@@ -37,12 +37,51 @@ describe('useDashboardData', () => {
 
     await waitFor(() => {
       expect(result.current).toBeDefined()
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.hasData).toBe(false)
       expect(result.current.progressionData).toEqual([])
       expect(result.current.painData).toEqual([])
       expect(result.current.recentSessions).toEqual([])
       expect(result.current.attendance.thisWeek).toBe(0)
       expect(result.current.attendance.target).toBe(4)
       expect(result.current.exerciseNames).toEqual([])
+    })
+  })
+
+  it('returns hasData=true when progression data exists', async () => {
+    const userId = await createUser()
+
+    await db.exerciseProgress.add({
+      userId,
+      exerciseId: 1,
+      exerciseName: 'Bench Press',
+      date: new Date(),
+      sessionId: 1,
+      weightKg: 60,
+      reps: 24,
+      sets: 3,
+      avgRepsInReserve: 2,
+      avgRestSeconds: 120,
+      exerciseOrder: 1,
+      phase: 'hypertrophy',
+      weekNumber: 1,
+    } as ExerciseProgress)
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.hasData).toBe(true)
+      expect(result.current.isLoading).toBe(false)
+    })
+  })
+
+  it('returns isLoading=true initially then resolves', async () => {
+    const { result } = renderHook(() => useDashboardData(undefined))
+
+    // When userId is undefined, should immediately return not loading with no data
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.hasData).toBe(false)
     })
   })
 
@@ -122,6 +161,7 @@ describe('useDashboardData', () => {
     expect(squatData!.entries[0].weightKg).toBe(80)
 
     expect(result.current.exerciseNames).toEqual(['Bench Press', 'Squat'])
+    expect(result.current.hasData).toBe(true)
   })
 
   it('aggregates pain data per zone', async () => {

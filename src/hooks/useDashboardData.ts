@@ -41,6 +41,8 @@ export interface DashboardData {
   recentSessions: RecentSession[]
   attendance: AttendanceData
   exerciseNames: string[]
+  hasData: boolean
+  isLoading: boolean
 }
 
 const emptyData: DashboardData = {
@@ -49,6 +51,8 @@ const emptyData: DashboardData = {
   recentSessions: [],
   attendance: { thisWeek: 0, target: 4 },
   exerciseNames: [],
+  hasData: false,
+  isLoading: true,
 }
 
 function getStartOfWeek(date: Date): Date {
@@ -63,7 +67,7 @@ function getStartOfWeek(date: Date): Date {
 
 export function useDashboardData(userId: number | undefined): DashboardData {
   const data = useLiveQuery(async (): Promise<DashboardData> => {
-    if (!userId) return emptyData
+    if (!userId) return { ...emptyData, isLoading: false }
 
     // Fetch user profile for target
     const profile = await db.userProfiles.get(userId)
@@ -165,12 +169,19 @@ export function useDashboardData(userId: number | undefined): DashboardData {
       return completedAt >= weekStart
     }).length
 
+    const hasData =
+      progressionData.length > 0 ||
+      painData.length > 0 ||
+      recentSessions.length > 0
+
     return {
       progressionData,
       painData,
       recentSessions,
       attendance: { thisWeek, target },
       exerciseNames,
+      hasData,
+      isLoading: false,
     }
   }, [userId])
 

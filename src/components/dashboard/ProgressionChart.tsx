@@ -18,8 +18,6 @@ interface ProgressionChartProps {
 export default function ProgressionChart({ data, exerciseNames }: ProgressionChartProps) {
   const [selectedExercise, setSelectedExercise] = useState<string>(exerciseNames[0] ?? '')
 
-  const exerciseData = data.find((d) => d.exerciseName === selectedExercise)
-
   // Update selection if current selection is empty but names are available
   const effectiveExercise = selectedExercise || exerciseNames[0] || ''
 
