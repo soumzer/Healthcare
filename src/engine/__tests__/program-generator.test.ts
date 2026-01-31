@@ -890,3 +890,870 @@ describe('Upper/Lower structured sessions', () => {
     })
   })
 })
+
+// ---------------------------------------------------------------------------
+// Push/Pull/Legs structured session builder
+// ---------------------------------------------------------------------------
+
+describe('Push/Pull/Legs structured sessions', () => {
+  // Realistic catalog with proper primaryMuscles covering all PPL needs
+  const pplCatalog: Exercise[] = [
+    // === COMPOUND UPPER: Horizontal push (chest) ===
+    makeExercise({
+      id: 201, name: 'Développé couché haltères', category: 'compound',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'dumbbells'],
+      equipmentNeeded: ['bench', 'dumbbells'],
+    }),
+    makeExercise({
+      id: 202, name: 'Développé couché smith machine', category: 'compound',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'smith_machine'],
+      equipmentNeeded: ['smith_machine', 'bench'],
+    }),
+    makeExercise({
+      id: 220, name: 'Développé couché machine', category: 'compound',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'machine'],
+      equipmentNeeded: ['pec_press'],
+    }),
+
+    // === COMPOUND UPPER: Vertical push (shoulders) ===
+    makeExercise({
+      id: 203, name: 'Développé militaire haltères', category: 'compound',
+      primaryMuscles: ['deltoïdes'],
+      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+    makeExercise({
+      id: 204, name: 'Développé militaire smith machine', category: 'compound',
+      primaryMuscles: ['deltoïdes'],
+      tags: ['push', 'upper_body', 'shoulders', 'smith_machine'],
+      equipmentNeeded: ['smith_machine', 'bench'],
+    }),
+    makeExercise({
+      id: 221, name: 'Développé militaire machine', category: 'compound',
+      primaryMuscles: ['deltoïdes'],
+      tags: ['push', 'upper_body', 'shoulders', 'machine'],
+      equipmentNeeded: ['shoulder_press'],
+    }),
+
+    // === ISOLATION UPPER: Chest accessories ===
+    makeExercise({
+      id: 206, name: 'Câble crossover (écartés câble)', category: 'isolation',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 207, name: 'Pec deck machine', category: 'isolation',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'machine'],
+      equipmentNeeded: ['pec_deck'],
+    }),
+
+    // === ISOLATION UPPER: Lateral raises ===
+    makeExercise({
+      id: 205, name: 'Élévations latérales', category: 'isolation',
+      primaryMuscles: ['deltoïdes latéraux'],
+      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+    makeExercise({
+      id: 222, name: 'Élévations latérales câble', category: 'isolation',
+      primaryMuscles: ['deltoïdes latéraux'],
+      tags: ['push', 'upper_body', 'shoulders', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+
+    // === ISOLATION UPPER: Triceps ===
+    makeExercise({
+      id: 209, name: 'Extension triceps poulie haute', category: 'isolation',
+      primaryMuscles: ['triceps'],
+      tags: ['push', 'upper_body', 'arms', 'triceps', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 223, name: 'Extension triceps câble corde (overhead)', category: 'isolation',
+      primaryMuscles: ['triceps'],
+      tags: ['push', 'upper_body', 'arms', 'triceps', 'cable'],
+      equipmentNeeded: ['cable', 'rope_attachment'],
+    }),
+
+    // === ISOLATION UPPER: Face pull ===
+    makeExercise({
+      id: 208, name: 'Face pull', category: 'isolation',
+      primaryMuscles: ['deltoïdes postérieurs', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'shoulders', 'posture', 'cable'],
+      equipmentNeeded: ['cable', 'rope_attachment'],
+    }),
+
+    // === COMPOUND UPPER: Horizontal pull (rowing) ===
+    makeExercise({
+      id: 210, name: 'Rowing câble assis', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'cable', 'posture'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 211, name: 'Rowing machine (chest-supported)', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'machine'],
+      equipmentNeeded: ['rowing_machine'],
+    }),
+
+    // === COMPOUND UPPER: Unilateral pull ===
+    makeExercise({
+      id: 212, name: 'Tirage horizontal câble unilatéral', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'cable', 'unilateral'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 224, name: 'Rowing haltère unilatéral', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'dumbbell', 'unilateral'],
+      equipmentNeeded: ['dumbbell', 'bench'],
+    }),
+
+    // === COMPOUND UPPER: Vertical pull ===
+    makeExercise({
+      id: 213, name: 'Tirage vertical (lat pulldown)', category: 'compound',
+      primaryMuscles: ['dorsaux', 'grand rond'],
+      tags: ['pull', 'upper_body', 'back', 'machine'],
+      equipmentNeeded: ['lat_pulldown'],
+    }),
+    makeExercise({
+      id: 225, name: 'Traction (pull-up)', category: 'compound',
+      primaryMuscles: ['dorsaux', 'grand rond'],
+      tags: ['pull', 'upper_body', 'back', 'bodyweight'],
+      equipmentNeeded: ['pull_up_bar'],
+    }),
+
+    // === ISOLATION UPPER: Biceps ===
+    makeExercise({
+      id: 214, name: 'Curl biceps haltères', category: 'isolation',
+      primaryMuscles: ['biceps'],
+      tags: ['pull', 'upper_body', 'arms', 'biceps', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+    makeExercise({
+      id: 226, name: 'Curl marteau (hammer curl)', category: 'isolation',
+      primaryMuscles: ['brachial', 'brachioradial'],
+      secondaryMuscles: ['biceps'],
+      tags: ['pull', 'upper_body', 'arms', 'biceps', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === ISOLATION UPPER: Rear delt ===
+    makeExercise({
+      id: 215, name: 'Band pull-apart', category: 'rehab',
+      primaryMuscles: ['deltoïdes postérieurs', 'rhomboïdes'],
+      tags: ['rehab', 'posture', 'shoulders', 'upper_back', 'band'],
+      equipmentNeeded: ['resistance_band'],
+      isRehab: true,
+    }),
+
+    // === ISOLATION UPPER: Shrug ===
+    makeExercise({
+      id: 227, name: 'Shrug haltères (haussements d\'épaules)', category: 'isolation',
+      primaryMuscles: ['trapèzes supérieurs'],
+      tags: ['pull', 'upper_body', 'traps', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === COMPOUND LOWER: Quad-dominant ===
+    makeExercise({
+      id: 101, name: 'Leg press', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'machine'],
+      equipmentNeeded: ['leg_press'],
+    }),
+    makeExercise({
+      id: 102, name: 'Squat smith machine', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'squat', 'smith_machine'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+
+    // === COMPOUND LOWER: Unilateral legs ===
+    makeExercise({
+      id: 103, name: 'Fentes haltères', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'lunge', 'dumbbells', 'unilateral'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+    makeExercise({
+      id: 104, name: 'Fentes smith machine', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'lunge', 'smith_machine', 'unilateral'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+
+    // === ISOLATION LOWER: Leg extension ===
+    makeExercise({
+      id: 105, name: 'Leg extension', category: 'isolation',
+      primaryMuscles: ['quadriceps'],
+      tags: ['legs', 'lower_body', 'quadriceps', 'machine'],
+      equipmentNeeded: ['leg_extension'],
+    }),
+
+    // === ISOLATION LOWER: Leg curl ===
+    makeExercise({
+      id: 106, name: 'Leg curl (ischio-jambiers)', category: 'isolation',
+      primaryMuscles: ['ischio-jambiers'],
+      tags: ['legs', 'lower_body', 'hamstrings', 'machine'],
+      equipmentNeeded: ['leg_curl'],
+    }),
+
+    // === ISOLATION LOWER: Calves ===
+    makeExercise({
+      id: 107, name: 'Mollets debout smith machine (calf raise)', category: 'isolation',
+      primaryMuscles: ['gastrocnémiens'],
+      tags: ['legs', 'lower_body', 'calves', 'smith_machine'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+
+    // === CORE ===
+    makeExercise({
+      id: 109, name: 'Dead bug', category: 'core',
+      primaryMuscles: ['transverse abdominal', 'rectus abdominis'],
+      tags: ['core', 'abs', 'stability', 'bodyweight'],
+      equipmentNeeded: [],
+    }),
+    makeExercise({
+      id: 110, name: 'Pallof press', category: 'core',
+      primaryMuscles: ['obliques', 'transverse abdominal'],
+      tags: ['core', 'anti_rotation', 'stability', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 128, name: 'Planche (plank)', category: 'core',
+      primaryMuscles: ['transverse abdominal', 'rectus abdominis'],
+      tags: ['core', 'stability', 'bodyweight', 'isometric'],
+      equipmentNeeded: [],
+    }),
+    makeExercise({
+      id: 129, name: 'Bird dog', category: 'core',
+      primaryMuscles: ['érecteurs du rachis', 'transverse abdominal'],
+      tags: ['core', 'stability', 'bodyweight', 'lower_back', 'posture'],
+      equipmentNeeded: [],
+    }),
+
+    // === COMPOUND LOWER: Hip hinge ===
+    makeExercise({
+      id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
+      primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+    makeExercise({
+      id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
+      primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === COMPOUND LOWER: Hip thrust ===
+    makeExercise({
+      id: 113, name: 'Hip thrust smith machine', category: 'compound',
+      primaryMuscles: ['fessiers'],
+      tags: ['lower_body', 'glutes', 'smith_machine'],
+      equipmentNeeded: ['smith_machine', 'bench'],
+    }),
+
+    // === ISOLATION LOWER: Pull-through ===
+    makeExercise({
+      id: 114, name: 'Pull-through câble (tirage entre les jambes)', category: 'isolation',
+      primaryMuscles: ['fessiers', 'ischio-jambiers'],
+      tags: ['lower_body', 'glutes', 'posterior_chain', 'cable'],
+      equipmentNeeded: ['cable', 'rope_attachment'],
+    }),
+  ]
+
+  const pplEquipment: GymEquipment[] = [
+    makeEquipment('bench'),
+    makeEquipment('dumbbells'),
+    makeEquipment('dumbbell'),
+    makeEquipment('cable'),
+    makeEquipment('rope_attachment'),
+    makeEquipment('smith_machine'),
+    makeEquipment('leg_press'),
+    makeEquipment('leg_extension'),
+    makeEquipment('leg_curl'),
+    makeEquipment('lat_pulldown'),
+    makeEquipment('shoulder_press'),
+    makeEquipment('pec_deck'),
+    makeEquipment('pec_press'),
+    makeEquipment('resistance_band'),
+    makeEquipment('rowing_machine'),
+    makeEquipment('pull_up_bar'),
+  ]
+
+  const pplInput = {
+    userId: 1,
+    goals: ['muscle_gain' as const],
+    conditions: [],
+    equipment: pplEquipment,
+    availableWeights: [],
+    daysPerWeek: 5,
+    minutesPerSession: 75,
+  }
+
+  function getSession(result: ReturnType<typeof generateProgram>, nameFragment: string) {
+    return result.sessions.find((s) => s.name.toLowerCase().includes(nameFragment.toLowerCase()))!
+  }
+
+  function sessionExerciseIds(session: { exercises: { exerciseId: number }[] }): number[] {
+    return session.exercises.map((e) => e.exerciseId)
+  }
+
+  const result = generateProgram(pplInput, pplCatalog)
+
+  it('generates 6 sessions for daysPerWeek=5 (PPL split)', () => {
+    expect(result.type).toBe('push_pull_legs')
+    expect(result.sessions).toHaveLength(6)
+  })
+
+  it('session orders are sequential 1-6', () => {
+    result.sessions.forEach((s, i) => {
+      expect(s.order).toBe(i + 1)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Push A
+  // -----------------------------------------------------------------------
+  describe('Push A', () => {
+    const pushA = getSession(result, 'push a')
+    const ids = sessionExerciseIds(pushA)
+
+    it('contains a horizontal push compound', () => {
+      // 201 = DC haltères, 202 = DC smith, 220 = DC machine
+      expect(ids.some((id) => [201, 202, 220].includes(id))).toBe(true)
+    })
+
+    it('contains a vertical push', () => {
+      // 203, 204, 221
+      expect(ids.some((id) => [203, 204, 221].includes(id))).toBe(true)
+    })
+
+    it('contains face pull', () => {
+      expect(ids).toContain(208)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('has between 5 and 7 exercises', () => {
+      expect(pushA.exercises.length).toBeGreaterThanOrEqual(5)
+      expect(pushA.exercises.length).toBeLessThanOrEqual(7)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Push B
+  // -----------------------------------------------------------------------
+  describe('Push B', () => {
+    const pushB = getSession(result, 'push b')
+    const ids = sessionExerciseIds(pushB)
+
+    it('contains a vertical push compound', () => {
+      expect(ids.some((id) => [203, 204, 221].includes(id))).toBe(true)
+    })
+
+    it('contains a horizontal push', () => {
+      expect(ids.some((id) => [201, 202, 220, 206, 207].includes(id))).toBe(true)
+    })
+
+    it('contains face pull', () => {
+      expect(ids).toContain(208)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Pull A
+  // -----------------------------------------------------------------------
+  describe('Pull A', () => {
+    const pullA = getSession(result, 'pull a')
+    const ids = sessionExerciseIds(pullA)
+
+    it('contains a horizontal pull', () => {
+      // 210 = Rowing câble, 211 = Rowing machine
+      expect(ids.some((id) => [210, 211].includes(id))).toBe(true)
+    })
+
+    it('contains a vertical pull', () => {
+      // 213 = Lat pulldown, 225 = Traction
+      expect(ids.some((id) => [213, 225].includes(id))).toBe(true)
+    })
+
+    it('contains face pull', () => {
+      expect(ids).toContain(208)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('has between 5 and 7 exercises', () => {
+      expect(pullA.exercises.length).toBeGreaterThanOrEqual(5)
+      expect(pullA.exercises.length).toBeLessThanOrEqual(7)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Pull B
+  // -----------------------------------------------------------------------
+  describe('Pull B', () => {
+    const pullB = getSession(result, 'pull b')
+    const ids = sessionExerciseIds(pullB)
+
+    it('contains a vertical pull', () => {
+      expect(ids.some((id) => [213, 225].includes(id))).toBe(true)
+    })
+
+    it('contains a horizontal pull', () => {
+      expect(ids.some((id) => [210, 211, 212, 224].includes(id))).toBe(true)
+    })
+
+    it('contains face pull', () => {
+      expect(ids).toContain(208)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Legs A — Quad Focus
+  // -----------------------------------------------------------------------
+  describe('Legs A — Quad Focus', () => {
+    const legsA = getSession(result, 'legs a')
+    const ids = sessionExerciseIds(legsA)
+
+    it('contains a quad compound exercise', () => {
+      // 101 = Leg press, 102 = Squat smith
+      expect(ids.some((id) => [101, 102].includes(id))).toBe(true)
+    })
+
+    it('contains leg extension', () => {
+      expect(ids).toContain(105)
+    })
+
+    it('contains a core exercise', () => {
+      expect(ids.some((id) => [109, 110, 128, 129].includes(id))).toBe(true)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('has between 5 and 7 exercises', () => {
+      expect(legsA.exercises.length).toBeGreaterThanOrEqual(5)
+      expect(legsA.exercises.length).toBeLessThanOrEqual(7)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Legs B — Hamstring/Glute Focus
+  // -----------------------------------------------------------------------
+  describe('Legs B — Hamstring/Glute Focus', () => {
+    const legsB = getSession(result, 'legs b')
+    const ids = sessionExerciseIds(legsB)
+
+    it('contains a hip hinge exercise', () => {
+      // 111 = SDT smith, 112 = SDT roumain haltères
+      expect(ids.some((id) => [111, 112].includes(id))).toBe(true)
+    })
+
+    it('contains hip thrust', () => {
+      expect(ids).toContain(113)
+    })
+
+    it('contains leg curl', () => {
+      expect(ids).toContain(106)
+    })
+
+    it('has no duplicate exercise IDs', () => {
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('has between 5 and 7 exercises', () => {
+      expect(legsB.exercises.length).toBeGreaterThanOrEqual(5)
+      expect(legsB.exercises.length).toBeLessThanOrEqual(7)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Cross-session invariants
+  // -----------------------------------------------------------------------
+  describe('Cross-session invariants', () => {
+    it('face pull appears in all push and pull sessions', () => {
+      const pushA = getSession(result, 'push a')
+      const pushB = getSession(result, 'push b')
+      const pullA = getSession(result, 'pull a')
+      const pullB = getSession(result, 'pull b')
+      expect(sessionExerciseIds(pushA)).toContain(208)
+      expect(sessionExerciseIds(pushB)).toContain(208)
+      expect(sessionExerciseIds(pullA)).toContain(208)
+      expect(sessionExerciseIds(pullB)).toContain(208)
+    })
+
+    it('no exercise ID duplicated within any single session', () => {
+      for (const session of result.sessions) {
+        const ids = session.exercises.map((e) => e.exerciseId)
+        expect(new Set(ids).size).toBe(ids.length)
+      }
+    })
+
+    it('every session has at least 5 exercises', () => {
+      for (const session of result.sessions) {
+        expect(session.exercises.length).toBeGreaterThanOrEqual(5)
+      }
+    })
+
+    it('all exercise fields are well-formed', () => {
+      for (const session of result.sessions) {
+        for (const ex of session.exercises) {
+          expect(ex.exerciseId).toBeGreaterThan(0)
+          expect(ex.order).toBeGreaterThan(0)
+          expect(ex.sets).toBeGreaterThanOrEqual(2)
+          expect(ex.targetReps).toBeGreaterThanOrEqual(1)
+          expect(ex.restSeconds).toBeGreaterThan(0)
+          expect(typeof ex.isRehab).toBe('boolean')
+        }
+      }
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Full Body structured session builder
+// ---------------------------------------------------------------------------
+
+describe('Full Body structured sessions', () => {
+  // Realistic catalog covering all full body needs
+  const fbCatalog: Exercise[] = [
+    // === COMPOUND LOWER: Quad-dominant ===
+    makeExercise({
+      id: 101, name: 'Leg press', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'machine'],
+      equipmentNeeded: ['leg_press'],
+    }),
+    makeExercise({
+      id: 102, name: 'Squat smith machine', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'squat', 'smith_machine'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+
+    // === COMPOUND LOWER: Unilateral legs ===
+    makeExercise({
+      id: 103, name: 'Fentes haltères', category: 'compound',
+      primaryMuscles: ['quadriceps', 'fessiers'],
+      tags: ['legs', 'lower_body', 'lunge', 'dumbbells', 'unilateral'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === COMPOUND LOWER: Hip hinge ===
+    makeExercise({
+      id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
+      primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
+      equipmentNeeded: ['smith_machine'],
+    }),
+    makeExercise({
+      id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
+      primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === COMPOUND LOWER: Hip thrust ===
+    makeExercise({
+      id: 113, name: 'Hip thrust smith machine', category: 'compound',
+      primaryMuscles: ['fessiers'],
+      tags: ['lower_body', 'glutes', 'smith_machine'],
+      equipmentNeeded: ['smith_machine', 'bench'],
+    }),
+
+    // === ISOLATION LOWER ===
+    makeExercise({
+      id: 105, name: 'Leg extension', category: 'isolation',
+      primaryMuscles: ['quadriceps'],
+      tags: ['legs', 'lower_body', 'quadriceps', 'machine'],
+      equipmentNeeded: ['leg_extension'],
+    }),
+    makeExercise({
+      id: 106, name: 'Leg curl (ischio-jambiers)', category: 'isolation',
+      primaryMuscles: ['ischio-jambiers'],
+      tags: ['legs', 'lower_body', 'hamstrings', 'machine'],
+      equipmentNeeded: ['leg_curl'],
+    }),
+
+    // === COMPOUND UPPER: Horizontal push ===
+    makeExercise({
+      id: 201, name: 'Développé couché haltères', category: 'compound',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'dumbbells'],
+      equipmentNeeded: ['bench', 'dumbbells'],
+    }),
+    makeExercise({
+      id: 202, name: 'Développé couché smith machine', category: 'compound',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'smith_machine'],
+      equipmentNeeded: ['smith_machine', 'bench'],
+    }),
+
+    // === COMPOUND UPPER: Vertical push ===
+    makeExercise({
+      id: 203, name: 'Développé militaire haltères', category: 'compound',
+      primaryMuscles: ['deltoïdes'],
+      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === COMPOUND UPPER: Horizontal pull ===
+    makeExercise({
+      id: 210, name: 'Rowing câble assis', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'cable', 'posture'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 211, name: 'Rowing machine (chest-supported)', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'machine'],
+      equipmentNeeded: ['rowing_machine'],
+    }),
+
+    // === COMPOUND UPPER: Unilateral pull ===
+    makeExercise({
+      id: 224, name: 'Rowing haltère unilatéral', category: 'compound',
+      primaryMuscles: ['dorsaux', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'back', 'dumbbell', 'unilateral'],
+      equipmentNeeded: ['dumbbell', 'bench'],
+    }),
+
+    // === COMPOUND UPPER: Vertical pull ===
+    makeExercise({
+      id: 213, name: 'Tirage vertical (lat pulldown)', category: 'compound',
+      primaryMuscles: ['dorsaux', 'grand rond'],
+      tags: ['pull', 'upper_body', 'back', 'machine'],
+      equipmentNeeded: ['lat_pulldown'],
+    }),
+
+    // === ISOLATION UPPER ===
+    makeExercise({
+      id: 205, name: 'Élévations latérales', category: 'isolation',
+      primaryMuscles: ['deltoïdes latéraux'],
+      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+    makeExercise({
+      id: 206, name: 'Câble crossover (écartés câble)', category: 'isolation',
+      primaryMuscles: ['pectoraux'],
+      tags: ['push', 'upper_body', 'chest', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+    makeExercise({
+      id: 208, name: 'Face pull', category: 'isolation',
+      primaryMuscles: ['deltoïdes postérieurs', 'rhomboïdes'],
+      tags: ['pull', 'upper_body', 'shoulders', 'posture', 'cable'],
+      equipmentNeeded: ['cable', 'rope_attachment'],
+    }),
+    makeExercise({
+      id: 214, name: 'Curl biceps haltères', category: 'isolation',
+      primaryMuscles: ['biceps'],
+      tags: ['pull', 'upper_body', 'arms', 'biceps', 'dumbbells'],
+      equipmentNeeded: ['dumbbells'],
+    }),
+
+    // === CORE ===
+    makeExercise({
+      id: 109, name: 'Dead bug', category: 'core',
+      primaryMuscles: ['transverse abdominal', 'rectus abdominis'],
+      tags: ['core', 'abs', 'stability', 'bodyweight'],
+      equipmentNeeded: [],
+    }),
+    makeExercise({
+      id: 110, name: 'Pallof press', category: 'core',
+      primaryMuscles: ['obliques', 'transverse abdominal'],
+      tags: ['core', 'anti_rotation', 'stability', 'cable'],
+      equipmentNeeded: ['cable'],
+    }),
+  ]
+
+  const fbEquipment: GymEquipment[] = [
+    makeEquipment('bench'),
+    makeEquipment('dumbbells'),
+    makeEquipment('dumbbell'),
+    makeEquipment('cable'),
+    makeEquipment('rope_attachment'),
+    makeEquipment('smith_machine'),
+    makeEquipment('leg_press'),
+    makeEquipment('leg_extension'),
+    makeEquipment('leg_curl'),
+    makeEquipment('lat_pulldown'),
+    makeEquipment('rowing_machine'),
+  ]
+
+  function getSession(result: ReturnType<typeof generateProgram>, nameFragment: string) {
+    return result.sessions.find((s) => s.name.toLowerCase().includes(nameFragment.toLowerCase()))!
+  }
+
+  function sessionExerciseIds(session: { exercises: { exerciseId: number }[] }): number[] {
+    return session.exercises.map((e) => e.exerciseId)
+  }
+
+  // -----------------------------------------------------------------------
+  // 2 days/week
+  // -----------------------------------------------------------------------
+  describe('2 days/week', () => {
+    const fbInput2 = {
+      userId: 1,
+      goals: ['muscle_gain' as const],
+      conditions: [],
+      equipment: fbEquipment,
+      availableWeights: [],
+      daysPerWeek: 2,
+      minutesPerSession: 60,
+    }
+
+    const result2 = generateProgram(fbInput2, fbCatalog)
+
+    it('generates 2 sessions for daysPerWeek=2', () => {
+      expect(result2.type).toBe('full_body')
+      expect(result2.sessions).toHaveLength(2)
+    })
+
+    it('Full Body A contains lower compound, push, pull, face pull, core', () => {
+      const fbA = getSession(result2, 'full body a')
+      const ids = sessionExerciseIds(fbA)
+
+      // Lower compound (quad)
+      expect(ids.some((id) => [101, 102].includes(id))).toBe(true)
+      // Push (horizontal chest compound)
+      expect(ids.some((id) => [201, 202].includes(id))).toBe(true)
+      // Pull (horizontal pull)
+      expect(ids.some((id) => [210, 211].includes(id))).toBe(true)
+      // Face pull
+      expect(ids).toContain(208)
+      // Core
+      expect(ids.some((id) => [109, 110].includes(id))).toBe(true)
+    })
+
+    it('Full Body B contains hip hinge, vertical push, vertical pull, face pull, core', () => {
+      const fbB = getSession(result2, 'full body b')
+      const ids = sessionExerciseIds(fbB)
+
+      // Hip hinge
+      expect(ids.some((id) => [111, 112].includes(id))).toBe(true)
+      // Vertical push
+      expect(ids).toContain(203)
+      // Vertical pull
+      expect(ids).toContain(213)
+      // Face pull
+      expect(ids).toContain(208)
+      // Core
+      expect(ids.some((id) => [109, 110].includes(id))).toBe(true)
+    })
+
+    it('no duplicates within any session', () => {
+      for (const session of result2.sessions) {
+        const ids = session.exercises.map((e) => e.exerciseId)
+        expect(new Set(ids).size).toBe(ids.length)
+      }
+    })
+
+    it('each session has 6-7 exercises', () => {
+      for (const session of result2.sessions) {
+        expect(session.exercises.length).toBeGreaterThanOrEqual(6)
+        expect(session.exercises.length).toBeLessThanOrEqual(7)
+      }
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // 3 days/week
+  // -----------------------------------------------------------------------
+  describe('3 days/week', () => {
+    const fbInput3 = {
+      userId: 1,
+      goals: ['muscle_gain' as const],
+      conditions: [],
+      equipment: fbEquipment,
+      availableWeights: [],
+      daysPerWeek: 3,
+      minutesPerSession: 60,
+    }
+
+    const result3 = generateProgram(fbInput3, fbCatalog)
+
+    it('generates 3 sessions for daysPerWeek=3', () => {
+      expect(result3.type).toBe('full_body')
+      expect(result3.sessions).toHaveLength(3)
+    })
+
+    it('Full Body C exists and contains push, pull, lower, face pull', () => {
+      const fbC = getSession(result3, 'full body c')
+      const ids = sessionExerciseIds(fbC)
+
+      // Unilateral legs or lower compound
+      expect(ids.some((id) => [101, 102, 103, 111, 112, 113].includes(id))).toBe(true)
+      // Push (horizontal)
+      expect(ids.some((id) => [201, 202, 206].includes(id))).toBe(true)
+      // Pull (unilateral or horizontal)
+      expect(ids.some((id) => [210, 211, 224].includes(id))).toBe(true)
+      // Face pull
+      expect(ids).toContain(208)
+    })
+
+    it('no duplicates within any session', () => {
+      for (const session of result3.sessions) {
+        const ids = session.exercises.map((e) => e.exerciseId)
+        expect(new Set(ids).size).toBe(ids.length)
+      }
+    })
+
+    it('each session has at least 6 exercises', () => {
+      for (const session of result3.sessions) {
+        expect(session.exercises.length).toBeGreaterThanOrEqual(6)
+      }
+    })
+
+    it('session orders are sequential 1-3', () => {
+      result3.sessions.forEach((s, i) => {
+        expect(s.order).toBe(i + 1)
+      })
+    })
+
+    it('face pull appears in every session', () => {
+      for (const session of result3.sessions) {
+        const ids = session.exercises.map((e) => e.exerciseId)
+        expect(ids).toContain(208)
+      }
+    })
+
+    it('all exercise fields are well-formed', () => {
+      for (const session of result3.sessions) {
+        for (const ex of session.exercises) {
+          expect(ex.exerciseId).toBeGreaterThan(0)
+          expect(ex.order).toBeGreaterThan(0)
+          expect(ex.sets).toBeGreaterThanOrEqual(2)
+          expect(ex.targetReps).toBeGreaterThanOrEqual(1)
+          expect(ex.restSeconds).toBeGreaterThan(0)
+          expect(typeof ex.isRehab).toBe('boolean')
+        }
+      }
+    })
+  })
+})

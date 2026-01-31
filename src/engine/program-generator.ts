@@ -264,27 +264,305 @@ function buildFullBodySessions(
   available: Exercise[],
   daysPerWeek: number,
 ): ProgramSession[] {
-  const sessions: ProgramSession[] = []
   const nonRehab = available.filter((e) => !e.isRehab)
-  const rehab = available.filter((e) => e.isRehab)
 
-  for (let i = 0; i < daysPerWeek; i++) {
-    const usedIds = new Set<number>()
-    const sessionExercises: Exercise[] = []
+  // -----------------------------------------------------------------------
+  // Categorize exercises by muscle group and movement pattern
+  // -----------------------------------------------------------------------
 
-    // Pick rehab exercises first (up to 2)
-    sessionExercises.push(...pickUpTo(rehab, 2, usedIds))
+  // Quad compounds
+  const quadCompounds = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0,
+  )
 
-    // 1 compound push (upper)
-    sessionExercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'push').filter((e) => e.tags.includes('upper_body')), 1, usedIds))
-    // 1 compound pull (upper)
-    sessionExercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'pull').filter((e) => e.tags.includes('upper_body')), 1, usedIds))
-    // 1 lower body compound
-    sessionExercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'lower_body').filter((e) => e.category === 'compound'), 1, usedIds))
-    // 1 core
-    sessionExercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
+  // Horizontal push: pectoraux compound
+  const horizontalPush = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['pectoraux']).length > 0,
+  )
 
-    sessions.push(buildSession(`Full Body ${String.fromCharCode(65 + i)}`, i + 1, sessionExercises))
+  // Horizontal pull: dorsaux compound (rowing)
+  const horizontalPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['dorsaux', 'rhomboïdes']).length > 0
+      && !e.name.toLowerCase().includes('pulldown')
+      && !e.name.toLowerCase().includes('traction')
+      && !e.name.toLowerCase().includes('pull-up'),
+  )
+
+  // Vertical push: deltoïdes compound
+  const verticalPush = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['deltoïdes']).length > 0,
+  )
+
+  // Vertical pull: lat pulldown or tractions
+  const verticalPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && (e.name.toLowerCase().includes('pulldown')
+        || e.name.toLowerCase().includes('traction')
+        || e.name.toLowerCase().includes('pull-up')
+        || e.name.toLowerCase().includes('tirage vertical')),
+  )
+
+  // Leg curl
+  const legCurls = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('leg curl'),
+  )
+
+  // Leg extension
+  const legExtensions = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('leg extension'),
+  )
+
+  // Lateral raises
+  const lateralRaises = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('élévations latérales') || e.name.toLowerCase().includes('lateral raise'),
+  )
+
+  // Face pull (non-rehab)
+  const facePulls = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('face pull'),
+  )
+
+  // Core exercises
+  const coreExercises = nonRehab.filter((e) => e.category === 'core')
+
+  // Hip hinge: ischio-jambiers compound lower_body
+  const hipHinges = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['ischio-jambiers']).length > 0
+      && e.tags.includes('lower_body'),
+  )
+
+  // Chest accessories: pectoraux isolation
+  const chestAccessories = nonRehab.filter(
+    (e) => (e.category === 'isolation') && exercisesForMuscles([e], ['pectoraux']).length > 0,
+  )
+
+  // Unilateral legs
+  const unilateralLegs = nonRehab.filter(
+    (e) => e.category === 'compound' && e.tags.includes('unilateral') && e.tags.includes('lower_body'),
+  )
+
+  // Hip thrust
+  const hipThrusts = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('hip thrust'),
+  )
+
+  // Unilateral pull
+  const unilateralPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['dorsaux', 'rhomboïdes']).length > 0
+      && e.tags.includes('unilateral'),
+  )
+
+  // Biceps exercises
+  const bicepsExercises = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['biceps', 'brachial']).length > 0
+      && (e.category === 'isolation'),
+  )
+
+  // -----------------------------------------------------------------------
+  // Full Body A
+  // -----------------------------------------------------------------------
+
+  const fullBodyASlots: ExerciseSlot[] = [
+    {
+      label: 'Lower compound',
+      candidates: () => quadCompounds,
+      preferredName: 'leg press',
+      sets: 4,
+      reps: 11,
+      rest: 150,
+    },
+    {
+      label: 'Horizontal push',
+      candidates: () => horizontalPush,
+      preferredName: 'développé couché haltères',
+      sets: 3,
+      reps: 10,
+      rest: 120,
+    },
+    {
+      label: 'Horizontal pull',
+      candidates: () => horizontalPull,
+      preferredName: 'rowing',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Leg curl',
+      candidates: () => legCurls,
+      preferredName: 'leg curl',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
+      sets: 3,
+      reps: 13,
+      rest: 60,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core exercise',
+      candidates: () => coreExercises,
+      preferredName: 'dead bug',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Full Body B
+  // -----------------------------------------------------------------------
+
+  const fullBodyBSlots: ExerciseSlot[] = [
+    {
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'sdt smith',
+      sets: 4,
+      reps: 9,
+      rest: 150,
+    },
+    {
+      label: 'Vertical push',
+      candidates: () => verticalPush,
+      preferredName: 'développé militaire',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Vertical pull',
+      candidates: () => verticalPull,
+      preferredName: 'lat pulldown',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Leg extension',
+      candidates: () => legExtensions,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Chest accessory',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'pec',
+      sets: 3,
+      reps: 11,
+      rest: 90,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core exercise',
+      candidates: () => coreExercises,
+      preferredName: 'pallof',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Full Body C (if 3 days)
+  // -----------------------------------------------------------------------
+
+  const fullBodyCSlots: ExerciseSlot[] = [
+    {
+      label: 'Unilateral legs',
+      candidates: () => unilateralLegs,
+      preferredName: 'fentes',
+      sets: 3,
+      reps: 13,
+      rest: 120,
+    },
+    {
+      label: 'Horizontal push',
+      candidates: () => [...horizontalPush, ...chestAccessories],
+      preferredName: 'pec press',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Horizontal pull (unilateral)',
+      candidates: () => [...unilateralPull, ...horizontalPull],
+      preferredName: 'rowing haltère',
+      sets: 3,
+      reps: 11,
+      rest: 90,
+    },
+    {
+      label: 'Hip thrust',
+      candidates: () => [...hipThrusts, ...hipHinges],
+      preferredName: 'hip thrust',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
+      sets: 3,
+      reps: 13,
+      rest: 60,
+    },
+    {
+      label: 'Biceps',
+      candidates: () => bicepsExercises,
+      preferredName: 'curl',
+      sets: 2,
+      reps: 13,
+      rest: 60,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Build sessions based on daysPerWeek (2 or 3)
+  // -----------------------------------------------------------------------
+
+  const sessions: ProgramSession[] = [
+    buildStructuredSession('Full Body A', 1, fullBodyASlots, available),
+    buildStructuredSession('Full Body B', 2, fullBodyBSlots, available),
+  ]
+
+  if (daysPerWeek >= 3) {
+    sessions.push(
+      buildStructuredSession('Full Body C', 3, fullBodyCSlots, available),
+    )
   }
 
   return sessions
@@ -650,75 +928,475 @@ function buildPushPullLegsSessions(
   available: Exercise[],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
-  const rehab = available.filter((e) => e.isRehab)
-  const sessions: ProgramSession[] = []
 
-  // Push
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'push').filter((e) => e.tags.includes('upper_body') && e.category === 'compound'), 2, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'push').filter((e) => e.tags.includes('upper_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Push', 1, exercises))
-  }
+  // -----------------------------------------------------------------------
+  // Categorize exercises by muscle group and movement pattern
+  // -----------------------------------------------------------------------
 
-  // Pull
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'pull').filter((e) => e.tags.includes('upper_body') && e.category === 'compound'), 2, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'pull').filter((e) => e.tags.includes('upper_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Pull', 2, exercises))
-  }
+  // Horizontal push: pectoraux compound
+  const horizontalPush = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['pectoraux']).length > 0,
+  )
 
-  // Legs
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.tags.includes('lower_body') && e.category === 'compound'), 3, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.tags.includes('lower_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Legs', 3, exercises))
-  }
+  // Vertical push: deltoïdes compound
+  const verticalPush = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['deltoïdes']).length > 0,
+  )
 
-  // For 6 days, duplicate the three sessions
-  // Push B, Pull B, Legs B
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'push').filter((e) => e.tags.includes('upper_body') && e.category === 'compound'), 2, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'push').filter((e) => e.tags.includes('upper_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Push B', 4, exercises))
-  }
+  // Chest accessories: pectoraux isolation
+  const chestAccessories = nonRehab.filter(
+    (e) => (e.category === 'isolation') && exercisesForMuscles([e], ['pectoraux']).length > 0,
+  )
 
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'pull').filter((e) => e.tags.includes('upper_body') && e.category === 'compound'), 2, usedIds))
-    exercises.push(...pickUpTo(exercisesWithTag(nonRehab, 'pull').filter((e) => e.tags.includes('upper_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Pull B', 5, exercises))
-  }
+  // Lateral raises
+  const lateralRaises = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('élévations latérales') || e.name.toLowerCase().includes('lateral raise'),
+  )
 
-  {
-    const usedIds = new Set<number>()
-    const exercises: Exercise[] = []
-    exercises.push(...pickUpTo(rehab, 1, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.tags.includes('lower_body') && e.category === 'compound'), 3, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.tags.includes('lower_body') && e.category === 'isolation'), 2, usedIds))
-    exercises.push(...pickUpTo(nonRehab.filter((e) => e.category === 'core'), 1, usedIds))
-    sessions.push(buildSession('Legs B', 6, exercises))
-  }
+  // Triceps exercises
+  const tricepsExercises = nonRehab.filter(
+    (e) => (e.category === 'isolation') && exercisesForMuscles([e], ['triceps']).length > 0,
+  )
 
-  return sessions
+  // Face pull (non-rehab version)
+  const facePulls = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('face pull'),
+  )
+
+  // Horizontal pull: dorsaux compound (rowing, not pulldown/traction)
+  const horizontalPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['dorsaux', 'rhomboïdes']).length > 0
+      && !e.name.toLowerCase().includes('pulldown')
+      && !e.name.toLowerCase().includes('traction')
+      && !e.name.toLowerCase().includes('pull-up'),
+  )
+
+  // Unilateral pull (rowing unilatéral)
+  const unilateralPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['dorsaux', 'rhomboïdes']).length > 0
+      && e.tags.includes('unilateral'),
+  )
+
+  // Vertical pull: lat pulldown or tractions
+  const verticalPull = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && (e.name.toLowerCase().includes('pulldown')
+        || e.name.toLowerCase().includes('traction')
+        || e.name.toLowerCase().includes('pull-up')
+        || e.name.toLowerCase().includes('tirage vertical')),
+  )
+
+  // Biceps exercises
+  const bicepsExercises = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['biceps', 'brachial']).length > 0
+      && (e.category === 'isolation'),
+  )
+
+  // Rear delt exercises
+  const rearDeltExercises = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['deltoïdes postérieurs']).length > 0
+      && e.name.toLowerCase() !== 'face pull',
+  )
+
+  // Also consider rehab-category band pull-apart as rear delt fallback
+  const rehabRearDelts = available.filter(
+    (e) => e.isRehab && (e.name.toLowerCase().includes('band pull-apart') || e.name.toLowerCase().includes('face pull')),
+  )
+
+  // Shrug exercises
+  const shrugExercises = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('shrug') || e.name.toLowerCase().includes('haussements'),
+  )
+
+  // Quad compounds
+  const quadCompounds = nonRehab.filter(
+    (e) => e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0,
+  )
+
+  // Unilateral legs
+  const unilateralLegs = nonRehab.filter(
+    (e) => e.category === 'compound' && e.tags.includes('unilateral') && e.tags.includes('lower_body'),
+  )
+
+  // Leg extension
+  const legExtensions = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('leg extension'),
+  )
+
+  // Leg curl
+  const legCurls = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('leg curl'),
+  )
+
+  // Calf exercises
+  const calves = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['gastrocnémiens', 'soléaire', 'mollets']).length > 0
+      && e.tags.includes('calves'),
+  )
+
+  // Core exercises
+  const coreExercises = nonRehab.filter((e) => e.category === 'core')
+
+  // Hip hinge: ischio-jambiers compound lower_body
+  const hipHinges = nonRehab.filter(
+    (e) => e.category === 'compound'
+      && exercisesForMuscles([e], ['ischio-jambiers']).length > 0
+      && e.tags.includes('lower_body'),
+  )
+
+  // Hip thrust
+  const hipThrusts = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('hip thrust'),
+  )
+
+  // Lighter quad / pull-through for Legs B
+  const lighterQuad = nonRehab.filter(
+    (e) => (e.name.toLowerCase().includes('pull-through')
+      || (e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0)),
+  )
+
+  // -----------------------------------------------------------------------
+  // Push A — Horizontal push focus
+  // -----------------------------------------------------------------------
+
+  const pushASlots: ExerciseSlot[] = [
+    {
+      label: 'Horizontal push compound',
+      candidates: () => horizontalPush,
+      preferredName: 'développé couché haltères',
+      sets: 4,
+      reps: 10,
+      rest: 120,
+    },
+    {
+      label: 'Vertical push',
+      candidates: () => verticalPush,
+      preferredName: 'développé militaire',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Chest accessory',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'pec',
+      sets: 3,
+      reps: 11,
+      rest: 90,
+    },
+    {
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Triceps',
+      candidates: () => tricepsExercises,
+      preferredName: 'extension triceps poulie',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Push B — Vertical push focus
+  // -----------------------------------------------------------------------
+
+  const pushBSlots: ExerciseSlot[] = [
+    {
+      label: 'Vertical push compound',
+      candidates: () => verticalPush,
+      preferredName: 'développé militaire smith',
+      sets: 4,
+      reps: 10,
+      rest: 120,
+    },
+    {
+      label: 'Horizontal push',
+      candidates: () => [...horizontalPush, ...chestAccessories],
+      preferredName: 'développé couché smith',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Élévations latérales câble',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales câble',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Chest fly / accessory',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'écartés',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Triceps overhead',
+      candidates: () => tricepsExercises,
+      preferredName: 'overhead',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Pull A — Horizontal pull focus
+  // -----------------------------------------------------------------------
+
+  const pullASlots: ExerciseSlot[] = [
+    {
+      label: 'Horizontal pull',
+      candidates: () => horizontalPull,
+      preferredName: 'rowing câble',
+      sets: 4,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Vertical pull',
+      candidates: () => verticalPull,
+      preferredName: 'lat pulldown',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Unilateral pull',
+      candidates: () => [...unilateralPull, ...horizontalPull],
+      preferredName: 'unilatéral',
+      sets: 3,
+      reps: 11,
+      rest: 90,
+    },
+    {
+      label: 'Face pull (posture)',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 13,
+      rest: 60,
+    },
+    {
+      label: 'Biceps',
+      candidates: () => bicepsExercises,
+      preferredName: 'curl biceps haltères',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+    {
+      label: 'Rear delt',
+      candidates: () => [...rearDeltExercises, ...rehabRearDelts, ...lateralRaises],
+      preferredName: 'band pull-apart',
+      sets: 3,
+      reps: 17,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Pull B — Vertical pull focus
+  // -----------------------------------------------------------------------
+
+  const pullBSlots: ExerciseSlot[] = [
+    {
+      label: 'Vertical pull',
+      candidates: () => verticalPull,
+      preferredName: 'lat pulldown',
+      sets: 4,
+      reps: 10,
+      rest: 120,
+    },
+    {
+      label: 'Horizontal pull',
+      candidates: () => horizontalPull,
+      preferredName: 'rowing machine',
+      sets: 3,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Unilateral pull',
+      candidates: () => [...unilateralPull, ...horizontalPull],
+      preferredName: 'rowing haltère',
+      sets: 3,
+      reps: 11,
+      rest: 90,
+    },
+    {
+      label: 'Face pull',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
+      sets: 3,
+      reps: 13,
+      rest: 60,
+    },
+    {
+      label: 'Biceps curl marteau (elbow-friendly)',
+      candidates: () => bicepsExercises,
+      preferredName: 'curl marteau',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+    {
+      label: 'Shrug',
+      candidates: () => [...shrugExercises, ...horizontalPull],
+      preferredName: 'shrug',
+      sets: 3,
+      reps: 13,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Legs A — Quad Focus
+  // -----------------------------------------------------------------------
+
+  const legsASlots: ExerciseSlot[] = [
+    {
+      label: 'Quad compound',
+      candidates: () => quadCompounds,
+      preferredName: 'leg press',
+      sets: 4,
+      reps: 11,
+      rest: 150,
+    },
+    {
+      label: 'Unilateral legs',
+      candidates: () => unilateralLegs,
+      preferredName: 'fentes',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Leg extension',
+      candidates: () => legExtensions,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Leg curl (balance)',
+      candidates: () => legCurls,
+      preferredName: 'leg curl',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Calf exercise',
+      candidates: () => calves,
+      sets: 3,
+      reps: 17,
+      rest: 60,
+    },
+    {
+      label: 'Core exercise',
+      candidates: () => coreExercises,
+      preferredName: 'dead bug',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Legs B — Hamstring/Glute Focus
+  // -----------------------------------------------------------------------
+
+  const legsBSlots: ExerciseSlot[] = [
+    {
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'sdt smith',
+      sets: 4,
+      reps: 9,
+      rest: 150,
+    },
+    {
+      label: 'Hip thrust',
+      candidates: () => hipThrusts,
+      preferredName: 'hip thrust',
+      sets: 4,
+      reps: 11,
+      rest: 120,
+    },
+    {
+      label: 'Leg curl',
+      candidates: () => legCurls,
+      preferredName: 'leg curl',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Lighter quad / pull-through',
+      candidates: () => lighterQuad,
+      preferredName: 'pull-through',
+      sets: 3,
+      reps: 13,
+      rest: 90,
+    },
+    {
+      label: 'Calf exercise',
+      candidates: () => calves,
+      sets: 3,
+      reps: 17,
+      rest: 60,
+    },
+    {
+      label: 'Core exercise',
+      candidates: () => coreExercises,
+      preferredName: 'planche',
+      sets: 3,
+      reps: 11,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Build the 6 sessions
+  // -----------------------------------------------------------------------
+
+  return [
+    buildStructuredSession('Push A', 1, pushASlots, available),
+    buildStructuredSession('Pull A', 2, pullASlots, available),
+    buildStructuredSession('Legs A — Quadriceps', 3, legsASlots, available),
+    buildStructuredSession('Push B', 4, pushBSlots, available),
+    buildStructuredSession('Pull B', 5, pullBSlots, available),
+    buildStructuredSession('Legs B — Hamstring / Glutes', 6, legsBSlots, available),
+  ]
 }
 
 // ---------------------------------------------------------------------------
