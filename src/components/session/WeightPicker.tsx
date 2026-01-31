@@ -3,6 +3,7 @@ import { useState } from 'react'
 interface WeightPickerProps {
   currentWeightKg: number
   prescribedReps: number
+  availableWeights?: number[]
   onSelect: (weightKg: number, adjustedReps: number) => void
 }
 
@@ -22,17 +23,31 @@ function adjustRepsForWeight(
 export default function WeightPicker({
   currentWeightKg,
   prescribedReps,
+  availableWeights,
   onSelect,
 }: WeightPickerProps) {
   const [customWeight, setCustomWeight] = useState('')
 
-  // Generate nearby weight options (2.5kg increments around current)
-  const options: number[] = []
-  const step = 2.5
-  for (let i = -4; i <= 4; i++) {
-    if (i === 0) continue // skip current weight
-    const w = currentWeightKg + i * step
-    if (w > 0) options.push(w)
+  // Use actual available weights if provided, otherwise generate nearby options
+  let options: number[]
+  if (availableWeights && availableWeights.length > 0) {
+    // Show available weights that are different from the current prescribed weight
+    options = availableWeights.filter((w) => Math.abs(w - currentWeightKg) > 0.1)
+    // Sort by distance from current weight (closest first)
+    options.sort((a, b) => Math.abs(a - currentWeightKg) - Math.abs(b - currentWeightKg))
+    // Limit to 8 closest options
+    options = options.slice(0, 8)
+    // Re-sort ascending for display
+    options.sort((a, b) => a - b)
+  } else {
+    // Fallback: generate nearby weight options (2.5kg increments around current)
+    options = []
+    const step = 2.5
+    for (let i = -4; i <= 4; i++) {
+      if (i === 0) continue // skip current weight
+      const w = currentWeightKg + i * step
+      if (w > 0) options.push(w)
+    }
   }
 
   const handleSelect = (weight: number) => {
@@ -61,7 +76,11 @@ export default function WeightPicker({
           {currentWeightKg}kg non disponible
         </p>
 
-        <p className="text-zinc-400 text-sm mb-3">Poids disponibles :</p>
+        <p className="text-zinc-400 text-sm mb-3">
+          {availableWeights && availableWeights.length > 0
+            ? 'Poids disponibles :'
+            : 'Poids proches :'}
+        </p>
         <div className="grid grid-cols-4 gap-2 mb-6">
           {options.map((w) => (
             <button

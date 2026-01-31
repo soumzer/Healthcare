@@ -441,3 +441,199 @@ describe('useSession - progression engine integration', () => {
     expect(result.current.currentExercise!.prescribedReps).toBe(8)
   })
 })
+
+describe('useSession - cooldown phase', () => {
+  // Use upper_back condition which has a cooldown exercise (Etirement pectoral)
+  const upperBackConditions: HealthCondition[] = [
+    {
+      userId: 1,
+      bodyZone: 'upper_back',
+      label: 'Posture',
+      diagnosis: 'Posture anterieure',
+      painLevel: 2,
+      since: '2 ans',
+      notes: '',
+      isActive: true,
+      createdAt: new Date(),
+    },
+  ]
+
+  /** Helper to complete all exercises in a session */
+  function completeAll(result: { current: ReturnType<typeof useSession> }) {
+    // Exercise 1: 3 sets
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(8, 42.5, 2))
+      act(() => result.current.completeRestTimer())
+    }
+    act(() => result.current.startSet())
+    act(() => result.current.logSet(8, 42.5, 2))
+
+    // Exercise 2: 3 sets
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(12, 12.5, 3))
+      act(() => result.current.completeRestTimer())
+    }
+    act(() => result.current.startSet())
+    act(() => result.current.logSet(12, 12.5, 3))
+  }
+
+  beforeEach(async () => {
+    await db.delete()
+    await db.open()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('transitions to cooldown after all exercises when cooldownRehab exists', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      userConditions: ['upper_back'],
+      healthConditions: upperBackConditions,
+    }
+    const { result } = renderHook(() => useSession(params))
+
+    // Check that cooldownRehab has exercises (upper_back protocol has doorway stretch as cooldown)
+    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
+
+    completeAll(result)
+
+    // Should be in cooldown phase
+    expect(result.current.phase).toBe('cooldown')
+  })
+
+  it('transitions from cooldown to end_pain_check when user has conditions', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      userConditions: ['upper_back'],
+      healthConditions: upperBackConditions,
+    }
+    const { result } = renderHook(() => useSession(params))
+
+    completeAll(result)
+
+    expect(result.current.phase).toBe('cooldown')
+    act(() => { result.current.completeCooldown() })
+    expect(result.current.phase).toBe('end_pain_check')
+  })
+
+  it('exposes completeWarmupRehab to transition from warmup_rehab to warmup', () => {
+    const { result } = renderHook(() => useSession(defaultParams))
+    expect(result.current.completeWarmupRehab).toBeDefined()
+    expect(typeof result.current.completeWarmupRehab).toBe('function')
+  })
+})
+
+describe('useSession - cooldown with DB persistence', () => {
+  // Use upper_back condition which has a cooldown exercise (Etirement pectoral)
+  const upperBackConditions: HealthCondition[] = [
+    {
+      userId: 1,
+      bodyZone: 'upper_back',
+      label: 'Posture',
+      diagnosis: 'Posture anterieure',
+      painLevel: 2,
+      since: '2 ans',
+      notes: '',
+      isActive: true,
+      createdAt: new Date(),
+    },
+  ]
+
+  beforeEach(async () => {
+    await db.delete()
+    await db.open()
+  })
+
+  it('skips end_pain_check when no conditions and cooldown exists', async () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      userConditions: [], // no conditions
+      healthConditions: upperBackConditions,
+    }
+    const { result } = renderHook(() => useSession(params))
+
+    // Verify cooldown rehab exists
+    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
+
+    // Complete all exercises
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(8, 42.5, 2))
+      act(() => result.current.completeRestTimer())
+    }
+    act(() => result.current.startSet())
+    act(() => result.current.logSet(8, 42.5, 2))
+
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(12, 12.5, 3))
+      act(() => result.current.completeRestTimer())
+    }
+    act(() => result.current.startSet())
+    act(() => result.current.logSet(12, 12.5, 3))
+
+    expect(result.current.phase).toBe('cooldown')
+    await act(async () => { await result.current.completeCooldown() })
+    expect(result.current.phase).toBe('done')
+  })
+
+  it('saves session to DB when no conditions and no cooldown', async () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      userConditions: [], // no conditions => skip pain check
+      // no healthConditions => no cooldown
+    }
+    const { result } = renderHook(() => useSession(params))
+
+    // Exercise 1: 3 sets
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(8, 42.5, 2))
+      act(() => result.current.completeRestTimer())
+    }
+    act(() => result.current.startSet())
+    act(() => result.current.logSet(8, 42.5, 2))
+
+    // Exercise 2: 3 sets
+    act(() => result.current.completeWarmup())
+    for (let i = 0; i < 2; i++) {
+      act(() => result.current.startSet())
+      act(() => result.current.logSet(12, 12.5, 3))
+      act(() => result.current.completeRestTimer())
+    }
+
+    // Last set triggers advanceExerciseOrEnd which calls saveSessionToDb (async)
+    act(() => result.current.startSet())
+    // logSet internally calls advanceExerciseOrEnd which is async
+    // We need to await the internal promise
+    await act(async () => {
+      result.current.logSet(12, 12.5, 3)
+      // Allow microtasks (the async DB save) to complete
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    // Should go straight to done
+    expect(result.current.phase).toBe('done')
+
+    // Verify session was saved to DB
+    const sessions = await db.workoutSessions.toArray()
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].sessionName).toBe('Push A')
+    expect(sessions[0].completedAt).toBeDefined()
+    expect(sessions[0].exercises).toHaveLength(2)
+
+    // Verify exercise progress was saved
+    const progress = await db.exerciseProgress.toArray()
+    expect(progress).toHaveLength(2)
+  })
+})

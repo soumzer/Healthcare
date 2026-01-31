@@ -16,11 +16,13 @@ import type {
 
 export type SessionPhase =
   | 'warmup'
+  | 'warmup_rehab'
   | 'exercise'
   | 'set_logger'
   | 'rest_timer'
   | 'occupied'
   | 'weight_picker'
+  | 'cooldown'
   | 'end_pain_check'
   | 'done'
 
@@ -57,6 +59,7 @@ export interface UseSessionReturn {
   cooldownRehab: RehabExerciseInfo[]
 
   // Actions
+  completeWarmupRehab: () => void
   completeWarmup: () => void
   skipWarmup: () => void
   completeWarmupSet: () => void
@@ -66,6 +69,7 @@ export interface UseSessionReturn {
   markMachineFree: () => void
   openWeightPicker: () => void
   selectAlternativeWeight: (weightKg: number, adjustedReps: number) => void
+  completeCooldown: () => Promise<void> | void
   completeRestTimer: () => void
   submitPainChecks: (checks: PainCheck[]) => Promise<void>
 }
@@ -177,16 +181,98 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     }
   }, [])
 
-  const advanceExerciseOrEnd = useCallback(() => {
+  // Save session data to DB — extracted so it can be called from multiple paths
+  const saveSessionToDb = useCallback(
+    async (checks: PainCheck[]) => {
+      const now = new Date()
+
+      // Save pain checks
+      for (const check of checks) {
+        if (check.level > 0) {
+          await db.painLogs.add({
+            userId,
+            zone: check.zone,
+            level: check.level,
+            context: 'end_session',
+            date: now,
+          })
+        }
+      }
+
+      // Build exercise names onto the engine exercises
+      const allExercises = engine.getAllExercises().map((ex) => ({
+        ...ex,
+        exerciseName: exerciseNames[ex.exerciseId] ?? '',
+      }))
+
+      // Save workout session
+      await db.workoutSessions.add({
+        userId,
+        programId,
+        sessionName: programSession.name,
+        startedAt: sessionStartRef.current,
+        completedAt: now,
+        exercises: allExercises,
+        endPainChecks: checks,
+        notes: '',
+      })
+
+      // Save exercise progress for each completed exercise
+      for (const ex of allExercises) {
+        if (ex.status === 'completed' && ex.sets.length > 0) {
+          const avgRIR =
+            ex.sets.reduce((sum, s) => sum + (s.repsInReserve ?? 0), 0) /
+            ex.sets.length
+          const avgRest =
+            ex.sets.reduce(
+              (sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds),
+              0
+            ) / ex.sets.length
+
+          await db.exerciseProgress.add({
+            userId,
+            exerciseId: ex.exerciseId,
+            exerciseName: exerciseNames[ex.exerciseId] ?? '',
+            date: now,
+            sessionId: 0, // Will be updated if needed
+            weightKg: ex.sets[0]?.actualWeightKg ?? 0,
+            reps: ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0),
+            sets: ex.sets.length,
+            avgRepsInReserve: avgRIR,
+            avgRestSeconds: avgRest,
+            exerciseOrder: ex.order,
+            phase: trainingPhase ?? 'hypertrophy',
+            weekNumber: 1,
+          })
+        }
+      }
+    },
+    [engine, userId, programId, programSession.name, exerciseNames, trainingPhase]
+  )
+
+  const advanceExerciseOrEnd = useCallback(async () => {
     engine.completeExercise()
     forceUpdate((n) => n + 1)
     if (engine.isSessionComplete()) {
-      setPhase('end_pain_check')
+      // If there are cooldown rehab exercises, show cooldown first
+      if (rehabIntegration.cooldownRehab.length > 0) {
+        setPhase('cooldown')
+      } else if (userConditions.length > 0) {
+        setPhase('end_pain_check')
+      } else {
+        // No cooldown, no pain check — save session and finish
+        await saveSessionToDb([])
+        setPhase('done')
+      }
     } else {
       setWarmupSetIndex(0)
       setPhase('warmup')
     }
-  }, [engine])
+  }, [engine, rehabIntegration.cooldownRehab.length, userConditions.length, saveSessionToDb])
+
+  const completeWarmupRehab = useCallback(() => {
+    setPhase('warmup')
+  }, [])
 
   const completeWarmup = useCallback(() => {
     setPhase('exercise')
@@ -295,6 +381,16 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     []
   )
 
+  const completeCooldown = useCallback(async () => {
+    if (userConditions.length > 0) {
+      setPhase('end_pain_check')
+    } else {
+      // No conditions to check, save session and go to done
+      await saveSessionToDb([])
+      setPhase('done')
+    }
+  }, [userConditions.length, saveSessionToDb])
+
   const completeRestTimer = useCallback(() => {
     stopRestTimer()
     setPhase('exercise')
@@ -302,72 +398,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   const submitPainChecks = useCallback(
     async (checks: PainCheck[]) => {
-      const now = new Date()
-
-      // Save pain checks
-      for (const check of checks) {
-        if (check.level > 0) {
-          await db.painLogs.add({
-            userId,
-            zone: check.zone,
-            level: check.level,
-            context: 'end_session',
-            date: now,
-          })
-        }
-      }
-
-      // Build exercise names onto the engine exercises
-      const allExercises = engine.getAllExercises().map((ex) => ({
-        ...ex,
-        exerciseName: exerciseNames[ex.exerciseId] ?? '',
-      }))
-
-      // Save workout session
-      await db.workoutSessions.add({
-        userId,
-        programId,
-        sessionName: programSession.name,
-        startedAt: sessionStartRef.current,
-        completedAt: now,
-        exercises: allExercises,
-        endPainChecks: checks,
-        notes: '',
-      })
-
-      // Save exercise progress for each completed exercise
-      for (const ex of allExercises) {
-        if (ex.status === 'completed' && ex.sets.length > 0) {
-          const avgRIR =
-            ex.sets.reduce((sum, s) => sum + (s.repsInReserve ?? 0), 0) /
-            ex.sets.length
-          const avgRest =
-            ex.sets.reduce(
-              (sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds),
-              0
-            ) / ex.sets.length
-
-          await db.exerciseProgress.add({
-            userId,
-            exerciseId: ex.exerciseId,
-            exerciseName: exerciseNames[ex.exerciseId] ?? '',
-            date: now,
-            sessionId: 0, // Will be updated if needed
-            weightKg: ex.sets[0]?.actualWeightKg ?? 0,
-            reps: ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0),
-            sets: ex.sets.length,
-            avgRepsInReserve: avgRIR,
-            avgRestSeconds: avgRest,
-            exerciseOrder: ex.order,
-            phase: trainingPhase ?? 'hypertrophy',
-            weekNumber: 1,
-          })
-        }
-      }
-
+      await saveSessionToDb(checks)
       setPhase('done')
     },
-    [engine, userId, programId, programSession.name, exerciseNames, trainingPhase]
+    [saveSessionToDb]
   )
 
   return {
@@ -398,6 +432,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     activeWaitPool: rehabIntegration.activeWaitPool,
     cooldownRehab: rehabIntegration.cooldownRehab,
 
+    completeWarmupRehab,
     completeWarmup,
     skipWarmup,
     completeWarmupSet,
@@ -407,6 +442,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     markMachineFree,
     openWeightPicker,
     selectAlternativeWeight,
+    completeCooldown,
     completeRestTimer,
     submitPainChecks,
   }

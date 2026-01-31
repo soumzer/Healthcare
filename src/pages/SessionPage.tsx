@@ -3,13 +3,15 @@ import { db } from '../db'
 import { useSession } from '../hooks/useSession'
 import type { ExerciseHistory } from '../engine/session-engine'
 import WarmupView from '../components/session/WarmupView'
+import WarmupRehabView from '../components/session/WarmupRehabView'
 import ExerciseView from '../components/session/ExerciseView'
 import SetLogger from '../components/session/SetLogger'
 import RestTimer from '../components/session/RestTimer'
 import ActiveWait from '../components/session/ActiveWait'
 import WeightPicker from '../components/session/WeightPicker'
+import CooldownView from '../components/session/CooldownView'
 import EndSessionPainCheck from '../components/session/EndSessionPainCheck'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 function SessionContent({
   programId,
@@ -112,6 +114,15 @@ function SessionContent({
     )
   }
 
+  if (session.phase === 'warmup_rehab') {
+    return (
+      <WarmupRehabView
+        rehabExercises={session.warmupRehab}
+        onComplete={session.completeWarmupRehab}
+      />
+    )
+  }
+
   if (session.phase === 'warmup') {
     return (
       <WarmupView
@@ -179,7 +190,17 @@ function SessionContent({
       <WeightPicker
         currentWeightKg={session.currentExercise?.prescribedWeightKg ?? 0}
         prescribedReps={session.currentExercise?.prescribedReps ?? 0}
+        availableWeights={availableWeights}
         onSelect={session.selectAlternativeWeight}
+      />
+    )
+  }
+
+  if (session.phase === 'cooldown') {
+    return (
+      <CooldownView
+        cooldownExercises={session.cooldownRehab}
+        onComplete={session.completeCooldown}
       />
     )
   }
@@ -197,11 +218,9 @@ function SessionContent({
 }
 
 export default function SessionPage() {
-  // For now, use URL params or defaults
-  // In production, these would come from navigation state or URL
-  const params = new URLSearchParams(window.location.search)
-  const programId = parseInt(params.get('programId') ?? '1')
-  const sessionIndex = parseInt(params.get('sessionIndex') ?? '0')
+  const [searchParams] = useSearchParams()
+  const programId = parseInt(searchParams.get('programId') ?? '1')
+  const sessionIndex = parseInt(searchParams.get('sessionIndex') ?? '0')
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
