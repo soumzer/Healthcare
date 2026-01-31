@@ -626,7 +626,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
   },
 
   // =========================================================================
-  // REHAB & MOBILITY EXERCISES (19)
+  // REHAB & MOBILITY EXERCISES (38)
   // =========================================================================
 
   // --- Golf Elbow (Épicondylite médiale) ---
@@ -1185,6 +1185,330 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
   // =========================================================================
   // ADDITIONAL REHAB — SHOULDER HYPERLAXITY (2)
   // =========================================================================
+  // --- Rotator Cuff (Coiffe des rotateurs) ---
+  {
+    name: 'Élévation latérale scaption (30°)',
+    category: 'rehab',
+    primaryMuscles: ['deltoïde moyen', 'supra-épineux'],
+    secondaryMuscles: ['trapèzes inférieurs', 'dentelé antérieur'],
+    equipmentNeeded: ['dumbbells'],
+    contraindications: [],
+    alternatives: ['Élévations latérales'],
+    instructions:
+      'Debout, haltères légers (1-3 kg) le long du corps. Levez les bras dans le plan de la scapula (30° en avant du plan frontal), pouces vers le haut. Montez jusqu\'à hauteur d\'épaule, contrôlez la descente sur 3 secondes. 3 séries de 12-15 répétitions. Angle shoulder-safe selon Thigpen et al. (2010) : réduit le risque de conflit sous-acromial par rapport à l\'élévation latérale pure.',
+    isRehab: true,
+    rehabTarget: 'shoulder_right',
+    tags: ['rehab', 'shoulder', 'rotator_cuff', 'scaption', 'dumbbell'],
+  },
+  {
+    name: 'Étirement capsule postérieure (sleeper stretch)',
+    category: 'mobility',
+    primaryMuscles: ['capsule postérieure de l\'épaule', 'infraépineux'],
+    secondaryMuscles: ['petit rond', 'deltoïde postérieur'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Cross-body stretch'],
+    instructions:
+      'Allongé sur le côté affecté, épaule à 90° de flexion, coude à 90°. Avec la main opposée, poussez doucement l\'avant-bras vers le sol (rotation interne). Maintenez 30 secondes, 3 répétitions. Ne forcez JAMAIS — arrêtez à la sensation d\'étirement. Adresse la raideur de la capsule postérieure, fréquente dans les tendinopathies de la coiffe des rotateurs.',
+    isRehab: true,
+    rehabTarget: 'shoulder_right',
+    tags: ['rehab', 'mobility', 'shoulder', 'rotator_cuff', 'stretch', 'capsule'],
+  },
+
+  // --- Tennis Elbow (Épicondylite latérale) ---
+  {
+    name: 'Extension poignet excentrique (tennis elbow)',
+    category: 'rehab',
+    primaryMuscles: ['extenseurs du poignet'],
+    secondaryMuscles: ['avant-bras'],
+    equipmentNeeded: ['dumbbell'],
+    contraindications: [],
+    alternatives: ['Tyler Twist inversé (golf elbow)'],
+    instructions:
+      'Avant-bras en pronation sur le genou ou un banc, poignet dépassant du bord. Montez le poignet en extension avec l\'aide de l\'autre main (phase concentrique assistée). Descendez LENTEMENT sur 5 secondes en résistant (phase excentrique). 3 séries de 15 répétitions avec charge légère (1-2 kg). Protocole Stasinopoulos & Stasinopoulos (2017) : l\'excentrique est le gold standard pour l\'épicondylite latérale. Augmentez la charge progressivement quand 3x15 est indolore pendant 2 semaines.',
+    isRehab: true,
+    rehabTarget: 'elbow_right',
+    tags: ['rehab', 'elbow', 'eccentric', 'tennis_elbow', 'wrist'],
+  },
+  {
+    name: 'Supination/pronation avec marteau',
+    category: 'rehab',
+    primaryMuscles: ['supinateur', 'pronateur rond'],
+    secondaryMuscles: ['avant-bras', 'brachioradial'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Assis, coude fléchi à 90°, tenez un marteau (ou un haltère lesté d\'un côté) par le manche. Tournez lentement la main de la position paume vers le bas (pronation) vers paume vers le haut (supination), puis inversez. 3 séries de 15 répétitions dans chaque direction. Commencez avec une charge très légère. Renforce les rotateurs de l\'avant-bras qui stabilisent le coude et réduisent le stress sur l\'épicondyle latéral.',
+    isRehab: true,
+    rehabTarget: 'elbow_right',
+    tags: ['rehab', 'elbow', 'tennis_elbow', 'forearm', 'supination', 'pronation'],
+  },
+  {
+    name: 'Étirement extenseurs du poignet',
+    category: 'mobility',
+    primaryMuscles: ['extenseurs du poignet'],
+    secondaryMuscles: ['avant-bras'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Étirement fléchisseurs du poignet'],
+    instructions:
+      'Bras tendu devant vous, paume vers le bas. Avec l\'autre main, tirez doucement les doigts vers le bas et vers vous en fléchissant le poignet. Maintenez 30 secondes, 3 répétitions. Faites avant et après les exercices de coude et avant toute séance impliquant la préhension. Ne forcez pas en cas de douleur aiguë.',
+    isRehab: true,
+    rehabTarget: 'elbow_right',
+    tags: ['rehab', 'mobility', 'elbow', 'tennis_elbow', 'stretch', 'wrist'],
+  },
+
+  // --- Patellofemoral Syndrome (Syndrome fémoro-patellaire) ---
+  {
+    name: 'Step-down excentrique',
+    category: 'rehab',
+    primaryMuscles: ['quadriceps', 'vaste médial oblique'],
+    secondaryMuscles: ['fessiers', 'ischio-jambiers'],
+    equipmentNeeded: ['step'],
+    contraindications: [],
+    alternatives: ['Leg extension tempo lent (tendinite rotulienne)'],
+    instructions:
+      'Debout sur un step (15-20 cm), jambe affectée en appui. Descendez lentement l\'autre pied vers le sol en fléchissant le genou de la jambe d\'appui sur 3-4 secondes (phase excentrique). Effleurez le sol avec le talon sans poser le pied, puis remontez. 3 séries de 10 répétitions par jambe. Genou aligné sur le 2e orteil — ne laissez pas le genou partir vers l\'intérieur. Protocole basé sur Rathleff et al. (2015) pour la douleur fémoro-patellaire.',
+    isRehab: true,
+    rehabTarget: 'knee_right',
+    tags: ['rehab', 'knee', 'eccentric', 'patellofemoral', 'step', 'vmo'],
+  },
+  {
+    name: 'Clam shell (renforcement moyen fessier)',
+    category: 'rehab',
+    primaryMuscles: ['moyen fessier'],
+    secondaryMuscles: ['petit fessier', 'rotateurs externes de hanche'],
+    equipmentNeeded: ['resistance_band'],
+    contraindications: [],
+    alternatives: ['Abduction hanche machine'],
+    instructions:
+      'Allongé sur le côté, hanches et genoux fléchis à 45°, pieds joints. Bande élastique autour des genoux. Ouvrez le genou du dessus comme une coquille en gardant les pieds joints et le bassin stable. Contrôlez la descente sur 2 secondes. 3 séries de 15 répétitions par côté. Approche Powers (2010) : le renforcement du moyen fessier améliore le tracking rotulien et réduit la douleur fémoro-patellaire. Ne laissez pas le bassin rouler vers l\'arrière.',
+    isRehab: true,
+    rehabTarget: 'knee_right',
+    tags: ['rehab', 'knee', 'hip', 'glute_med', 'patellofemoral', 'band'],
+  },
+  {
+    name: 'Terminal knee extension câble',
+    category: 'rehab',
+    primaryMuscles: ['quadriceps', 'vaste médial oblique'],
+    secondaryMuscles: [],
+    equipmentNeeded: ['resistance_band'],
+    contraindications: [],
+    alternatives: ['Leg extension'],
+    instructions:
+      'Debout, bande élastique attachée à un point fixe derrière le genou, juste au-dessus de l\'articulation. Partez genou légèrement fléchi (30°), puis étendez complètement le genou contre la résistance de la bande. Tenez 2 secondes en extension complète. 3 séries de 15 répétitions. Cible spécifiquement les derniers degrés d\'extension où le VMO est le plus actif. Exercice clé pour la rééducation du genou.',
+    isRehab: true,
+    rehabTarget: 'knee_right',
+    tags: ['rehab', 'knee', 'patellofemoral', 'vmo', 'band', 'terminal_extension'],
+  },
+  {
+    name: 'Foam roll quadriceps/ITB',
+    category: 'mobility',
+    primaryMuscles: ['quadriceps', 'tenseur du fascia lata'],
+    secondaryMuscles: ['bandelette ilio-tibiale'],
+    equipmentNeeded: ['foam_roller'],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Face au sol, rouleau sous les quadriceps. Roulez lentement du haut du genou jusqu\'à la hanche, en insistant sur les points sensibles (15-30 secondes par point). Puis tournez-vous sur le côté pour rouler la bandelette ilio-tibiale (de la hanche au genou). 2 séries de 60 secondes par zone. Auto-libération myofasciale : réduit les tensions qui contribuent au mauvais tracking rotulien. Ne roulez jamais directement sur l\'articulation du genou.',
+    isRehab: true,
+    rehabTarget: 'knee_right',
+    tags: ['rehab', 'mobility', 'knee', 'patellofemoral', 'foam_roll', 'myofascial'],
+  },
+
+  // --- Disc Herniation (Hernie discale) ---
+  {
+    name: 'Extension McKenzie (prone press-up)',
+    category: 'rehab',
+    primaryMuscles: ['érecteurs du rachis'],
+    secondaryMuscles: ['abdominaux'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Cat-cow (chat-vache)'],
+    instructions:
+      'Allongé face au sol, mains sous les épaules comme pour faire une pompe. Poussez le haut du corps vers le haut en gardant les hanches et le bassin au sol, en étendant le dos. Montez aussi haut que confortable, tenez 2-3 secondes en haut, redescendez lentement. 3 séries de 10 répétitions. Méthode McKenzie : gold standard pour les hernies/protrusions discales. L\'extension répétée centralise la douleur (la rapproche du centre du dos), signe de bon pronostic. STOP si la douleur se déplace vers la jambe (périphéralisation).',
+    isRehab: true,
+    rehabTarget: 'lower_back',
+    tags: ['rehab', 'lower_back', 'disc', 'mckenzie', 'extension', 'herniation'],
+  },
+  {
+    name: 'Marche (décompression active)',
+    category: 'rehab',
+    primaryMuscles: ['érecteurs du rachis', 'fessiers', 'mollets'],
+    secondaryMuscles: ['core', 'ischio-jambiers', 'quadriceps'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Vélo stationnaire'],
+    instructions:
+      'Marchez à allure confortable pendant 10-15 minutes sur terrain plat. Gardez le buste droit, balancez naturellement les bras. La marche est le meilleur exercice de décompression discale : le mouvement cyclique du bassin favorise la nutrition du disque intervertébral par imbibition. Faites-le quotidiennement, idéalement le matin. Augmentez progressivement la durée vers 20-30 minutes. À faire les jours de repos et après chaque séance.',
+    isRehab: true,
+    rehabTarget: 'lower_back',
+    tags: ['rehab', 'lower_back', 'disc', 'walking', 'decompression', 'rest_day'],
+  },
+
+  // --- Piriformis Syndrome (Syndrome du piriforme) ---
+  {
+    name: 'Étirement piriforme assis',
+    category: 'mobility',
+    primaryMuscles: ['piriforme', 'fessiers profonds'],
+    secondaryMuscles: ['fessiers'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Étirement piriforme'],
+    instructions:
+      'Assis sur une chaise, croisez la cheville affectée sur le genou opposé (figure 4). Gardez le dos droit et penchez-vous doucement vers l\'avant en maintenant la position figure 4. Maintenez 30-45 secondes, 3 répétitions par côté. Variante assise de l\'étirement piriforme classique — peut être faite au bureau ou à la salle. Respirez profondément pendant l\'étirement. Augmentez progressivement l\'inclinaison du buste.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'mobility', 'hip', 'piriformis', 'stretch', 'seated'],
+  },
+  {
+    name: 'Foam roll fessier',
+    category: 'mobility',
+    primaryMuscles: ['grand fessier', 'piriforme'],
+    secondaryMuscles: ['moyen fessier', 'rotateurs externes de hanche'],
+    equipmentNeeded: ['foam_roller'],
+    contraindications: [],
+    alternatives: ['Balle de tennis massage fessier'],
+    instructions:
+      'Assis sur le foam roller, croisez une cheville sur le genou opposé. Penchez-vous du côté de la jambe croisée. Roulez lentement sur le fessier en insistant sur les points sensibles (15-30 secondes par point). 2 séries de 60 secondes par côté. Cible le piriforme et les rotateurs profonds de la hanche. Pour plus de pression localisée, utilisez une balle de tennis ou de lacrosse à la place du rouleau.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'mobility', 'hip', 'piriformis', 'foam_roll', 'myofascial'],
+  },
+  {
+    name: 'Pont fessier unilatéral (single-leg glute bridge)',
+    category: 'rehab',
+    primaryMuscles: ['fessiers'],
+    secondaryMuscles: ['ischio-jambiers', 'core'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Pont fessier (glute bridge)', 'Hip thrust smith machine'],
+    instructions:
+      'Allongé sur le dos, un pied à plat au sol, l\'autre jambe tendue vers le plafond ou genou fléchi contre la poitrine. Poussez les hanches vers le plafond en serrant le fessier de la jambe d\'appui. Tenez 3 secondes en haut. 3 séries de 10 répétitions par jambe. Corrige les déséquilibres entre les deux côtés et renforce spécifiquement le fessier de la hanche affectée. Progression du pont fessier bilatéral.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'hip', 'glutes', 'unilateral', 'bodyweight', 'piriformis'],
+  },
+
+  // --- Chronic Ankle Sprain / Instability (Entorse cheville chronique) ---
+  {
+    name: 'Proprioception unipodal (single-leg balance)',
+    category: 'rehab',
+    primaryMuscles: ['péroniers', 'tibial postérieur'],
+    secondaryMuscles: ['muscles intrinsèques du pied', 'mollets'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Short foot (exercice du pied court)'],
+    instructions:
+      'Debout sur une jambe, genou légèrement fléchi, regard droit devant. Maintenez l\'équilibre 30 secondes. 3 séries par pied. Progressions : 1) yeux ouverts sur sol dur, 2) yeux fermés sur sol dur, 3) yeux ouverts sur coussin/surface instable, 4) yeux fermés sur surface instable. Protocole Freeman et al. : l\'entraînement proprioceptif réduit le risque de récidive d\'entorse de 50%. À faire quotidiennement.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'ankle', 'proprioception', 'balance', 'stability', 'bodyweight'],
+  },
+  {
+    name: 'Éversion/inversion résistée (banded ankle)',
+    category: 'rehab',
+    primaryMuscles: ['péroniers', 'tibial postérieur'],
+    secondaryMuscles: ['tibial antérieur', 'mollets'],
+    equipmentNeeded: ['resistance_band'],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Assis, bande élastique autour de l\'avant-pied. Pour l\'éversion : attachez la bande à un point fixe côté médial, tournez le pied vers l\'extérieur contre la résistance. Pour l\'inversion : attachez côté latéral, tournez vers l\'intérieur. 3 séries de 15 répétitions dans chaque direction. Mouvement lent et contrôlé. Renforce les stabilisateurs de la cheville, essentiels après entorse. Les péroniers (éversion) sont particulièrement importants pour prévenir l\'inversion excessive.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'ankle', 'eversion', 'inversion', 'band', 'stability'],
+  },
+  {
+    name: 'Mollets excentriques unilatéral',
+    category: 'rehab',
+    primaryMuscles: ['gastrocnémiens', 'soléaire'],
+    secondaryMuscles: ['péroniers'],
+    equipmentNeeded: ['step'],
+    contraindications: [],
+    alternatives: ['Mollets debout smith machine (calf raise)'],
+    instructions:
+      'Debout sur un step, avant-pied en appui, talon dans le vide. Montez sur la pointe des deux pieds, puis levez le pied sain et descendez LENTEMENT sur une jambe sur 3-4 secondes (phase excentrique). Remontez sur deux pieds et recommencez. 3 séries de 12 répétitions par jambe. Renforce les mollets de façon excentrique pour stabiliser la cheville et protéger contre les entorses récidivantes.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'ankle', 'eccentric', 'calves', 'step', 'unilateral'],
+  },
+
+  // --- Achilles Tendinitis (Tendinite d'Achille) ---
+  {
+    name: 'Mollets excentriques Alfredson (heel drop)',
+    category: 'rehab',
+    primaryMuscles: ['gastrocnémiens', 'tendon d\'Achille'],
+    secondaryMuscles: ['soléaire'],
+    equipmentNeeded: ['step'],
+    contraindications: [],
+    alternatives: ['Mollets excentriques genou fléchi'],
+    instructions:
+      'Debout sur un step, avant-pied en appui, talon dans le vide, GENOU TENDU. Montez sur la pointe des deux pieds, puis levez le pied sain et descendez LENTEMENT sur une jambe sur 3-5 secondes (phase excentrique) en laissant le talon descendre sous le niveau du step. Remontez sur deux pieds. 3 séries de 15 répétitions, 2x par jour. Protocole Alfredson (1998) : gold standard pour la tendinopathie d\'Achille. 12 semaines minimum. La douleur légère (< 5/10) pendant l\'exercice est acceptable et même attendue au début.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'ankle', 'achilles', 'eccentric', 'alfredson', 'calves', 'step'],
+  },
+  {
+    name: 'Mollets excentriques genou fléchi (soleus heel drop)',
+    category: 'rehab',
+    primaryMuscles: ['soléaire', 'tendon d\'Achille'],
+    secondaryMuscles: ['gastrocnémiens'],
+    equipmentNeeded: ['step'],
+    contraindications: [],
+    alternatives: ['Mollets excentriques Alfredson (heel drop)'],
+    instructions:
+      'Même position que le heel drop Alfredson, mais avec le GENOU FLÉCHI à 20-30°. Montez sur la pointe des deux pieds (genoux fléchis), puis levez le pied sain et descendez LENTEMENT sur une jambe sur 3-5 secondes. Le genou fléchi cible le soléaire, qui constitue la majorité de la masse du tendon d\'Achille. 3 séries de 15 répétitions. Complément essentiel au heel drop genou tendu — les deux variantes doivent être faites dans le protocole Alfredson complet.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'ankle', 'achilles', 'eccentric', 'alfredson', 'soleus', 'step'],
+  },
+  {
+    name: 'Étirement mollet mur (wall calf stretch)',
+    category: 'mobility',
+    primaryMuscles: ['gastrocnémiens', 'soléaire'],
+    secondaryMuscles: ['tendon d\'Achille'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Debout face à un mur, un pied en avant (genou fléchi), l\'autre en arrière (genou tendu, talon au sol). Appuyez les mains contre le mur et avancez les hanches jusqu\'à sentir l\'étirement du mollet arrière. Maintenez 30 secondes, 3 répétitions par jambe. Pour cibler le soléaire, fléchissez légèrement le genou arrière. Étirement essentiel pour maintenir la souplesse du complexe mollet-Achille. Ne rebondissez jamais pendant l\'étirement.',
+    isRehab: true,
+    rehabTarget: 'ankle_right',
+    tags: ['rehab', 'mobility', 'ankle', 'achilles', 'calves', 'stretch'],
+  },
+
+  // --- Carpal Tunnel Syndrome (Syndrome du canal carpien) ---
+  {
+    name: 'Nerve gliding poignet (median nerve glides)',
+    category: 'rehab',
+    primaryMuscles: ['nerf médian'],
+    secondaryMuscles: ['fléchisseurs du poignet', 'avant-bras'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Debout ou assis, bras le long du corps. Séquence de 6 positions progressives : 1) Poing fermé, poignet neutre. 2) Doigts tendus, poignet neutre. 3) Doigts et poignet en extension. 4) Idem + pouce en extension. 5) Idem + supination de l\'avant-bras. 6) Idem + étirement doux du pouce avec l\'autre main. Maintenez chaque position 5-7 secondes. 2 séries de 10 cycles. Protocole Rozmaryn et al. (1998) : les glissements nerveux réduisent la pression intracarpienne. Mouvement DOUX — arrêtez si picotements ou engourdissement augmentent.',
+    isRehab: true,
+    rehabTarget: 'wrist_right',
+    tags: ['rehab', 'wrist', 'carpal_tunnel', 'nerve_gliding', 'median_nerve'],
+  },
+  {
+    name: 'Renforcement préhension (grip strengthening)',
+    category: 'rehab',
+    primaryMuscles: ['fléchisseurs des doigts', 'muscles intrinsèques de la main'],
+    secondaryMuscles: ['avant-bras'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Avec une balle souple ou une serviette roulée, serrez et maintenez 5 secondes, puis relâchez lentement. 3 séries de 10-15 répétitions. Commencez avec une résistance très légère (balle souple, pas un grip strengthener dur). Ne faites PAS cet exercice en phase aiguë de syndrome du canal carpien (picotements constants). Renforcez progressivement la force de préhension pour stabiliser le poignet. Peut être fait les jours de repos.',
+    isRehab: true,
+    rehabTarget: 'wrist_right',
+    tags: ['rehab', 'wrist', 'carpal_tunnel', 'grip', 'strengthening', 'rest_day'],
+  },
+
   {
     name: 'Rotation externe haltère (couché)',
     category: 'rehab',

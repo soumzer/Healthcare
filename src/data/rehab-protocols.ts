@@ -14,6 +14,15 @@ import type { BodyZone } from '../db/types'
  * - Rio et al. (2015) — Isométriques pour tendinopathie rotulienne
  * - Hara et al. (2023) — Short foot exercises pour pieds plats
  * - Cleland et al. (2006) — Chin tucks et mobilisation cervicale
+ * - Reinold et al. (2004) — Protocole coiffe des rotateurs
+ * - Thigpen et al. (2010) — Scaption shoulder-safe angle
+ * - Stasinopoulos & Stasinopoulos (2017) — Excentrique épicondylite latérale
+ * - Rathleff et al. (2015) — Step-down excentrique fémoro-patellaire
+ * - Powers (2010) — Renforcement proximal pour douleur fémoro-patellaire
+ * - McKenzie — Extension pour hernie discale
+ * - Alfredson (1998) — Protocole excentrique tendinite d'Achille
+ * - Freeman et al. — Entraînement proprioceptif cheville
+ * - Rozmaryn et al. (1998) — Nerve gliding syndrome canal carpien
  */
 
 export interface RehabProtocol {
@@ -313,6 +322,379 @@ export const rehabProtocols: RehabProtocol[] = [
         notes:
           'Position de repos qui ouvre doucement l\'espace intervertébral. Idéal en fin de séance. Si les genoux sont douloureux, placer un coussin entre les fesses et les talons.',
         placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 7. ROTATOR CUFF TENDINITIS (Tendinite épaule / coiffe des rotateurs)
+  // =========================================================================
+  {
+    targetZone: 'shoulder_right',
+    conditionName: 'Tendinite épaule / coiffe des rotateurs',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Quand 3x15 répétitions de rotation externe sont indolores pendant 2 semaines consécutives, augmenter la charge de 0.5 kg. Pour la scaption, progresser de 1 kg à 3 kg maximum. Quand la douleur est < 2/10 pendant les exercices de poussée au-dessus de la tête, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 douleur sur les mouvements overhead et de rotation externe.',
+    exercises: [
+      {
+        exerciseName: 'Rotation externe haltère (couché)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Side-lying external rotation. Basé sur Reinold et al. (2004) : protocole de renforcement de la coiffe des rotateurs. Phase excentrique de 3 secondes. Commencer avec 1-2 kg. Le coude reste collé au flanc pendant tout le mouvement. Faire avant toute séance impliquant les épaules.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation externe câble',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Câble réglé à hauteur du coude, serviette roulée entre le coude et le corps. Rotation externe contrôlée, 3 secondes en excentrique. Charge légère — la coiffe des rotateurs ne nécessite pas de charges lourdes. Excellent en active wait entre les séries de développé couché.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Élévation latérale scaption (30°)',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Élévation dans le plan de la scapula (30° en avant du plan frontal), pouces vers le haut. Angle shoulder-safe selon Thigpen et al. (2010) : réduit le risque de conflit sous-acromial. Haltères très légers (1-3 kg). Ne pas dépasser la hauteur des épaules.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement capsule postérieure (sleeper stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Allongé sur le côté affecté, rotation interne passive douce. Adresse la raideur de la capsule postérieure, fréquente dans les tendinopathies de la coiffe. Ne JAMAIS forcer — aller à la sensation d\'étirement sans douleur. Faire après chaque séance.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 8. LATERAL EPICONDYLITIS / TENNIS ELBOW (Épicondylite latérale)
+  // =========================================================================
+  {
+    targetZone: 'elbow_right',
+    conditionName: 'Épicondylite latérale (tennis elbow)',
+    frequency: 'daily',
+    priority: 1,
+    progressionCriteria:
+      'Quand 3x15 extensions excentriques sont indolores pendant 2 semaines consécutives, augmenter la charge de 0.5 kg. Protocole Stasinopoulos (2017) : 12 semaines minimum. Quand la douleur est < 2/10 sur les mouvements de préhension et d\'extension du poignet, réduire à un programme d\'entretien (3x/semaine). Objectif : reprendre les exercices de tirage sans douleur au coude.',
+    exercises: [
+      {
+        exerciseName: 'Extension poignet excentrique (tennis elbow)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Gold standard pour le tennis elbow — Stasinopoulos & Stasinopoulos (2017). Phase excentrique de 5 secondes, concentrique assistée par l\'autre main. Commencer avec 1-2 kg. Faire 2x/jour les jours sans entraînement. Ne pas augmenter la charge tant que 3x15 n\'est pas indolore.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Supination/pronation avec marteau',
+        sets: 3,
+        reps: 15,
+        intensity: 'very_light',
+        notes:
+          'Utiliser un marteau léger ou un haltère lesté d\'un côté. Mouvements lents et contrôlés de supination et pronation. Renforce les rotateurs de l\'avant-bras qui stabilisent le coude. Commencer avec une charge très légère et augmenter progressivement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement extenseurs du poignet',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Étirement doux des extenseurs du poignet. Bras tendu, paume vers le bas, tirez les doigts vers le bas. Ne jamais forcer en douleur. Faire avant et après les exercices excentriques et avant toute séance impliquant la préhension.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 9. PATELLOFEMORAL SYNDROME (Syndrome fémoro-patellaire / douleur rotule)
+  // =========================================================================
+  {
+    targetZone: 'knee_right',
+    conditionName: 'Syndrome fémoro-patellaire (douleur rotule)',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Step-down : progresser de 15 cm à 20 cm de hauteur de step quand indolore. Clam shell : ajouter une bande plus résistante quand 3x15 est facile. TKE : augmenter la résistance de la bande. Quand la douleur est < 2/10 pendant les squats et montées d\'escaliers, réintroduire progressivement les exercices en chaîne cinétique fermée (squats, fentes). Approche Powers (2010) : le renforcement proximal (hanche) est aussi important que le renforcement local (quadriceps).',
+    exercises: [
+      {
+        exerciseName: 'Step-down excentrique',
+        sets: 3,
+        reps: '10/jambe',
+        intensity: 'light',
+        notes:
+          'Rathleff et al. (2015) : l\'excentrique ciblé du VMO améliore le tracking rotulien. Descente lente sur 3-4 secondes, genou aligné sur le 2e orteil. Step de 15-20 cm. Ne laissez pas le genou partir en valgus (vers l\'intérieur).',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Clam shell (renforcement moyen fessier)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Powers (2010) : le renforcement du moyen fessier améliore le contrôle du genou et réduit la douleur fémoro-patellaire de 43% en 6 semaines. Bande élastique autour des genoux. Ne laissez pas le bassin rouler vers l\'arrière.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Terminal knee extension câble',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Bande derrière le genou, extension des derniers 30° du genou. Cible spécifiquement le VMO dans les amplitudes les plus fonctionnelles. Tenez 2 secondes en extension complète. Excellent en active wait.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Foam roll quadriceps/ITB',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Auto-libération myofasciale des quadriceps et de la bandelette ilio-tibiale. Roulez lentement, insistez sur les points sensibles. Réduit les tensions qui contribuent au mauvais tracking rotulien. Ne roulez jamais directement sur le genou.',
+        placement: 'warmup',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 10. DISC HERNIATION (Hernie discale / protrusion discale)
+  // =========================================================================
+  {
+    targetZone: 'lower_back',
+    conditionName: 'Hernie discale / protrusion',
+    frequency: 'daily',
+    priority: 1,
+    progressionCriteria:
+      'Extension McKenzie : progresser de la version coudes au sol (sphinx) vers la version bras tendus quand indolore. Bird dog : ajouter une pause de 5 secondes en extension, puis un élastique. Quand la douleur est centralisée (reste au centre du dos, ne descend plus dans la jambe) et < 3/10 pendant 4 semaines, commencer à réintroduire la flexion progressive (cat-cow, puis squats légers). Le retour au soulevé de terre ne doit se faire que quand 0 douleur irradiante depuis 8 semaines minimum.',
+    exercises: [
+      {
+        exerciseName: 'Extension McKenzie (prone press-up)',
+        sets: 3,
+        reps: 10,
+        intensity: 'very_light',
+        notes:
+          'Méthode McKenzie : gold standard pour les hernies/protrusions discales. L\'extension répétée centralise la douleur (signe de bon pronostic). Faire plusieurs fois par jour (toutes les 2-3 heures). STOP immédiatement si la douleur se déplace vers la jambe (périphéralisation). Commencer par la version sphinx (coudes au sol) si la version bras tendus est douloureuse.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Bird dog',
+        sets: 3,
+        reps: 10,
+        intensity: 'light',
+        notes:
+          'McGill Big 3 : stabilisation lombaire sans flexion du rachis. Le bassin ne doit PAS tourner. Tenir 3 secondes en extension. Excellent complément au McKenzie pour renforcer les stabilisateurs du tronc sans charger le disque.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Marche (décompression active)',
+        sets: 1,
+        reps: '10-15 min',
+        intensity: 'very_light',
+        notes:
+          'Décompression par le mouvement cyclique du bassin. La marche favorise la nutrition du disque intervertébral par imbibition. Faire quotidiennement, idéalement le matin. Augmenter progressivement la durée vers 20-30 minutes.',
+        placement: 'rest_day',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 11. PIRIFORMIS SYNDROME (Syndrome du piriforme)
+  // =========================================================================
+  {
+    targetZone: 'hip_right',
+    conditionName: 'Syndrome du piriforme',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Étirement piriforme : augmenter la durée de 30 à 60 secondes quand bien toléré. Clam shell : progresser vers une bande plus résistante quand 3x15 est facile. Pont fessier unilatéral : ajouter une charge (haltère sur la hanche) quand 3x10 est indolore. Quand la douleur est < 2/10 pendant la position assise prolongée et les squats profonds, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 douleur dans la fesse et absence de symptômes irradiants.',
+    exercises: [
+      {
+        exerciseName: 'Étirement piriforme assis',
+        sets: 3,
+        reps: '30-45 sec',
+        intensity: 'very_light',
+        notes:
+          'Variante assise : figure 4 sur la chaise puis inclinaison du buste vers l\'avant. Peut être fait au bureau ou à la salle entre les exercices. Respirez profondément pendant l\'étirement. Ne forcez jamais au-delà de la sensation d\'étirement confortable.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Clam shell (renforcement moyen fessier)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Renforce le moyen fessier pour stabiliser la hanche et réduire la surcharge du piriforme. Bande élastique autour des genoux. Ne laissez pas le bassin rouler vers l\'arrière. Peut être fait en échauffement et les jours de repos.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Foam roll fessier',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Assis sur le foam roller, croisez la cheville sur le genou opposé. Roulez sur le fessier en insistant sur les points sensibles. Pour plus de pression, utilisez une balle de lacrosse. Libère les tensions du piriforme et des rotateurs profonds.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Pont fessier unilatéral (single-leg glute bridge)',
+        sets: 3,
+        reps: '10/jambe',
+        intensity: 'light',
+        notes:
+          'Renforce spécifiquement le fessier de la hanche affectée. Corrige les déséquilibres bilatéraux. Serrez le fessier 3 secondes en haut. Excellent en active wait entre les séries d\'exercices pour le bas du corps.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 12. CHRONIC ANKLE SPRAIN / INSTABILITY (Entorse cheville chronique)
+  // =========================================================================
+  {
+    targetZone: 'ankle_right',
+    conditionName: 'Entorse cheville chronique / instabilité',
+    frequency: '3x_week',
+    priority: 3,
+    progressionCriteria:
+      'Proprioception : progresser de sol dur yeux ouverts → yeux fermés → surface instable yeux ouverts → surface instable yeux fermés. Quand capable de tenir 30 secondes yeux fermés sur surface instable, réduire à un programme d\'entretien (2x/semaine). Éversion résistée : augmenter la résistance de la bande. Mollets excentriques : ajouter une charge (sac à dos lesté) quand 3x12 est facile. Objectif : 0 sensation d\'instabilité pendant les mouvements latéraux et la course.',
+    exercises: [
+      {
+        exerciseName: 'Proprioception unipodal (single-leg balance)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Protocole Freeman et al. : l\'entraînement proprioceptif réduit le risque de récidive d\'entorse de 50%. Progresser : sol dur yeux ouverts → yeux fermés → coussin yeux ouverts → coussin yeux fermés. Faire quotidiennement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Éversion/inversion résistée (banded ankle)',
+        sets: 3,
+        reps: 15,
+        intensity: 'very_light',
+        notes:
+          'Bande autour de l\'avant-pied. Éversion : tournez le pied vers l\'extérieur contre la bande. Inversion : tournez vers l\'intérieur. Les péroniers (éversion) sont particulièrement importants pour prévenir l\'inversion excessive. Mouvements lents et contrôlés.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Mollets excentriques unilatéral',
+        sets: 3,
+        reps: 12,
+        intensity: 'light',
+        notes:
+          'Montée sur deux pieds, descente excentrique sur une jambe sur 3-4 secondes. Renforce les mollets pour stabiliser la cheville. Travaillez l\'amplitude complète (talon sous le step).',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Mobilité cheville (ankle circles & dorsiflexion)',
+        sets: 3,
+        reps: 15,
+        intensity: 'very_light',
+        notes:
+          'Cercles de cheville et dorsiflexion genou-au-mur. Maintient l\'amplitude articulaire essentielle après entorse. La dorsiflexion est souvent limitée après une entorse et doit être restaurée pour prévenir les récidives.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 13. ACHILLES TENDINITIS (Tendinite d'Achille)
+  // =========================================================================
+  {
+    targetZone: 'ankle_right',
+    conditionName: 'Tendinite d\'Achille',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Protocole Alfredson (1998) : 12 semaines minimum, 2x par jour. Phase 1 (semaines 1-4) : poids du corps uniquement, la douleur légère (< 5/10) est acceptable. Phase 2 (semaines 5-8) : ajouter progressivement du poids (sac à dos lesté, gilet lesté). Phase 3 (semaines 9-12) : charges plus lourdes, réintroduction progressive de la course. Quand 3x15 heel drops sont indolores avec charge additionnelle pendant 2 semaines, commencer le retour au sport progressif. Ne JAMAIS faire de sprints ou de pliométrie avant la fin du protocole de 12 semaines.',
+    exercises: [
+      {
+        exerciseName: 'Mollets excentriques Alfredson (heel drop)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Gold standard — protocole Alfredson (1998). Genou TENDU, descente excentrique lente sur 3-5 secondes. Montée sur 2 pieds, descente sur 1 pied. Faire 2x/jour (matin et soir). La douleur légère pendant l\'exercice est acceptable et attendue au début. 12 semaines minimum.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Mollets excentriques genou fléchi (soleus heel drop)',
+        sets: 3,
+        reps: 15,
+        intensity: 'light',
+        notes:
+          'Même protocole mais genou fléchi à 20-30° pour cibler le soléaire. Le soléaire constitue la majorité de la masse du tendon d\'Achille. Les deux variantes (genou tendu + genou fléchi) doivent être faites — c\'est le protocole Alfredson complet. Faire 2x/jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement mollet mur (wall calf stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Étirement du gastrocnémien (genou tendu) puis du soléaire (genou légèrement fléchi). Maintenir la souplesse du complexe mollet-Achille est essentiel pendant le protocole excentrique. Ne jamais rebondir pendant l\'étirement.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 14. CARPAL TUNNEL SYNDROME (Syndrome canal carpien / douleur poignet)
+  // =========================================================================
+  {
+    targetZone: 'wrist_right',
+    conditionName: 'Syndrome canal carpien / douleur poignet',
+    frequency: 'daily',
+    priority: 3,
+    progressionCriteria:
+      'Nerve gliding : augmenter de 5 à 10 répétitions par position quand bien toléré. Si les symptômes diminuent (picotements < 2/10), ajouter le renforcement de préhension. Étirements : augmenter la durée de 30 à 45 secondes. Quand les symptômes nocturnes disparaissent et que la force de préhension est symétrique, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 engourdissement/picotement nocturne et force de préhension normale. Si aucune amélioration après 6 semaines, référer au médecin pour évaluation chirurgicale.',
+    exercises: [
+      {
+        exerciseName: 'Nerve gliding poignet (median nerve glides)',
+        sets: 2,
+        reps: 10,
+        intensity: 'very_light',
+        notes:
+          'Protocole Rozmaryn et al. (1998) : les glissements du nerf médian réduisent la pression intracarpienne. 6 positions progressives, 5-7 secondes chacune. Mouvement DOUX — arrêtez immédiatement si picotements ou engourdissement augmentent. Faire 2-3x par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement fléchisseurs du poignet',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Bras tendu, paume vers le haut, tirez doucement les doigts vers le bas. Étire les fléchisseurs qui passent dans le canal carpien. Ne forcez pas en cas de douleur ou de picotements.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Étirement extenseurs du poignet',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Bras tendu, paume vers le bas, tirez les doigts vers le bas. Équilibre les tensions musculaires autour du poignet. Complément essentiel à l\'étirement des fléchisseurs.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Renforcement préhension (grip strengthening)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Balle souple ou serviette roulée. Serrer et maintenir 5 secondes. Ne PAS faire en phase aiguë (picotements constants). À introduire uniquement quand les symptômes sont bien contrôlés. Faire les jours de repos.',
+        placement: 'rest_day',
       },
     ],
   },
