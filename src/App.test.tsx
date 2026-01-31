@@ -5,6 +5,6 @@ import AppWrapper from './App'
 describe('App', () => {
   it('renders onboarding when no user exists', async () => {
     render(<AppWrapper />)
-    expect(await screen.findByText('Onboarding')).toBeInTheDocument()
+    expect(await screen.findByText('Votre profil')).toBeInTheDocument()
   })
 })
