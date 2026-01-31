@@ -51,6 +51,17 @@ export class SessionEngine {
     const prev = this.history[pe.exerciseId]
     if (!prev) return 0
 
+    // During deload, reduce weight to 60% of last weight used
+    if (this.options.phase === 'deload') {
+      const deloadWeight = Math.round(prev.lastWeightKg * 0.6 * 2) / 2 // round to nearest 0.5kg
+      const availableWeights = this.options.availableWeights ?? generateDefaultWeights(prev.lastWeightKg)
+      // Find closest available weight at or below the deload target
+      const closest = availableWeights
+        .filter(w => w <= deloadWeight)
+        .sort((a, b) => b - a)[0]
+      return closest ?? deloadWeight
+    }
+
     const result = this.runProgression(pe, prev)
     return result.nextWeightKg
   }
@@ -58,6 +69,11 @@ export class SessionEngine {
   private calculatePrescribedReps(pe: ProgramExercise): number {
     const prev = this.history[pe.exerciseId]
     if (!prev) return pe.targetReps
+
+    // During deload, maintain same reps as prescribed in the program
+    if (this.options.phase === 'deload') {
+      return pe.targetReps
+    }
 
     const result = this.runProgression(pe, prev)
     return result.nextReps

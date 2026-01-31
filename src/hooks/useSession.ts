@@ -3,6 +3,7 @@ import { SessionEngine, type ExerciseHistory, type SessionEngineOptions } from '
 import { generateWarmupSets, type WarmupSet } from '../engine/warmup'
 import { suggestFiller, type FillerSuggestion } from '../engine/filler'
 import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
+import { getPhaseRecommendation } from '../engine/progression'
 import { db } from '../db'
 import type {
   ProgramSession,
@@ -12,6 +13,7 @@ import type {
   HealthCondition,
   PainCheck,
   SessionSet,
+  TrainingPhase,
 } from '../db/types'
 
 export type SessionPhase =
@@ -107,6 +109,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sessionStartRef = useRef(new Date())
   const setStartRef = useRef<Date | null>(null)
+  const lastRestElapsedRef = useRef<number>(0)
 
   // Integrate rehab exercises into session
   const rehabIntegration = useMemo(() => {
@@ -217,37 +220,132 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         notes: '',
       })
 
+      // Compute weekNumber from first session date
+      const firstSession = await db.workoutSessions
+        .where('userId')
+        .equals(userId)
+        .toArray()
+      const firstDate = firstSession
+        .filter((s) => s.completedAt)
+        .map((s) => s.completedAt!.getTime())
+        .sort((a, b) => a - b)[0]
+      const weekNumber = firstDate
+        ? Math.floor((now.getTime() - firstDate) / (7 * 24 * 60 * 60 * 1000)) + 1
+        : 1
+
+      // Determine current phase from TrainingPhase records
+      const currentPhaseRecord = await db.trainingPhases
+        .where('userId')
+        .equals(userId)
+        .and((p) => !p.endedAt)
+        .first()
+      const currentPhaseName = currentPhaseRecord?.phase ?? trainingPhase ?? 'hypertrophy'
+      const effectivePhase = currentPhaseName === 'transition' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'strength' | 'deload'
+
       // Save exercise progress for each completed exercise
+      let progressionCount = 0
+      let totalExerciseCount = 0
       for (const ex of allExercises) {
         if (ex.status === 'completed' && ex.sets.length > 0) {
           const avgRIR =
             ex.sets.reduce((sum, s) => sum + (s.repsInReserve ?? 0), 0) /
             ex.sets.length
-          const avgRest =
-            ex.sets.reduce(
-              (sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds),
-              0
-            ) / ex.sets.length
+          // Only include sets with actual rest data (skip first set which has no rest before it)
+          const setsWithRest = ex.sets.filter((s) => s.restActualSeconds !== undefined)
+          const avgRest = setsWithRest.length > 0
+            ? setsWithRest.reduce((sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds), 0) / setsWithRest.length
+            : ex.sets[0]?.restPrescribedSeconds ?? 120
+
+          // Use last set's weight (most representative of current capacity)
+          const lastSet = ex.sets[ex.sets.length - 1]
+          const weightKg = lastSet?.actualWeightKg ?? 0
+
+          // Reps = average reps per set (not total)
+          const avgReps = Math.round(
+            ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0) / ex.sets.length
+          )
+
+          // Check if any pain was reported (used for progression decisions)
+          const hadPain = ex.sets.some((s) => s.painReported)
+
+          // Get prescribed values from the program exercise definition
+          const programExercise = programSession.exercises.find(
+            (pe) => pe.exerciseId === ex.exerciseId
+          )
 
           await db.exerciseProgress.add({
             userId,
             exerciseId: ex.exerciseId,
             exerciseName: exerciseNames[ex.exerciseId] ?? '',
             date: now,
-            sessionId: 0, // Will be updated if needed
-            weightKg: ex.sets[0]?.actualWeightKg ?? 0,
-            reps: ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0),
+            sessionId: 0,
+            weightKg,
+            reps: avgReps,
             sets: ex.sets.length,
-            avgRepsInReserve: avgRIR,
+            avgRepsInReserve: hadPain ? -1 : avgRIR, // -1 signals pain occurred
             avgRestSeconds: avgRest,
             exerciseOrder: ex.order,
-            phase: trainingPhase ?? 'hypertrophy',
-            weekNumber: 1,
+            phase: effectivePhase,
+            weekNumber,
+            prescribedReps: ex.prescribedReps,
+            prescribedRestSeconds: programExercise?.restSeconds,
+          })
+
+          totalExerciseCount++
+          // Track whether this exercise progressed (for phase recommendation)
+          const prevProgress = engine.getProgressionResult(ex.exerciseId)
+          if (prevProgress && (prevProgress.action === 'increase_weight' || prevProgress.action === 'increase_reps')) {
+            progressionCount++
+          }
+        }
+      }
+
+      // Phase transition logic: check if phase should change
+      if (currentPhaseRecord && totalExerciseCount > 0) {
+        const progressionConsistency = progressionCount / totalExerciseCount
+
+        // Get average pain level from recent pain logs
+        const recentPainLogs = await db.painLogs
+          .where('userId')
+          .equals(userId)
+          .toArray()
+        const last2WeeksPain = recentPainLogs.filter(
+          (p) => now.getTime() - p.date.getTime() < 14 * 24 * 60 * 60 * 1000
+        )
+        const avgPainLevel = last2WeeksPain.length > 0
+          ? last2WeeksPain.reduce((sum, p) => sum + p.level, 0) / last2WeeksPain.length
+          : 0
+
+        const mappedPhase = currentPhaseName === 'deload' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'transition' | 'strength'
+        const recommendation = getPhaseRecommendation({
+          currentPhase: mappedPhase,
+          weeksInPhase: currentPhaseRecord.weekCount,
+          avgPainLevel,
+          progressionConsistency,
+        })
+
+        if (recommendation !== mappedPhase) {
+          // Close current phase
+          await db.trainingPhases.update(currentPhaseRecord.id!, {
+            endedAt: now,
+          })
+
+          // Create new phase
+          await db.trainingPhases.add({
+            userId,
+            phase: recommendation as TrainingPhase['phase'],
+            startedAt: now,
+            weekCount: 1,
+          })
+        } else {
+          // Update week count
+          await db.trainingPhases.update(currentPhaseRecord.id!, {
+            weekCount: weekNumber,
           })
         }
       }
     },
-    [engine, userId, programId, programSession.name, exerciseNames, trainingPhase]
+    [engine, userId, programId, programSession, exerciseNames, trainingPhase]
   )
 
   const advanceExerciseOrEnd = useCallback(async () => {
@@ -303,8 +401,9 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       pain?: { zone: BodyZone; level: number }
     ) => {
       const now = new Date()
+      const setNum = engine.getCurrentSetNumber()
       const set: SessionSet = {
-        setNumber: engine.getCurrentSetNumber(),
+        setNumber: setNum,
         prescribedReps: currentExercise?.prescribedReps ?? 0,
         prescribedWeightKg: alternativeWeight ?? currentExercise?.prescribedWeightKg ?? 0,
         actualReps: reps,
@@ -314,6 +413,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         painZone: pain?.zone,
         painLevel: pain?.level,
         restPrescribedSeconds: restSeconds,
+        restActualSeconds: setNum > 1 ? lastRestElapsedRef.current : undefined,
         completedAt: now,
       }
       engine.logSet(set)
@@ -392,9 +492,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }, [userConditions.length, saveSessionToDb])
 
   const completeRestTimer = useCallback(() => {
+    lastRestElapsedRef.current = restElapsed
     stopRestTimer()
     setPhase('exercise')
-  }, [stopRestTimer])
+  }, [stopRestTimer, restElapsed])
 
   const submitPainChecks = useCallback(
     async (checks: PainCheck[]) => {

@@ -155,13 +155,15 @@ export interface ExerciseProgress {
   date: Date
   sessionId: number
   weightKg: number
-  reps: number
+  reps: number // average reps per set
   sets: number
-  avgRepsInReserve: number
+  avgRepsInReserve: number // -1 if pain was reported
   avgRestSeconds: number
   exerciseOrder: number
   phase: 'hypertrophy' | 'strength' | 'deload'
   weekNumber: number
+  prescribedReps?: number
+  prescribedRestSeconds?: number
 }
 
 // Pain history

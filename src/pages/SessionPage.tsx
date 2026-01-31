@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
+import { shouldDeload } from '../engine/progression'
 import type { ExerciseHistory } from '../engine/session-engine'
 import WarmupView from '../components/session/WarmupView'
 import WarmupRehabView from '../components/session/WarmupRehabView'
@@ -47,19 +48,89 @@ function SessionContent({
     [user?.id]
   )
 
-  // Build history from progress data
+  // Determine current training phase and deload status
+  const phaseData = useLiveQuery(
+    async () => {
+      if (!user?.id) return { phase: 'hypertrophy' as const, isDeload: false }
+
+      // Get current open phase record
+      const phases = await db.trainingPhases
+        .where('userId')
+        .equals(user.id)
+        .toArray()
+      const sortedPhases = phases.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+      const currentPhase = sortedPhases.find((p) => !p.endedAt)
+
+      // If already in deload phase, continue deload
+      if (currentPhase?.phase === 'deload') {
+        return { phase: 'deload' as const, isDeload: true }
+      }
+
+      // Calculate weeks since last deload
+      const lastDeload = sortedPhases.find((p) => p.phase === 'deload')
+      let weeksSince = 0
+      if (lastDeload) {
+        const deloadEnd = lastDeload.endedAt ?? lastDeload.startedAt
+        weeksSince = Math.floor((Date.now() - deloadEnd.getTime()) / (7 * 24 * 60 * 60 * 1000))
+      } else {
+        // No deload ever — count from first completed session
+        const allSessions = await db.workoutSessions
+          .where('userId')
+          .equals(user.id)
+          .toArray()
+        const firstCompleted = allSessions
+          .filter((s) => s.completedAt)
+          .sort((a, b) => a.completedAt!.getTime() - b.completedAt!.getTime())[0]
+        if (firstCompleted?.completedAt) {
+          weeksSince = Math.floor(
+            (Date.now() - firstCompleted.completedAt.getTime()) / (7 * 24 * 60 * 60 * 1000)
+          )
+        }
+      }
+
+      const needsDeload = shouldDeload(weeksSince)
+      if (needsDeload) {
+        // Create deload phase record
+        if (currentPhase) {
+          await db.trainingPhases.update(currentPhase.id!, { endedAt: new Date() })
+        }
+        await db.trainingPhases.add({
+          userId: user.id,
+          phase: 'deload',
+          startedAt: new Date(),
+          weekCount: 1,
+        })
+        return { phase: 'deload' as const, isDeload: true }
+      }
+
+      const mappedPhase = currentPhase?.phase ?? 'hypertrophy'
+      const sessionPhase = mappedPhase === 'transition' ? 'hypertrophy' : mappedPhase
+      return { phase: sessionPhase as 'hypertrophy' | 'strength' | 'deload', isDeload: false }
+    },
+    [user?.id]
+  )
+
+  // Build history from progress data — use latest ExerciseProgress entry per exercise
   const history: ExerciseHistory = {}
   if (progressData) {
+    // Group by exerciseId, keep only the most recent entry
+    const latestByExercise = new Map<number, typeof progressData[0]>()
     for (const p of progressData) {
-      const existing = history[p.exerciseId]
-      if (!existing || p.date > (existing as { date?: Date }).date!) {
-        history[p.exerciseId] = {
-          lastWeightKg: p.weightKg,
-          lastReps: Array(p.sets).fill(Math.round(p.reps / p.sets)),
-          lastAvgRIR: p.avgRepsInReserve,
-          lastAvgRestSeconds: p.avgRestSeconds,
-          prescribedSets: p.sets,
-        }
+      const existing = latestByExercise.get(p.exerciseId)
+      if (!existing || p.date > existing.date) {
+        latestByExercise.set(p.exerciseId, p)
+      }
+    }
+
+    for (const [exerciseId, p] of latestByExercise) {
+      history[exerciseId] = {
+        lastWeightKg: p.weightKg,
+        lastReps: Array(p.sets).fill(p.reps), // reps is already avg per set
+        lastAvgRIR: p.avgRepsInReserve,
+        lastAvgRestSeconds: p.avgRestSeconds,
+        prescribedSets: p.sets,
+        prescribedReps: p.prescribedReps,
+        prescribedRestSeconds: p.prescribedRestSeconds,
       }
     }
   }
@@ -89,6 +160,7 @@ function SessionContent({
     exerciseNames,
     healthConditions: conditions ?? undefined,
     availableWeights,
+    phase: phaseData?.phase,
   })
 
   if (!program || !programSession || !user || !allExercises) {

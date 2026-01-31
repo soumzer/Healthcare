@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
+import { shouldDeload } from '../engine/progression'
 import type { ProgramSession, WorkoutProgram } from '../db/types'
 
 export interface NextSessionExercisePreview {
@@ -32,6 +33,10 @@ export interface NextSessionInfo {
   program: WorkoutProgram | null
   // Task 9: Session preview with exercise names and weights
   preview: NextSessionPreview | null
+  // Task 11: Deload and phase tracking
+  isDeload: boolean
+  currentPhase: 'hypertrophy' | 'transition' | 'strength' | 'deload'
+  weeksSinceLastDeload: number
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
@@ -44,6 +49,9 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: null,
       preview: null,
+      isDeload: false,
+      currentPhase: 'hypertrophy' as const,
+      weeksSinceLastDeload: 0,
     }
 
     // Find active program for this user
@@ -62,6 +70,9 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         restRecommendation: null,
         program: null,
         preview: null,
+        isDeload: false,
+        currentPhase: 'hypertrophy' as const,
+        weeksSinceLastDeload: 0,
       }
     }
 
@@ -129,15 +140,47 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       weightMap.set(exId, entries[0].weightKg)
     }
 
+    // Deload detection: check TrainingPhase records for weeks since last deload
+    const phaseRecords = await db.trainingPhases
+      .where('userId')
+      .equals(userId)
+      .toArray()
+    const sortedPhases = phaseRecords.sort(
+      (a, b) => b.startedAt.getTime() - a.startedAt.getTime()
+    )
+    const currentPhaseRecord = sortedPhases.find((p) => !p.endedAt)
+    const currentPhase = currentPhaseRecord?.phase ?? 'hypertrophy'
+
+    // Calculate weeks since last deload
+    const lastDeloadPhase = sortedPhases.find((p) => p.phase === 'deload')
+    let weeksSinceLastDeload = 0
+    if (lastDeloadPhase) {
+      const deloadEnd = lastDeloadPhase.endedAt ?? lastDeloadPhase.startedAt
+      weeksSinceLastDeload = Math.floor(
+        (Date.now() - deloadEnd.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      )
+    } else if (completedSessions.length > 0) {
+      // No deload ever — count weeks from first session
+      const firstSessionDate = completedSessions[completedSessions.length - 1].completedAt!
+      weeksSinceLastDeload = Math.floor(
+        (Date.now() - firstSessionDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      )
+    }
+
+    const isDeload = shouldDeload(weeksSinceLastDeload) || currentPhase === 'deload'
+
     const preview: NextSessionPreview = {
       sessionName: nextProgramSession.name,
-      exercises: nextProgramSession.exercises.map((pe) => ({
-        name: exerciseNameMap.get(pe.exerciseId) ?? `Exercice #${pe.exerciseId}`,
-        sets: pe.sets,
-        targetReps: pe.targetReps,
-        estimatedWeightKg: weightMap.get(pe.exerciseId) ?? 0,
-        isRehab: pe.isRehab,
-      })),
+      exercises: nextProgramSession.exercises.map((pe) => {
+        const baseWeight = weightMap.get(pe.exerciseId) ?? 0
+        return {
+          name: exerciseNameMap.get(pe.exerciseId) ?? `Exercice #${pe.exerciseId}`,
+          sets: pe.sets,
+          targetReps: pe.targetReps,
+          estimatedWeightKg: isDeload ? Math.round(baseWeight * 0.6 * 2) / 2 : baseWeight,
+          isRehab: pe.isRehab,
+        }
+      }),
     }
 
     // Calculate hours since last session
@@ -163,6 +206,9 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           restRecommendation: `Repos recommande : encore ${remainingHours}h avant la prochaine seance`,
           program: activeProgram,
           preview,
+          isDeload,
+          currentPhase,
+          weeksSinceLastDeload,
         }
       }
     }
@@ -184,6 +230,9 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: activeProgram,
       preview,
+      isDeload,
+      currentPhase,
+      weeksSinceLastDeload,
     }
   }, [userId])
 }
