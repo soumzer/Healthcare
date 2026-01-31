@@ -168,7 +168,7 @@ function SessionContent({
   if (session.phase === 'occupied') {
     return (
       <ActiveWait
-        fillerExercises={session.fillerExercises}
+        fillerSuggestion={session.fillerSuggestion}
         onMachineFree={session.markMachineFree}
       />
     )

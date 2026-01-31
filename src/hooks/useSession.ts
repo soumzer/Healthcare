@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { SessionEngine, type ExerciseHistory, type SessionEngineOptions } from '../engine/session-engine'
 import { generateWarmupSets, type WarmupSet } from '../engine/warmup'
-import { selectFillerExercises } from '../engine/filler'
+import { suggestFiller, type FillerSuggestion } from '../engine/filler'
 import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
 import { db } from '../db'
 import type {
@@ -44,7 +44,7 @@ export interface UseSessionReturn {
   totalSets: number
   warmupSets: WarmupSet[]
   warmupSetIndex: number
-  fillerExercises: Exercise[]
+  fillerSuggestion: FillerSuggestion | null
   restSeconds: number
   restElapsed: number
   userConditions: BodyZone[]
@@ -133,15 +133,18 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     ? generateWarmupSets(currentExercise.prescribedWeightKg, availableWeights)
     : []
 
-  // Get filler exercises for occupied state
-  const fillerExercises = currentExercise
-    ? selectFillerExercises(
-        availableExercises.find((e) => e.id === currentExercise.exerciseId)
-          ?.primaryMuscles ?? [],
-        userConditions,
-        availableExercises
-      )
-    : []
+  // Get filler suggestion for occupied state (uses rehab active wait pool)
+  const [completedFillers, setCompletedFillers] = useState<string[]>([])
+  const fillerSuggestion = currentExercise
+    ? suggestFiller({
+        activeWaitPool: rehabIntegration.activeWaitPool,
+        nextExerciseMuscles:
+          availableExercises.find((e) => e.id === currentExercise.exerciseId)
+            ?.primaryMuscles ?? [],
+        completedFillers,
+        allExercises: availableExercises,
+      })
+    : null
 
   // Rest seconds from program
   const restSeconds =
@@ -383,7 +386,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     totalSets,
     warmupSets,
     warmupSetIndex,
-    fillerExercises,
+    fillerSuggestion,
     restSeconds,
     restElapsed,
     userConditions,
