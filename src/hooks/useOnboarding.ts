@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { db } from '../db'
 import type { HealthCondition, GymEquipment, Goal } from '../db/types'
+import { generateProgram } from '../engine/program-generator'
 
 export interface OnboardingState {
   step: number
@@ -64,6 +65,49 @@ export function useOnboarding() {
         state.equipment.map(e => ({ ...e, userId }))
       )
     }
+
+    // --- Generate workout program ---
+
+    // 1. Load the exercise catalog from the database
+    const exerciseCatalog = await db.exercises.toArray()
+
+    // 2. Build the full GymEquipment list for the generator
+    //    (add userId to the onboarding equipment items)
+    const equipmentForGenerator: GymEquipment[] = state.equipment.map(e => ({
+      ...e,
+      userId,
+    }))
+
+    // 3. Build full HealthCondition list for the generator
+    const conditionsForGenerator: HealthCondition[] = state.conditions.map(c => ({
+      ...c,
+      userId,
+      createdAt: now,
+    }))
+
+    // 4. Call the program generator
+    const generatedProgram = generateProgram(
+      {
+        userId,
+        goals: state.goals,
+        conditions: conditionsForGenerator,
+        equipment: equipmentForGenerator,
+        availableWeights: [],
+        daysPerWeek: state.daysPerWeek,
+        minutesPerSession: state.minutesPerSession,
+      },
+      exerciseCatalog,
+    )
+
+    // 5. Save the generated program to the database
+    await db.workoutPrograms.add({
+      userId,
+      name: generatedProgram.name,
+      type: generatedProgram.type,
+      sessions: generatedProgram.sessions,
+      isActive: true,
+      createdAt: new Date(),
+    })
 
     return userId
   }
