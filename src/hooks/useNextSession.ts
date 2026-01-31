@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
+import type { ProgramSession, WorkoutProgram } from '../db/types'
 
 export interface NextSessionInfo {
   status: 'ready' | 'rest_recommended' | 'no_program'
@@ -11,11 +12,23 @@ export interface NextSessionInfo {
   lastSessionDate?: Date
   hoursSinceLastSession?: number
   minimumRestHours: number
+  // New fields for Task 6 integration
+  nextSession: ProgramSession | null
+  canStart: boolean
+  restRecommendation: string | null
+  program: WorkoutProgram | null
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
   return useLiveQuery(async () => {
-    if (!userId) return { status: 'no_program' as const, minimumRestHours: 24 }
+    if (!userId) return {
+      status: 'no_program' as const,
+      minimumRestHours: 24,
+      nextSession: null,
+      canStart: false,
+      restRecommendation: null,
+      program: null,
+    }
 
     // Find active program for this user
     const activeProgram = await db.workoutPrograms
@@ -25,7 +38,14 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       .first()
 
     if (!activeProgram || !activeProgram.sessions || activeProgram.sessions.length === 0) {
-      return { status: 'no_program' as const, minimumRestHours: 24 }
+      return {
+        status: 'no_program' as const,
+        minimumRestHours: 24,
+        nextSession: null,
+        canStart: false,
+        restRecommendation: null,
+        program: null,
+      }
     }
 
     // Find last completed workout session for this program
@@ -69,6 +89,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       const hoursSinceLastSession = diffMs / (1000 * 60 * 60)
 
       if (hoursSinceLastSession < minimumRestHours) {
+        const remainingHours = Math.ceil(minimumRestHours - hoursSinceLastSession)
         return {
           status: 'rest_recommended' as const,
           nextSessionName: nextProgramSession.name,
@@ -79,6 +100,10 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           lastSessionDate: lastSession.completedAt,
           hoursSinceLastSession,
           minimumRestHours,
+          nextSession: nextProgramSession,
+          canStart: false,
+          restRecommendation: `Repos recommande : encore ${remainingHours}h avant la prochaine seance`,
+          program: activeProgram,
         }
       }
     }
@@ -95,6 +120,10 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         ? (new Date().getTime() - lastSession.completedAt.getTime()) / (1000 * 60 * 60)
         : undefined,
       minimumRestHours,
+      nextSession: nextProgramSession,
+      canStart: true,
+      restRecommendation: null,
+      program: activeProgram,
     }
   }, [userId])
 }

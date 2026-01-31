@@ -1,13 +1,15 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { SessionEngine, type ExerciseHistory } from '../engine/session-engine'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { SessionEngine, type ExerciseHistory, type SessionEngineOptions } from '../engine/session-engine'
 import { generateWarmupSets, type WarmupSet } from '../engine/warmup'
 import { selectFillerExercises } from '../engine/filler'
+import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
 import { db } from '../db'
 import type {
   ProgramSession,
   SessionExercise,
   Exercise,
   BodyZone,
+  HealthCondition,
   PainCheck,
   SessionSet,
 } from '../db/types'
@@ -30,6 +32,9 @@ export interface UseSessionParams {
   userConditions: BodyZone[]
   availableExercises: Exercise[]
   exerciseNames: Record<number, string>
+  healthConditions?: HealthCondition[]
+  availableWeights?: number[]
+  phase?: 'hypertrophy' | 'strength' | 'deload'
 }
 
 export interface UseSessionReturn {
@@ -45,6 +50,11 @@ export interface UseSessionReturn {
   userConditions: BodyZone[]
   exerciseIndex: number
   totalExercises: number
+
+  // Rehab integration
+  warmupRehab: RehabExerciseInfo[]
+  activeWaitPool: RehabExerciseInfo[]
+  cooldownRehab: RehabExerciseInfo[]
 
   // Actions
   completeWarmup: () => void
@@ -69,9 +79,18 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     userConditions,
     availableExercises,
     exerciseNames,
+    healthConditions,
+    availableWeights,
+    phase: trainingPhase,
   } = params
 
-  const engineRef = useRef<SessionEngine>(new SessionEngine(programSession, history))
+  // Build engine options from params
+  const engineOptions: SessionEngineOptions = {
+    availableWeights,
+    phase: trainingPhase,
+  }
+
+  const engineRef = useRef<SessionEngine>(new SessionEngine(programSession, history, engineOptions))
   const engine = engineRef.current
 
   const [phase, setPhase] = useState<SessionPhase>('warmup')
@@ -84,6 +103,19 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sessionStartRef = useRef(new Date())
   const setStartRef = useRef<Date | null>(null)
+
+  // Integrate rehab exercises into session
+  const rehabIntegration = useMemo(() => {
+    if (!healthConditions || healthConditions.length === 0) {
+      return { warmupRehab: [], activeWaitPool: [], cooldownRehab: [] }
+    }
+    const integrated = integrateRehab(programSession, healthConditions)
+    return {
+      warmupRehab: integrated.warmupRehab,
+      activeWaitPool: integrated.activeWaitPool,
+      cooldownRehab: integrated.cooldownRehab,
+    }
+  }, [programSession, healthConditions])
 
   // Derive current state from engine
   const currentExercise = engine.isSessionComplete() ? null : engine.getCurrentExercise()
@@ -98,7 +130,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   // Generate warmup sets for current exercise
   const warmupSets = currentExercise
-    ? generateWarmupSets(currentExercise.prescribedWeightKg)
+    ? generateWarmupSets(currentExercise.prescribedWeightKg, availableWeights)
     : []
 
   // Get filler exercises for occupied state
@@ -324,7 +356,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
             avgRepsInReserve: avgRIR,
             avgRestSeconds: avgRest,
             exerciseOrder: ex.order,
-            phase: 'hypertrophy',
+            phase: trainingPhase ?? 'hypertrophy',
             weekNumber: 1,
           })
         }
@@ -332,7 +364,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
       setPhase('done')
     },
-    [engine, userId, programId, programSession.name, exerciseNames]
+    [engine, userId, programId, programSession.name, exerciseNames, trainingPhase]
   )
 
   return {
@@ -357,6 +389,11 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     userConditions,
     exerciseIndex,
     totalExercises,
+
+    // Rehab integration
+    warmupRehab: rehabIntegration.warmupRehab,
+    activeWaitPool: rehabIntegration.activeWaitPool,
+    cooldownRehab: rehabIntegration.cooldownRehab,
 
     completeWarmup,
     skipWarmup,

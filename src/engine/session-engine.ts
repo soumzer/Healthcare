@@ -1,11 +1,23 @@
-import type { ProgramSession, SessionExercise, SessionSet } from '../db/types'
+import { calculateProgression, type ProgressionResult } from './progression'
+import type { ProgramSession, ProgramExercise, SessionExercise, SessionSet } from '../db/types'
+
+export interface ExerciseHistoryEntry {
+  lastWeightKg: number
+  lastReps: number[]
+  lastAvgRIR: number
+  lastAvgRestSeconds?: number
+  prescribedRestSeconds?: number
+  prescribedSets?: number
+  prescribedReps?: number
+}
 
 export interface ExerciseHistory {
-  [exerciseId: number]: {
-    lastWeightKg: number
-    lastReps: number[]
-    lastAvgRIR: number
-  }
+  [exerciseId: number]: ExerciseHistoryEntry
+}
+
+export interface SessionEngineOptions {
+  availableWeights?: number[]
+  phase?: 'hypertrophy' | 'strength' | 'deload'
 }
 
 export class SessionEngine {
@@ -13,32 +25,67 @@ export class SessionEngine {
   private currentIndex: number = 0
   private occupied: boolean = false
   private history: ExerciseHistory
+  private options: SessionEngineOptions
+  private progressionResults: Map<number, ProgressionResult> = new Map()
 
-  constructor(programSession: ProgramSession, history: ExerciseHistory) {
+  constructor(
+    programSession: ProgramSession,
+    history: ExerciseHistory,
+    options: SessionEngineOptions = {},
+  ) {
     this.history = history
+    this.options = options
     this.exercises = programSession.exercises.map((pe) => ({
       exerciseId: pe.exerciseId,
       exerciseName: '',
       order: pe.order,
       prescribedSets: pe.sets,
-      prescribedReps: pe.targetReps,
-      prescribedWeightKg: this.calculatePrescribedWeight(pe.exerciseId, pe.targetReps),
+      prescribedReps: this.calculatePrescribedReps(pe),
+      prescribedWeightKg: this.calculatePrescribedWeight(pe),
       sets: [],
       status: 'pending' as const,
     }))
   }
 
-  private calculatePrescribedWeight(exerciseId: number, targetReps: number): number {
-    const prev = this.history[exerciseId]
+  private calculatePrescribedWeight(pe: ProgramExercise): number {
+    const prev = this.history[pe.exerciseId]
     if (!prev) return 0
 
-    const allRepsHit = prev.lastReps.every(r => r >= targetReps)
-    const easyEnough = prev.lastAvgRIR >= 2
+    const result = this.runProgression(pe, prev)
+    return result.nextWeightKg
+  }
 
-    if (allRepsHit && easyEnough) {
-      return prev.lastWeightKg + 2.5
-    }
-    return prev.lastWeightKg
+  private calculatePrescribedReps(pe: ProgramExercise): number {
+    const prev = this.history[pe.exerciseId]
+    if (!prev) return pe.targetReps
+
+    const result = this.runProgression(pe, prev)
+    return result.nextReps
+  }
+
+  private runProgression(pe: ProgramExercise, prev: ExerciseHistoryEntry): ProgressionResult {
+    // Cache result to avoid double calculation (weight + reps for same exercise)
+    const cached = this.progressionResults.get(pe.exerciseId)
+    if (cached) return cached
+
+    const result = calculateProgression({
+      prescribedWeightKg: prev.lastWeightKg,
+      prescribedReps: prev.prescribedReps ?? pe.targetReps,
+      prescribedSets: prev.prescribedSets ?? pe.sets,
+      actualReps: prev.lastReps,
+      avgRIR: prev.lastAvgRIR,
+      avgRestSeconds: prev.lastAvgRestSeconds ?? pe.restSeconds,
+      prescribedRestSeconds: prev.prescribedRestSeconds ?? pe.restSeconds,
+      availableWeights: this.options.availableWeights ?? generateDefaultWeights(prev.lastWeightKg),
+      phase: this.options.phase ?? 'hypertrophy',
+    })
+
+    this.progressionResults.set(pe.exerciseId, result)
+    return result
+  }
+
+  getProgressionResult(exerciseId: number): ProgressionResult | undefined {
+    return this.progressionResults.get(exerciseId)
   }
 
   getCurrentExercise(): SessionExercise {
@@ -84,4 +131,18 @@ export class SessionEngine {
   getAllExercises(): SessionExercise[] {
     return this.exercises
   }
+}
+
+/**
+ * Generates a default set of available weights around the current weight.
+ * Used when no explicit available weights are provided.
+ * Generates weights in 2.5kg increments from 0 to currentWeight + 20kg.
+ */
+function generateDefaultWeights(currentWeightKg: number): number[] {
+  const max = currentWeightKg + 20
+  const weights: number[] = []
+  for (let w = 0; w <= max; w += 2.5) {
+    weights.push(w)
+  }
+  return weights
 }

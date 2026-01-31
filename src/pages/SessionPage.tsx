@@ -37,6 +37,13 @@ function SessionContent({
         : [],
     [user?.id]
   )
+  const availableWeightsData = useLiveQuery(
+    () =>
+      user?.id
+        ? db.availableWeights.where('userId').equals(user.id).and((w) => w.isAvailable).toArray()
+        : [],
+    [user?.id]
+  )
 
   // Build history from progress data
   const history: ExerciseHistory = {}
@@ -48,10 +55,17 @@ function SessionContent({
           lastWeightKg: p.weightKg,
           lastReps: Array(p.sets).fill(Math.round(p.reps / p.sets)),
           lastAvgRIR: p.avgRepsInReserve,
+          lastAvgRestSeconds: p.avgRestSeconds,
+          prescribedSets: p.sets,
         }
       }
     }
   }
+
+  // Build unique available weights list
+  const availableWeights = availableWeightsData
+    ? [...new Set(availableWeightsData.map((w) => w.weightKg))].sort((a, b) => a - b)
+    : undefined
 
   // Build exercise names map
   const exerciseNames: Record<number, string> = {}
@@ -71,6 +85,8 @@ function SessionContent({
     userConditions: conditions?.map((c) => c.bodyZone) ?? [],
     availableExercises: allExercises ?? [],
     exerciseNames,
+    healthConditions: conditions ?? undefined,
+    availableWeights,
   })
 
   if (!program || !programSession || !user || !allExercises) {

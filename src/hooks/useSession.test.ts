@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { useSession, type UseSessionParams } from './useSession'
 import { db } from '../db'
-import type { Exercise } from '../db/types'
+import type { Exercise, HealthCondition } from '../db/types'
 
 const mockProgramSession = {
   name: 'Push A',
@@ -295,5 +295,149 @@ describe('useSession - DB persistence', () => {
     // Verify exercise progress was saved
     const progress = await db.exerciseProgress.toArray()
     expect(progress).toHaveLength(2)
+  })
+})
+
+describe('useSession - rehab integration', () => {
+  beforeEach(async () => {
+    await db.delete()
+    await db.open()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('returns empty rehab arrays when no healthConditions provided', () => {
+    const { result } = renderHook(() => useSession(defaultParams))
+    expect(result.current.warmupRehab).toEqual([])
+    expect(result.current.activeWaitPool).toEqual([])
+    expect(result.current.cooldownRehab).toEqual([])
+  })
+
+  it('returns rehab exercises when healthConditions are provided', () => {
+    const healthConditions: HealthCondition[] = [
+      {
+        userId: 1,
+        bodyZone: 'elbow_right',
+        label: 'Golf elbow',
+        diagnosis: 'Epicondylite mediale',
+        painLevel: 3,
+        since: '1 an',
+        notes: '',
+        isActive: true,
+        createdAt: new Date(),
+      },
+    ]
+
+    const params: UseSessionParams = {
+      ...defaultParams,
+      healthConditions,
+    }
+
+    const { result } = renderHook(() => useSession(params))
+
+    // Should have at least some rehab exercises for elbow_right
+    const totalRehab =
+      result.current.warmupRehab.length +
+      result.current.activeWaitPool.length +
+      result.current.cooldownRehab.length
+    expect(totalRehab).toBeGreaterThan(0)
+  })
+
+  it('returns no rehab exercises when healthConditions are inactive', () => {
+    const healthConditions: HealthCondition[] = [
+      {
+        userId: 1,
+        bodyZone: 'elbow_right',
+        label: 'Golf elbow',
+        diagnosis: 'Epicondylite mediale',
+        painLevel: 0,
+        since: '1 an',
+        notes: '',
+        isActive: false,
+        createdAt: new Date(),
+      },
+    ]
+
+    const params: UseSessionParams = {
+      ...defaultParams,
+      healthConditions,
+    }
+
+    const { result } = renderHook(() => useSession(params))
+    expect(result.current.warmupRehab).toEqual([])
+    expect(result.current.activeWaitPool).toEqual([])
+    expect(result.current.cooldownRehab).toEqual([])
+  })
+})
+
+describe('useSession - progression engine integration', () => {
+  beforeEach(async () => {
+    await db.delete()
+    await db.open()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('uses progression engine to increase weight after successful session', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      history: {
+        1: { lastWeightKg: 40, lastReps: [8, 8, 8], lastAvgRIR: 2 },
+        2: { lastWeightKg: 10, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      },
+    }
+    const { result } = renderHook(() => useSession(params))
+    act(() => result.current.completeWarmup())
+    // Exercise 1: 40kg, all reps hit, RIR >= 2 -> 42.5kg
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(42.5)
+  })
+
+  it('maintains weight when reps were not all completed', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      history: {
+        1: { lastWeightKg: 40, lastReps: [8, 7, 6], lastAvgRIR: 1 },
+        2: { lastWeightKg: 10, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      },
+    }
+    const { result } = renderHook(() => useSession(params))
+    act(() => result.current.completeWarmup())
+    // Exercise 1: 40kg, not all reps hit -> maintain at 40
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(40)
+  })
+
+  it('passes available weights to the engine when provided', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      history: {
+        1: { lastWeightKg: 40, lastReps: [8, 8, 8], lastAvgRIR: 2 },
+        2: { lastWeightKg: 10, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      },
+      // Only has 40 and 45 -> 45 > 42.5+1=43.5 -> increase reps instead
+      availableWeights: [20, 40, 45, 60],
+    }
+    const { result } = renderHook(() => useSession(params))
+    act(() => result.current.completeWarmup())
+    // No 42.5 available, and 45 > 43.5 -> increase_reps
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(40)
+    expect(result.current.currentExercise!.prescribedReps).toBe(9)
+  })
+
+  it('uses 0kg for exercise with no history', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      history: {}, // No history at all
+    }
+    const { result } = renderHook(() => useSession(params))
+    act(() => result.current.completeWarmup())
+    // No history -> 0kg, target reps from program
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(0)
+    expect(result.current.currentExercise!.prescribedReps).toBe(8)
   })
 })
