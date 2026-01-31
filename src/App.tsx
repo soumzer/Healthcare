@@ -1,9 +1,38 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from './db'
+import BottomNav from './components/BottomNav'
+import HomePage from './pages/HomePage'
+import OnboardingPage from './pages/OnboardingPage'
+import SessionPage from './pages/SessionPage'
+import DashboardPage from './pages/DashboardPage'
+
 function App() {
+  const user = useLiveQuery(async () => (await db.userProfiles.toCollection().first()) ?? null)
+
+  // Loading state
+  if (user === undefined) return null
+
+  // No user profile — show onboarding
+  if (!user) return <OnboardingPage />
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-      <h1 className="text-2xl font-bold">Health Coach</h1>
+    <div className="min-h-screen bg-zinc-950 text-white pb-16">
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/session" element={<SessionPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      <BottomNav />
     </div>
   )
 }
 
-export default App
+export default function AppWrapper() {
+  return (
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  )
+}
