@@ -2,6 +2,19 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import type { ProgramSession, WorkoutProgram } from '../db/types'
 
+export interface NextSessionExercisePreview {
+  name: string
+  sets: number
+  targetReps: number
+  estimatedWeightKg: number  // From last session's progression, or 0 if first time
+  isRehab: boolean
+}
+
+export interface NextSessionPreview {
+  sessionName: string
+  exercises: NextSessionExercisePreview[]
+}
+
 export interface NextSessionInfo {
   status: 'ready' | 'rest_recommended' | 'no_program'
   nextSessionName?: string
@@ -17,6 +30,8 @@ export interface NextSessionInfo {
   canStart: boolean
   restRecommendation: string | null
   program: WorkoutProgram | null
+  // Task 9: Session preview with exercise names and weights
+  preview: NextSessionPreview | null
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
@@ -28,6 +43,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       canStart: false,
       restRecommendation: null,
       program: null,
+      preview: null,
     }
 
     // Find active program for this user
@@ -45,6 +61,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         canStart: false,
         restRecommendation: null,
         program: null,
+        preview: null,
       }
     }
 
@@ -82,6 +99,47 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
 
     const minimumRestHours = 24
 
+    // Build session preview with exercise names and estimated weights
+    const exerciseIds = nextProgramSession.exercises.map((e) => e.exerciseId)
+
+    // Resolve exercise names from the exercises table
+    const exerciseRecords = await db.exercises
+      .where('id')
+      .anyOf(exerciseIds)
+      .toArray()
+    const exerciseNameMap = new Map(exerciseRecords.map((e) => [e.id!, e.name]))
+
+    // Get latest exercise progress for each exercise to determine estimated weight
+    const progressRecords = await db.exerciseProgress
+      .where('exerciseId')
+      .anyOf(exerciseIds)
+      .and((p) => p.userId === userId)
+      .toArray()
+
+    // Group by exerciseId and find the latest entry (by date) for each
+    const progressByExercise = new Map<number, typeof progressRecords>()
+    for (const p of progressRecords) {
+      const list = progressByExercise.get(p.exerciseId) || []
+      list.push(p)
+      progressByExercise.set(p.exerciseId, list)
+    }
+    const weightMap = new Map<number, number>()
+    for (const [exId, entries] of progressByExercise) {
+      entries.sort((a, b) => b.date.getTime() - a.date.getTime())
+      weightMap.set(exId, entries[0].weightKg)
+    }
+
+    const preview: NextSessionPreview = {
+      sessionName: nextProgramSession.name,
+      exercises: nextProgramSession.exercises.map((pe) => ({
+        name: exerciseNameMap.get(pe.exerciseId) ?? `Exercice #${pe.exerciseId}`,
+        sets: pe.sets,
+        targetReps: pe.targetReps,
+        estimatedWeightKg: weightMap.get(pe.exerciseId) ?? 0,
+        isRehab: pe.isRehab,
+      })),
+    }
+
     // Calculate hours since last session
     if (lastSession?.completedAt) {
       const now = new Date()
@@ -104,6 +162,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           canStart: false,
           restRecommendation: `Repos recommande : encore ${remainingHours}h avant la prochaine seance`,
           program: activeProgram,
+          preview,
         }
       }
     }
@@ -124,6 +183,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       canStart: true,
       restRecommendation: null,
       program: activeProgram,
+      preview,
     }
   }, [userId])
 }
