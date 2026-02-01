@@ -768,7 +768,7 @@ function buildUpperLowerSessions(
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
     {
@@ -876,7 +876,7 @@ function buildUpperLowerSessions(
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
     {
@@ -938,7 +938,7 @@ function buildUpperLowerSessions(
       candidates: () => [...rearDeltExercises, ...rehabRearDelts],
       preferredName: 'band pull-apart',
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
   ]
@@ -1251,7 +1251,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...rearDeltExercises, ...rehabRearDelts, ...lateralRaises],
       preferredName: 'band pull-apart',
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
   ]
@@ -1352,7 +1352,7 @@ function buildPushPullLegsSessions(
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
     {
@@ -1408,7 +1408,7 @@ function buildPushPullLegsSessions(
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 15,
+      reps: 20,
       rest: 60,
     },
     {
