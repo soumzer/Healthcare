@@ -150,11 +150,11 @@ describe('integrateRehab', () => {
       }
     })
 
-    it('warmup is capped at 5 exercises', () => {
+    it('warmup returns all 6 exercises (under cap of 8)', () => {
       const result = integrateRehab(session, conditions)
       // Golf elbow has 3 warmup, lower back has 3 warmup (Dead bug, Bird dog, Pont fessier)
-      // Total would be 6, but capped to 5
-      expect(result.warmupRehab).toHaveLength(5)
+      // Total is 6, under the cap of 8, so all are returned
+      expect(result.warmupRehab).toHaveLength(6)
     })
 
     it('warmup contains exercises from both protocols', () => {
@@ -256,7 +256,7 @@ describe('integrateRehab', () => {
       expect(names).toContain('Child\'s pose (posture de l\'enfant)')
     })
 
-    it('cooldown is capped at 3 exercises', () => {
+    it('cooldown returns all 3 exercises (under cap of 5)', () => {
       const result = integrateRehab(session, conditions)
       expect(result.cooldownRehab).toHaveLength(3)
     })
@@ -347,13 +347,13 @@ describe('integrateRehab', () => {
   })
 
   // -----------------------------------------------------------------------
-  // Warmup capped at 5
+  // Warmup capped at 8
   // -----------------------------------------------------------------------
-  describe('warmup cap at 5 exercises', () => {
-    it('caps warmup to 5 when many conditions produce many warmup exercises', () => {
+  describe('warmup cap at 8 exercises', () => {
+    it('caps warmup to 8 when many conditions produce many warmup exercises', () => {
       // golf elbow (3 warmup) + lower_back (3 warmup) + knee (1 warmup)
       // + foot (2 warmup) + posture (2 warmup) + sciatique (2 warmup)
-      // = 13 total warmup → capped to 5
+      // = 13 total warmup → capped to 8
       const conditions = [
         makeCondition('elbow_right', 'Golf elbow'),
         makeCondition('lower_back', 'Douleurs lombaires'),
@@ -365,7 +365,7 @@ describe('integrateRehab', () => {
       const session = makeSession('Full Body')
       const result = integrateRehab(session, conditions)
 
-      expect(result.warmupRehab).toHaveLength(5)
+      expect(result.warmupRehab).toHaveLength(8)
     })
 
     it('higher priority protocols are kept when capping', () => {
@@ -382,23 +382,51 @@ describe('integrateRehab', () => {
       const session = makeSession('Full Body')
       const result = integrateRehab(session, conditions)
 
-      // The first 5 should be from priority 1 protocols (golf elbow + lower back)
+      // The first 6 should be from priority 1 protocols (golf elbow + lower back)
       // golf elbow: 3 warmup (priority 1), lower back: 3 warmup (priority 1)
-      // That's 6 from priority 1, capped to 5, so all 5 should be priority 1
-      for (const ex of result.warmupRehab) {
-        expect(ex.priority).toBe(1)
+      // That's 6 from priority 1, then 2 from priority 2 fill up to the cap of 8
+      const priority1Exercises = result.warmupRehab.filter((e) => e.priority === 1)
+      expect(priority1Exercises).toHaveLength(6)
+      // All priority 1 exercises should come before any priority 2
+      const lastPriority1Idx = result.warmupRehab.reduce(
+        (maxIdx, ex, idx) => (ex.priority === 1 ? idx : maxIdx),
+        -1,
+      )
+      const firstPriority2Idx = result.warmupRehab.findIndex((e) => e.priority === 2)
+      if (firstPriority2Idx !== -1) {
+        expect(lastPriority1Idx).toBeLessThan(firstPriority2Idx)
       }
+    })
+
+    it('with 6 conditions, returns more than 5 warmup exercises', () => {
+      // Regression: the old cap of 5 cut important exercises like nerve flossing
+      // and short foot for users with many health conditions. The new cap of 8
+      // allows more rehab exercises through.
+      const conditions = [
+        makeCondition('elbow_right', 'Golf elbow'),
+        makeCondition('lower_back', 'Douleurs lombaires'),
+        makeCondition('knee_right', 'Tendinite'),
+        makeCondition('foot_left', 'Pieds plats'),
+        makeCondition('upper_back', 'Posture'),
+        makeCondition('hip_right', 'Sciatique'),
+      ]
+      const session = makeSession('Full Body')
+      const result = integrateRehab(session, conditions)
+
+      // 13 total warmup exercises across 6 conditions, capped at 8
+      expect(result.warmupRehab.length).toBeGreaterThan(5)
+      expect(result.warmupRehab.length).toBeLessThanOrEqual(8)
     })
   })
 
   // -----------------------------------------------------------------------
-  // Cooldown capped at 3
+  // Cooldown capped at 5
   // -----------------------------------------------------------------------
-  describe('cooldown cap at 3 exercises', () => {
-    it('cooldown is capped at 3 even with multiple conditions', () => {
+  describe('cooldown cap at 5 exercises', () => {
+    it('cooldown is capped at 5 even with multiple conditions', () => {
       // posture: 1 cooldown (Etirement pectoral)
       // sciatique: 2 cooldown (Etirement piriforme, Child's pose)
-      // total: 3, exactly at cap
+      // total: 3, under cap of 5
       const conditions = [
         makeCondition('upper_back', 'Posture'),
         makeCondition('hip_right', 'Sciatique'),
@@ -406,7 +434,7 @@ describe('integrateRehab', () => {
       const session = makeSession('Full Body')
       const result = integrateRehab(session, conditions)
 
-      expect(result.cooldownRehab.length).toBeLessThanOrEqual(3)
+      expect(result.cooldownRehab.length).toBeLessThanOrEqual(5)
     })
   })
 

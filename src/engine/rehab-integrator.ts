@@ -27,8 +27,8 @@ export interface RehabExerciseInfo {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_WARMUP = 5
-const MAX_COOLDOWN = 3
+const MAX_WARMUP = 8
+const MAX_COOLDOWN = 5
 
 // ---------------------------------------------------------------------------
 // Main function
@@ -127,7 +127,7 @@ export function integrateRehab(
   activeWaitAll.sort(sortByPriority)
   cooldownAll.sort(sortByPriority)
 
-  // 6. Cap warmupRehab to max 5, cooldownRehab to max 3
+  // 6. Cap warmupRehab to max 8, cooldownRehab to max 5
   const warmupRehab = warmupAll.slice(0, MAX_WARMUP)
   const cooldownRehab = cooldownAll.slice(0, MAX_COOLDOWN)
 
