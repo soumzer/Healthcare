@@ -528,6 +528,28 @@ describe('useSession - cooldown phase', () => {
     expect(result.current.completeWarmupRehab).toBeDefined()
     expect(typeof result.current.completeWarmupRehab).toBe('function')
   })
+
+  it('cooldown is reachable after the last exercise when healthConditions have cooldown exercises', () => {
+    const params: UseSessionParams = {
+      ...defaultParams,
+      userConditions: ['upper_back'],
+      healthConditions: upperBackConditions,
+    }
+    const { result } = renderHook(() => useSession(params))
+
+    // Verify cooldownRehab was computed from healthConditions
+    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
+
+    // Complete all exercises
+    completeAll(result)
+
+    // After the last exercise, session must enter 'cooldown' — not skip to end_pain_check or done
+    expect(result.current.phase).toBe('cooldown')
+
+    // Complete cooldown to verify the full flow continues
+    act(() => { result.current.completeCooldown() })
+    expect(result.current.phase).toBe('end_pain_check')
+  })
 })
 
 describe('useSession - cooldown with DB persistence', () => {

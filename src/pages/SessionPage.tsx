@@ -14,6 +14,7 @@ import CooldownView from '../components/session/CooldownView'
 import EndSessionPainCheck from '../components/session/EndSessionPainCheck'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+/** Data loader — resolves all async data then renders SessionRunner */
 function SessionContent({
   programId,
   sessionIndex,
@@ -21,8 +22,6 @@ function SessionContent({
   programId: number
   sessionIndex: number
 }) {
-  const navigate = useNavigate()
-
   const program = useLiveQuery(() => db.workoutPrograms.get(programId))
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
   const conditions = useLiveQuery(
@@ -53,7 +52,6 @@ function SessionContent({
     async () => {
       if (!user?.id) return { phase: 'hypertrophy' as const, isDeload: false }
 
-      // Get current open phase record
       const phases = await db.trainingPhases
         .where('userId')
         .equals(user.id)
@@ -61,19 +59,16 @@ function SessionContent({
       const sortedPhases = phases.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
       const currentPhase = sortedPhases.find((p) => !p.endedAt)
 
-      // If already in deload phase, continue deload
       if (currentPhase?.phase === 'deload') {
         return { phase: 'deload' as const, isDeload: true }
       }
 
-      // Calculate weeks since last deload
       const lastDeload = sortedPhases.find((p) => p.phase === 'deload')
       let weeksSince = 0
       if (lastDeload) {
         const deloadEnd = lastDeload.endedAt ?? lastDeload.startedAt
         weeksSince = Math.floor((Date.now() - deloadEnd.getTime()) / (7 * 24 * 60 * 60 * 1000))
       } else {
-        // No deload ever — count from first completed session
         const allSessions = await db.workoutSessions
           .where('userId')
           .equals(user.id)
@@ -90,7 +85,6 @@ function SessionContent({
 
       const needsDeload = shouldDeload(weeksSince)
       if (needsDeload) {
-        // Create deload phase record
         if (currentPhase) {
           await db.trainingPhases.update(currentPhase.id!, { endedAt: new Date() })
         }
@@ -110,66 +104,99 @@ function SessionContent({
     [user?.id]
   )
 
-  // Build history from progress data — use latest ExerciseProgress entry per exercise
-  const history: ExerciseHistory = {}
-  if (progressData) {
-    // Group by exerciseId, keep only the most recent entry
-    const latestByExercise = new Map<number, typeof progressData[0]>()
-    for (const p of progressData) {
-      const existing = latestByExercise.get(p.exerciseId)
-      if (!existing || p.date > existing.date) {
-        latestByExercise.set(p.exerciseId, p)
-      }
-    }
-
-    for (const [exerciseId, p] of latestByExercise) {
-      history[exerciseId] = {
-        lastWeightKg: p.weightKg,
-        lastReps: Array(p.sets).fill(p.reps), // reps is already avg per set
-        lastAvgRIR: p.avgRepsInReserve,
-        lastAvgRestSeconds: p.avgRestSeconds,
-        prescribedSets: p.sets,
-        prescribedReps: p.prescribedReps,
-        prescribedRestSeconds: p.prescribedRestSeconds,
-      }
-    }
-  }
-
-  // Build unique available weights list
-  const availableWeights = availableWeightsData
-    ? [...new Set(availableWeightsData.map((w) => w.weightKg))].sort((a, b) => a - b)
-    : undefined
-
-  // Build exercise names map
-  const exerciseNames: Record<number, string> = {}
-  if (allExercises) {
-    for (const ex of allExercises) {
-      if (ex.id !== undefined) exerciseNames[ex.id] = ex.name
-    }
-  }
-
   const programSession = program?.sessions?.[sessionIndex]
 
-  const session = useSession({
-    programSession: programSession ?? { name: '', order: 0, exercises: [] },
-    history,
-    userId: user?.id ?? 1,
-    programId,
-    userConditions: conditions?.map((c) => c.bodyZone) ?? [],
-    availableExercises: allExercises ?? [],
-    exerciseNames,
-    healthConditions: conditions ?? undefined,
-    availableWeights,
-    phase: phaseData?.phase,
-  })
-
-  if (!program || !programSession || !user || !allExercises) {
+  if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined) {
     return (
       <div className="p-4 text-center">
         <p className="text-zinc-400">Chargement de la seance...</p>
       </div>
     )
   }
+
+  // Build history from progress data — use latest ExerciseProgress entry per exercise
+  const history: ExerciseHistory = {}
+  const latestByExercise = new Map<number, typeof progressData[0]>()
+  for (const p of progressData) {
+    const existing = latestByExercise.get(p.exerciseId)
+    if (!existing || p.date > existing.date) {
+      latestByExercise.set(p.exerciseId, p)
+    }
+  }
+  for (const [exerciseId, p] of latestByExercise) {
+    history[exerciseId] = {
+      lastWeightKg: p.weightKg,
+      lastReps: Array(p.sets).fill(p.reps),
+      lastAvgRIR: p.avgRepsInReserve,
+      lastAvgRestSeconds: p.avgRestSeconds,
+      prescribedSets: p.sets,
+      prescribedReps: p.prescribedReps,
+      prescribedRestSeconds: p.prescribedRestSeconds,
+    }
+  }
+
+  // Build unique available weights list (undefined if empty, so engine uses defaults)
+  const availableWeights = availableWeightsData && availableWeightsData.length > 0
+    ? [...new Set(availableWeightsData.map((w) => w.weightKg))].sort((a, b) => a - b)
+    : undefined
+
+  // Build exercise names map
+  const exerciseNames: Record<number, string> = {}
+  for (const ex of allExercises) {
+    if (ex.id !== undefined) exerciseNames[ex.id] = ex.name
+  }
+
+  return (
+    <SessionRunner
+      programSession={programSession}
+      history={history}
+      userId={user.id!}
+      programId={programId}
+      conditions={conditions ?? []}
+      allExercises={allExercises}
+      exerciseNames={exerciseNames}
+      availableWeights={availableWeights}
+      phase={phaseData.phase}
+    />
+  )
+}
+
+/** Session runner — only mounts when all data is loaded */
+function SessionRunner({
+  programSession,
+  history,
+  userId,
+  programId,
+  conditions,
+  allExercises,
+  exerciseNames,
+  availableWeights,
+  phase: phaseFromData,
+}: {
+  programSession: import('../db/types').ProgramSession
+  history: ExerciseHistory
+  userId: number
+  programId: number
+  conditions: import('../db/types').HealthCondition[]
+  allExercises: import('../db/types').Exercise[]
+  exerciseNames: Record<number, string>
+  availableWeights: number[] | undefined
+  phase: 'hypertrophy' | 'strength' | 'deload'
+}) {
+  const navigate = useNavigate()
+
+  const session = useSession({
+    programSession,
+    history,
+    userId,
+    programId,
+    userConditions: conditions.map((c) => c.bodyZone),
+    availableExercises: allExercises,
+    exerciseNames,
+    healthConditions: conditions.length > 0 ? conditions : undefined,
+    availableWeights,
+    phase: phaseFromData,
+  })
 
   if (session.phase === 'done') {
     return (
