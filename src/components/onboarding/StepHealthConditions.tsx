@@ -1,29 +1,9 @@
 import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { BodyZone } from '../../db/types'
+import { bodyZones, painLabels } from '../../constants/body-zones'
 
 type Props = ReturnType<typeof useOnboarding>
-
-const bodyZones: { zone: BodyZone; label: string }[] = [
-  { zone: 'neck', label: 'Cou' },
-  { zone: 'shoulder_left', label: 'Epaule gauche' },
-  { zone: 'shoulder_right', label: 'Epaule droite' },
-  { zone: 'elbow_left', label: 'Coude gauche' },
-  { zone: 'elbow_right', label: 'Coude droit' },
-  { zone: 'wrist_left', label: 'Poignet gauche' },
-  { zone: 'wrist_right', label: 'Poignet droit' },
-  { zone: 'upper_back', label: 'Haut du dos' },
-  { zone: 'lower_back', label: 'Bas du dos' },
-  { zone: 'hip_left', label: 'Hanche gauche' },
-  { zone: 'hip_right', label: 'Hanche droite' },
-  { zone: 'knee_left', label: 'Genou gauche' },
-  { zone: 'knee_right', label: 'Genou droit' },
-  { zone: 'ankle_left', label: 'Cheville gauche' },
-  { zone: 'ankle_right', label: 'Cheville droite' },
-  { zone: 'foot_left', label: 'Pied gauche' },
-  { zone: 'foot_right', label: 'Pied droit' },
-  { zone: 'other', label: 'Autre' },
-]
 
 interface ConditionForm {
   bodyZone: BodyZone
@@ -64,8 +44,11 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
   const handleSaveCondition = () => {
     if (!form) return
+    // Auto-generate label from zone name if user left it empty
+    const zoneName = bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''
+    const label = form.label.trim() || `Douleur ${zoneName}`
     const updated = state.conditions.filter(c => c.bodyZone !== form.bodyZone)
-    updated.push({ ...form, isActive: true })
+    updated.push({ ...form, label, isActive: true })
     updateConditions(updated)
     setExpandedZone(null)
     setForm(null)
@@ -81,10 +64,10 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
   }
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-bold">Problemes de sante</h2>
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold">Zones douloureuses</h2>
       <p className="text-sm text-zinc-400">
-        Selectionnez les zones concernees pour adapter votre programme.
+        Touchez les zones ou vous avez mal ou un probleme. Pas besoin de connaitre le nom medical.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -113,30 +96,34 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
           </h3>
 
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Description</label>
+            <label className="block text-xs text-zinc-400 mb-1">
+              Qu'est-ce que vous avez ? (si vous savez)
+            </label>
             <input
               type="text"
               value={form.label}
               onChange={e => setForm({ ...form, label: e.target.value })}
-              placeholder="Ex: Golf elbow, tendinite..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Diagnostic</label>
-            <input
-              type="text"
-              value={form.diagnosis}
-              onChange={e => setForm({ ...form, diagnosis: e.target.value })}
-              placeholder="Ex: Epicondylite mediale"
+              placeholder="Ex: tendinite, arthrose, douleur..."
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
             />
           </div>
 
           <div>
             <label className="block text-xs text-zinc-400 mb-1">
-              Niveau de douleur: {form.painLevel}/10
+              Quand est-ce que ca fait mal ?
+            </label>
+            <input
+              type="text"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Ex: quand je pousse lourd, en marchant, au repos..."
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1">
+              Douleur : {form.painLevel}/10 — {painLabels[form.painLevel] ?? ''}
             </label>
             <input
               type="range"
@@ -146,26 +133,20 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
               onChange={e => setForm({ ...form, painLevel: Number(e.target.value) })}
               className="w-full accent-white"
             />
+            <div className="flex justify-between text-[10px] text-zinc-600 px-0.5">
+              <span>0</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">Depuis quand</label>
+            <label className="block text-xs text-zinc-400 mb-1">Depuis quand ?</label>
             <input
               type="text"
               value={form.since}
               onChange={e => setForm({ ...form, since: e.target.value })}
-              placeholder="Ex: 6 mois, 1 an"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1">Notes</label>
-            <input
-              type="text"
-              value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="Notes supplementaires"
+              placeholder="Ex: 6 mois, 2 ans, toujours..."
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
             />
           </div>
@@ -174,8 +155,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
             <button
               type="button"
               onClick={handleSaveCondition}
-              disabled={!form.label.trim()}
-              className="flex-1 bg-white text-black font-semibold py-2 rounded-lg text-sm disabled:opacity-40"
+              className="flex-1 bg-white text-black font-semibold py-2 rounded-lg text-sm"
             >
               Ajouter
             </button>
@@ -194,12 +174,17 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
       {state.conditions.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm text-zinc-400">Conditions ajoutees:</h3>
+          <h3 className="text-sm text-zinc-400">{state.conditions.length} zone{state.conditions.length > 1 ? 's' : ''} ajoutee{state.conditions.length > 1 ? 's' : ''}</h3>
           {state.conditions.map(c => (
-            <div key={c.bodyZone} className="flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2">
-              <span className="text-sm">{c.label} ({bodyZones.find(z => z.zone === c.bodyZone)?.label})</span>
-              <span className="text-xs text-zinc-500">Douleur {c.painLevel}/10</span>
-            </div>
+            <button
+              key={c.bodyZone}
+              type="button"
+              onClick={() => handleZoneTap(c.bodyZone)}
+              className="w-full flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2"
+            >
+              <span className="text-sm text-left">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
+              <span className="text-xs text-zinc-500 shrink-0 ml-2">{c.painLevel}/10</span>
+            </button>
           ))}
         </div>
       )}

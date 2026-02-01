@@ -362,6 +362,7 @@ function SessionRunner({
       <EndSessionPainCheck
         userConditions={session.userConditions}
         onSubmit={session.submitPainChecks}
+        userId={userId}
       />
     )
   }
