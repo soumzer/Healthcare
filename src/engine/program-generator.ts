@@ -63,10 +63,12 @@ export function filterExercisesByEquipment(
 
 /**
  * Excludes exercises whose `contraindications` overlap with active health
- * conditions that have `painLevel >= 3`.
+ * conditions that have `painLevel >= 7` (severe pain).
  *
- * If a condition's `painLevel` is below 3 the zone is considered mild and the
- * exercise is still allowed.
+ * Moderate pain (< 7) does NOT exclude exercises — the rehab integrator will
+ * add appropriate warmup/cooldown for those zones instead. This avoids
+ * stripping all compound movements from users with common issues like mild
+ * knee tendinitis or elbow pain.
  */
 export function filterExercisesByContraindications(
   exercises: Exercise[],
@@ -74,7 +76,7 @@ export function filterExercisesByContraindications(
 ): Exercise[] {
   const painfulZones = new Set(
     conditions
-      .filter((c) => c.isActive && c.painLevel >= 3)
+      .filter((c) => c.isActive && c.painLevel >= 7)
       .map((c) => c.bodyZone),
   )
 
@@ -185,7 +187,7 @@ interface ExerciseSlot {
   preferredName?: string
   /** Prescribed sets */
   sets: number
-  /** Prescribed target reps (use midpoint of range) */
+  /** Prescribed target reps */
   reps: number
   /** Rest in seconds */
   rest: number
@@ -371,7 +373,7 @@ function buildFullBodySessions(
       candidates: () => quadCompounds,
       preferredName: 'leg press',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 150,
     },
     {
@@ -387,7 +389,7 @@ function buildFullBodySessions(
       candidates: () => horizontalPull,
       preferredName: 'rowing',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -395,7 +397,7 @@ function buildFullBodySessions(
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -403,7 +405,7 @@ function buildFullBodySessions(
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -419,7 +421,7 @@ function buildFullBodySessions(
       candidates: () => coreExercises,
       preferredName: 'dead bug',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 60,
     },
   ]
@@ -434,7 +436,7 @@ function buildFullBodySessions(
       candidates: () => hipHinges,
       preferredName: 'sdt smith',
       sets: 4,
-      reps: 9,
+      reps: 8,
       rest: 150,
     },
     {
@@ -442,7 +444,7 @@ function buildFullBodySessions(
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -450,7 +452,7 @@ function buildFullBodySessions(
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -458,7 +460,7 @@ function buildFullBodySessions(
       candidates: () => legExtensions,
       preferredName: 'leg extension',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -466,7 +468,7 @@ function buildFullBodySessions(
       candidates: () => [...chestAccessories, ...horizontalPush],
       preferredName: 'pec',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 90,
     },
     {
@@ -482,7 +484,7 @@ function buildFullBodySessions(
       candidates: () => coreExercises,
       preferredName: 'pallof',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 60,
     },
   ]
@@ -497,7 +499,7 @@ function buildFullBodySessions(
       candidates: () => unilateralLegs,
       preferredName: 'fentes',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 120,
     },
     {
@@ -505,7 +507,7 @@ function buildFullBodySessions(
       candidates: () => [...horizontalPush, ...chestAccessories],
       preferredName: 'pec press',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -513,7 +515,7 @@ function buildFullBodySessions(
       candidates: () => [...unilateralPull, ...horizontalPull],
       preferredName: 'rowing haltère',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 90,
     },
     {
@@ -521,7 +523,7 @@ function buildFullBodySessions(
       candidates: () => [...hipThrusts, ...hipHinges],
       preferredName: 'hip thrust',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -529,7 +531,7 @@ function buildFullBodySessions(
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -537,7 +539,7 @@ function buildFullBodySessions(
       candidates: () => bicepsExercises,
       preferredName: 'curl',
       sets: 2,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -706,7 +708,7 @@ function buildUpperLowerSessions(
       candidates: () => quadCompounds,
       preferredName: 'leg press',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 150,
     },
     {
@@ -714,7 +716,7 @@ function buildUpperLowerSessions(
       candidates: () => unilateralLegs,
       preferredName: 'fentes',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -722,7 +724,7 @@ function buildUpperLowerSessions(
       candidates: () => legExtensions,
       preferredName: 'leg extension',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -730,14 +732,14 @@ function buildUpperLowerSessions(
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
     {
@@ -767,7 +769,7 @@ function buildUpperLowerSessions(
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -775,14 +777,14 @@ function buildUpperLowerSessions(
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
       label: 'Chest accessory',
       candidates: () => chestAccessories,
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 90,
     },
     {
@@ -797,7 +799,7 @@ function buildUpperLowerSessions(
       label: 'Push accessory (triceps)',
       candidates: () => pushAccessories,
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 60,
     },
   ]
@@ -812,7 +814,7 @@ function buildUpperLowerSessions(
       candidates: () => hipHinges,
       preferredName: 'sdt smith',
       sets: 4,
-      reps: 9,
+      reps: 8,
       rest: 150,
     },
     {
@@ -820,7 +822,7 @@ function buildUpperLowerSessions(
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -828,7 +830,7 @@ function buildUpperLowerSessions(
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -836,21 +838,21 @@ function buildUpperLowerSessions(
       candidates: () => lighterQuad,
       preferredName: 'pull-through',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
     {
       label: 'Core exercise (different from Lower 1)',
       candidates: () => coreExercises,
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 60,
     },
   ]
@@ -865,7 +867,7 @@ function buildUpperLowerSessions(
       candidates: () => horizontalPull,
       preferredName: 'rowing câble',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -873,7 +875,7 @@ function buildUpperLowerSessions(
       candidates: () => unilateralPull,
       preferredName: 'unilatéral',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 90,
     },
     {
@@ -881,7 +883,7 @@ function buildUpperLowerSessions(
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -889,7 +891,7 @@ function buildUpperLowerSessions(
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -897,7 +899,7 @@ function buildUpperLowerSessions(
       candidates: () => bicepsExercises,
       preferredName: 'curl biceps',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -905,7 +907,7 @@ function buildUpperLowerSessions(
       candidates: () => [...rearDeltExercises, ...rehabRearDelts],
       preferredName: 'band pull-apart',
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -1075,7 +1077,7 @@ function buildPushPullLegsSessions(
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1083,7 +1085,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...chestAccessories, ...horizontalPush],
       preferredName: 'pec',
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1091,7 +1093,7 @@ function buildPushPullLegsSessions(
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1099,7 +1101,7 @@ function buildPushPullLegsSessions(
       candidates: () => tricepsExercises,
       preferredName: 'extension triceps poulie',
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1130,7 +1132,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...horizontalPush, ...chestAccessories],
       preferredName: 'développé couché smith',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1138,7 +1140,7 @@ function buildPushPullLegsSessions(
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales câble',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1146,7 +1148,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...chestAccessories, ...horizontalPush],
       preferredName: 'écartés',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1154,7 +1156,7 @@ function buildPushPullLegsSessions(
       candidates: () => tricepsExercises,
       preferredName: 'overhead',
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1177,7 +1179,7 @@ function buildPushPullLegsSessions(
       candidates: () => horizontalPull,
       preferredName: 'rowing câble',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1185,7 +1187,7 @@ function buildPushPullLegsSessions(
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1193,7 +1195,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...unilateralPull, ...horizontalPull],
       preferredName: 'unilatéral',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 90,
     },
     {
@@ -1201,7 +1203,7 @@ function buildPushPullLegsSessions(
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1209,7 +1211,7 @@ function buildPushPullLegsSessions(
       candidates: () => bicepsExercises,
       preferredName: 'curl biceps haltères',
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1217,7 +1219,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...rearDeltExercises, ...rehabRearDelts, ...lateralRaises],
       preferredName: 'band pull-apart',
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -1240,7 +1242,7 @@ function buildPushPullLegsSessions(
       candidates: () => horizontalPull,
       preferredName: 'rowing machine',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1248,7 +1250,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...unilateralPull, ...horizontalPull],
       preferredName: 'rowing haltère',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 90,
     },
     {
@@ -1256,7 +1258,7 @@ function buildPushPullLegsSessions(
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1264,7 +1266,7 @@ function buildPushPullLegsSessions(
       candidates: () => bicepsExercises,
       preferredName: 'curl marteau',
       sets: 3,
-      reps: 11,
+      reps: 12,
       rest: 60,
     },
     {
@@ -1272,7 +1274,7 @@ function buildPushPullLegsSessions(
       candidates: () => [...shrugExercises, ...horizontalPull],
       preferredName: 'shrug',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 60,
     },
   ]
@@ -1287,7 +1289,7 @@ function buildPushPullLegsSessions(
       candidates: () => quadCompounds,
       preferredName: 'leg press',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 150,
     },
     {
@@ -1295,7 +1297,7 @@ function buildPushPullLegsSessions(
       candidates: () => unilateralLegs,
       preferredName: 'fentes',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1303,7 +1305,7 @@ function buildPushPullLegsSessions(
       candidates: () => legExtensions,
       preferredName: 'leg extension',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1311,14 +1313,14 @@ function buildPushPullLegsSessions(
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
     {
@@ -1341,7 +1343,7 @@ function buildPushPullLegsSessions(
       candidates: () => hipHinges,
       preferredName: 'sdt smith',
       sets: 4,
-      reps: 9,
+      reps: 8,
       rest: 150,
     },
     {
@@ -1349,7 +1351,7 @@ function buildPushPullLegsSessions(
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
-      reps: 11,
+      reps: 10,
       rest: 120,
     },
     {
@@ -1357,7 +1359,7 @@ function buildPushPullLegsSessions(
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
@@ -1365,14 +1367,14 @@ function buildPushPullLegsSessions(
       candidates: () => lighterQuad,
       preferredName: 'pull-through',
       sets: 3,
-      reps: 13,
+      reps: 12,
       rest: 90,
     },
     {
       label: 'Calf exercise',
       candidates: () => calves,
       sets: 3,
-      reps: 17,
+      reps: 15,
       rest: 60,
     },
     {
@@ -1380,7 +1382,7 @@ function buildPushPullLegsSessions(
       candidates: () => coreExercises,
       preferredName: 'planche',
       sets: 3,
-      reps: 11,
+      reps: 10,
       rest: 60,
     },
   ]
@@ -1426,15 +1428,23 @@ export function generateProgram(
   )
 
   // Step 2 — filter by contraindications
-  const eligible = filterExercisesByContraindications(
+  const afterContraindications = filterExercisesByContraindications(
     afterEquipment,
     input.conditions,
   )
 
-  // Step 3 — determine split
+  // Step 3 — exclude cardio exercises from strength training pool
+  // Cardio exercises (bike, treadmill, elliptique) have primaryMuscles like
+  // 'quadriceps' which causes them to be picked for strength slots.
+  // They remain available for warmup/cooldown but not for the main program.
+  const eligible = afterContraindications.filter(
+    (e) => !e.tags.includes('cardio'),
+  )
+
+  // Step 5 — determine split
   const splitType = determineSplit(input.daysPerWeek)
 
-  // Step 4 — build sessions
+  // Step 6 — build sessions
   let sessions: ProgramSession[]
   switch (splitType) {
     case 'full_body':
