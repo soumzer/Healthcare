@@ -33,9 +33,11 @@ const formFromCondition = (c: HealthCondition): ConditionForm => ({
 
 interface Props {
   userId: number
+  onRegenerate?: () => Promise<{ success: boolean; error?: string }>
+  isRegenerating?: boolean
 }
 
-export default function HealthConditionsManager({ userId }: Props) {
+export default function HealthConditionsManager({ userId, onRegenerate, isRegenerating }: Props) {
   const conditions = useLiveQuery(
     () => db.healthConditions.where('userId').equals(userId).toArray(),
     [userId]
@@ -46,6 +48,7 @@ export default function HealthConditionsManager({ userId }: Props) {
   const [expandedZone, setExpandedZone] = useState<BodyZone | null>(null)
   const [form, setForm] = useState<ConditionForm | null>(null)
   const [conditionsChanged, setConditionsChanged] = useState(false)
+  const [regenerateResult, setRegenerateResult] = useState<{ success: boolean; error?: string } | null>(null)
 
   if (conditions === undefined) return null
 
@@ -321,18 +324,37 @@ export default function HealthConditionsManager({ userId }: Props) {
       )}
 
       {/* Regeneration banner */}
-      {conditionsChanged && (
+      {conditionsChanged && !regenerateResult?.success && (
         <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-2">
           <p className="text-sm text-white">
             Tes conditions ont change. Veux-tu regenerer ton programme ?
           </p>
+          {regenerateResult?.error && (
+            <p className="text-sm text-red-400">{regenerateResult.error}</p>
+          )}
           <button
             type="button"
-            onClick={() => setConditionsChanged(false)}
-            className="w-full py-2 bg-white text-black font-semibold rounded-lg text-sm"
+            disabled={isRegenerating}
+            onClick={async () => {
+              if (!onRegenerate) return
+              setRegenerateResult(null)
+              const result = await onRegenerate()
+              setRegenerateResult(result)
+              if (result.success) {
+                setConditionsChanged(false)
+              }
+            }}
+            className="w-full py-2 bg-white text-black font-semibold rounded-lg text-sm disabled:opacity-50"
           >
-            Regenerer le programme
+            {isRegenerating ? 'Regeneration en cours...' : 'Regenerer le programme'}
           </button>
+        </div>
+      )}
+
+      {/* Success feedback */}
+      {regenerateResult?.success && (
+        <div className="bg-green-900 border border-green-700 rounded-xl p-4">
+          <p className="text-sm text-green-200">Programme regenere avec succes !</p>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import BackupSection from '../components/settings/BackupSection'
 import HealthConditionsManager from '../components/settings/HealthConditionsManager'
+import { useRegenerateProgram } from '../hooks/useRegenerateProgram'
 
 const goalLabels: Record<string, string> = {
   weight_loss: 'Perte de poids',
@@ -19,6 +20,7 @@ const splitLabels: Record<string, string> = {
 }
 
 export default function ProfilePage() {
+  const { regenerate, isRegenerating } = useRegenerateProgram()
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
   const program = useLiveQuery(
     () => user?.id
@@ -81,7 +83,11 @@ export default function ProfilePage() {
 
       {/* Health conditions manager */}
       <div className="bg-zinc-900 rounded-xl p-4">
-        <HealthConditionsManager userId={user.id!} />
+        <HealthConditionsManager
+          userId={user.id!}
+          onRegenerate={() => regenerate(user.id!)}
+          isRegenerating={isRegenerating}
+        />
       </div>
 
       {/* Backup */}
