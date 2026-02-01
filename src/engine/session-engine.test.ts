@@ -234,7 +234,7 @@ describe('SessionEngine - applyPainAdjustments', () => {
     ],
   }
 
-  it('reduces prescribed weight when action is reduce_weight', () => {
+  it('reduces prescribed weight when action is reduce_weight (no referenceWeightKg)', () => {
     const history: ExerciseHistory = {
       1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
       2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
@@ -257,8 +257,35 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
     engine.applyPainAdjustments(adjustments)
 
-    // 102.5 * 0.8 = 82, rounded to nearest 0.5 = 82
+    // Falls back to prescribed weight: 102.5 * 0.8 = 82
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(82)
+  })
+
+  it('uses referenceWeightKg instead of prescribed weight when available', () => {
+    const history: ExerciseHistory = {
+      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+    }
+    const engine = new SessionEngine(mockSession, history)
+
+    // Exercise 1 progressed to 102.5 from progression engine
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(102.5)
+
+    const adjustments: PainAdjustment[] = [
+      {
+        exerciseId: 1,
+        exerciseName: 'Back squat barre',
+        action: 'reduce_weight',
+        reason: 'Douleur moderee sur lower_back',
+        weightMultiplier: 0.8,
+        referenceWeightKg: 90, // Last "healthy" weight
+      },
+    ]
+
+    engine.applyPainAdjustments(adjustments)
+
+    // Uses reference weight: 90 * 0.8 = 72, NOT 102.5 * 0.8 = 82
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(72)
   })
 
   it('does not modify weight for skip or no_progression actions', () => {

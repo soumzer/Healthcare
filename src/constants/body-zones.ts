@@ -25,14 +25,14 @@ export const painLabels: Record<number, string> = {
   0: 'Aucune',
   1: 'Tres legere',
   2: 'Legere',
-  3: 'Moderee',
-  4: 'Moderee',
-  5: 'Moyenne',
-  6: 'Forte',
-  7: 'Forte',
-  8: 'Tres forte',
-  9: 'Severe',
-  10: 'Insupportable',
+  3: 'Moderee — progression bloquee',
+  4: 'Moderee — progression bloquee',
+  5: 'Forte — charge reduite',
+  6: 'Forte — exercices adaptes',
+  7: 'Severe — exercice remplace',
+  8: 'Severe — exercice remplace',
+  9: 'Severe — exercice remplace',
+  10: 'Severe — exercice remplace',
 }
 
 export const bodyZoneLabels: Record<string, string> = Object.fromEntries(

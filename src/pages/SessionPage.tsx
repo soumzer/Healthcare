@@ -180,6 +180,29 @@ function SessionContent({
     }))
   })()
 
+  // Build reference weights map: for each exercise, find the most recent
+  // ExerciseProgress entry where avgRepsInReserve >= 0 (no pain reported;
+  // pain is recorded as -1). This is the last "healthy" weight.
+  const referenceWeights = useMemo(() => {
+    if (!progressData || progressData.length === 0) return new Map<number, number>()
+    const refMap = new Map<number, number>()
+    // Group progress entries by exerciseId, sorted by date descending
+    const byExercise = new Map<number, typeof progressData>()
+    for (const p of progressData) {
+      const list = byExercise.get(p.exerciseId) ?? []
+      list.push(p)
+      byExercise.set(p.exerciseId, list)
+    }
+    for (const [exerciseId, entries] of byExercise) {
+      const sorted = entries.sort((a, b) => b.date.getTime() - a.date.getTime())
+      const healthyEntry = sorted.find((e) => e.avgRepsInReserve >= 0)
+      if (healthyEntry) {
+        refMap.set(exerciseId, healthyEntry.weightKg)
+      }
+    }
+    return refMap
+  }, [progressData])
+
   // Calculate pain adjustments for session exercises
   const painAdjustments = (() => {
     if (painFeedback.length === 0) return undefined
@@ -191,7 +214,7 @@ function SessionContent({
         contraindications: ex?.contraindications ?? [],
       }
     })
-    const adjustments = calculatePainAdjustments(painFeedback, sessionExercises)
+    const adjustments = calculatePainAdjustments(painFeedback, sessionExercises, referenceWeights)
     return adjustments.length > 0 ? adjustments : undefined
   })()
 

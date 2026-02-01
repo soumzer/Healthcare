@@ -113,8 +113,9 @@ export class SessionEngine {
       if (!exercise) continue
 
       if (adj.action === 'reduce_weight' && adj.weightMultiplier) {
+        const baseWeight = adj.referenceWeightKg ?? exercise.prescribedWeightKg
         exercise.prescribedWeightKg =
-          Math.round(exercise.prescribedWeightKg * adj.weightMultiplier * 2) / 2
+          Math.round(baseWeight * adj.weightMultiplier * 2) / 2
       }
       // 'skip' and 'no_progression' are handled by SessionRunner UI
     }
