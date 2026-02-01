@@ -175,7 +175,32 @@ function pickPreferred(
 }
 
 // ---------------------------------------------------------------------------
-// 4c. Session slot definition for structured session building
+// 4c. Lower-back condition helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when the user has an active lower_back condition with
+ * painLevel >= 3.  In that case SDT (soulevé de terre / deadlift) variants
+ * are too aggravating and the program should substitute hip thrust as the
+ * primary hip-hinge compound.
+ */
+function hasLowerBackPain(conditions: HealthCondition[]): boolean {
+  return conditions.some(
+    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 3,
+  )
+}
+
+/** Filter out any SDT / deadlift exercise from a candidate list */
+function filterOutSDT(exercises: Exercise[]): Exercise[] {
+  const sdtPatterns = ['soulevé de terre', 'sdt', 'deadlift']
+  return exercises.filter((e) => {
+    const lower = e.name.toLowerCase()
+    return !sdtPatterns.some((p) => lower.includes(p))
+  })
+}
+
+// ---------------------------------------------------------------------------
+// 4d. Session slot definition for structured session building
 // ---------------------------------------------------------------------------
 
 interface ExerciseSlot {
@@ -265,6 +290,7 @@ function buildSession(
 function buildFullBodySessions(
   available: Exercise[],
   daysPerWeek: number,
+  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -430,13 +456,15 @@ function buildFullBodySessions(
   // Full Body B
   // -----------------------------------------------------------------------
 
+  const avoidSDT = hasLowerBackPain(conditions)
+
   const fullBodyBSlots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
-      candidates: () => hipHinges,
-      preferredName: 'sdt smith',
+      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
-      reps: 8,
+      reps: avoidSDT ? 10 : 8,
       rest: 150,
     },
     {
@@ -572,6 +600,7 @@ function buildFullBodySessions(
 
 function buildUpperLowerSessions(
   available: Exercise[],
+  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -808,23 +837,25 @@ function buildUpperLowerSessions(
   // Lower 2 — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
+  const avoidSDT = hasLowerBackPain(conditions)
+
   const lower2Slots: ExerciseSlot[] = [
     {
-      label: 'Hip hinge',
-      candidates: () => hipHinges,
-      preferredName: 'sdt smith',
+      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
+      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
-      reps: 8,
+      reps: avoidSDT ? 10 : 8,
       rest: 150,
     },
-    {
+    ...(avoidSDT ? [] : [{
       label: 'Hip thrust',
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
       reps: 10,
       rest: 120,
-    },
+    } as ExerciseSlot]),
     {
       label: 'Leg curl',
       candidates: () => legCurls,
@@ -928,6 +959,7 @@ function buildUpperLowerSessions(
 
 function buildPushPullLegsSessions(
   available: Exercise[],
+  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -1337,23 +1369,25 @@ function buildPushPullLegsSessions(
   // Legs B — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
+  const avoidSDT = hasLowerBackPain(conditions)
+
   const legsBSlots: ExerciseSlot[] = [
     {
-      label: 'Hip hinge',
-      candidates: () => hipHinges,
-      preferredName: 'sdt smith',
+      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
+      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
-      reps: 8,
+      reps: avoidSDT ? 10 : 8,
       rest: 150,
     },
-    {
+    ...(avoidSDT ? [] : [{
       label: 'Hip thrust',
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
       reps: 10,
       rest: 120,
-    },
+    } as ExerciseSlot]),
     {
       label: 'Leg curl',
       candidates: () => legCurls,
@@ -1448,13 +1482,13 @@ export function generateProgram(
   let sessions: ProgramSession[]
   switch (splitType) {
     case 'full_body':
-      sessions = buildFullBodySessions(eligible, input.daysPerWeek)
+      sessions = buildFullBodySessions(eligible, input.daysPerWeek, input.conditions)
       break
     case 'upper_lower':
-      sessions = buildUpperLowerSessions(eligible)
+      sessions = buildUpperLowerSessions(eligible, input.conditions)
       break
     case 'push_pull_legs':
-      sessions = buildPushPullLegsSessions(eligible)
+      sessions = buildPushPullLegsSessions(eligible, input.conditions)
       break
   }
 
