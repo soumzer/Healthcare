@@ -271,7 +271,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['fessiers'],
     secondaryMuscles: ['ischio-jambiers', 'core'],
     equipmentNeeded: ['bench', 'barbell'],
-    contraindications: ['lower_back', 'hip_left', 'hip_right'],
+    contraindications: ['hip_left', 'hip_right'],
     alternatives: ['Hip thrust smith machine', 'Pont fessier (glute bridge)', 'Soulevé de terre roumain haltères'],
     instructions:
       'Haut du dos appuyé sur un banc, barre sur les hanches (avec coussin). Pieds à plat, genoux à 90°. Poussez les hanches vers le plafond en serrant les fessiers. Descendez lentement. Ne cambrez pas le bas du dos.',
@@ -970,7 +970,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['fessiers'],
     secondaryMuscles: ['ischio-jambiers', 'core'],
     equipmentNeeded: ['smith_machine', 'bench'],
-    contraindications: ['lower_back', 'hip_left', 'hip_right'],
+    contraindications: ['hip_left', 'hip_right'],
     alternatives: ['Pont fessier (glute bridge)', 'Hip thrust barre', 'Soulevé de terre roumain haltères'],
     instructions:
       'Placez un banc perpendiculaire à la Smith machine. Haut du dos appuyé sur le banc, barre sur les hanches (avec coussin). Pieds à plat, genoux à 90°. Décrochez la barre et poussez les hanches vers le plafond en serrant les fessiers. Descendez lentement. La Smith machine stabilise le mouvement et permet de charger lourd en sécurité.',

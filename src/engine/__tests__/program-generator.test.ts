@@ -231,6 +231,106 @@ describe('filterExercisesByContraindications', () => {
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('Dead Bug')
   })
+
+  // -----------------------------------------------------------------------
+  // lower_back special threshold (>= 3)
+  // -----------------------------------------------------------------------
+
+  it('excludes exercises with lower_back contraindication at painLevel >= 3', () => {
+    const rowingBarre = makeExercise({
+      id: 30,
+      name: 'Rowing barre',
+      contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
+    })
+    const conditions = [makeCondition('lower_back', 3)]
+    const result = filterExercisesByContraindications(
+      [rowingBarre, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('Dead Bug')
+  })
+
+  it('allows exercises with lower_back contraindication at painLevel 2 (below threshold)', () => {
+    const rowingBarre = makeExercise({
+      id: 30,
+      name: 'Rowing barre',
+      contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
+    })
+    const conditions = [makeCondition('lower_back', 2)]
+    const result = filterExercisesByContraindications(
+      [rowingBarre, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(2)
+  })
+
+  it('does NOT exclude machine rowing (no lower_back contraindication) even with back pain', () => {
+    const machineRowing = makeExercise({
+      id: 31,
+      name: 'Rowing machine (chest-supported)',
+      contraindications: [],
+    })
+    const conditions = [makeCondition('lower_back', 5)]
+    const result = filterExercisesByContraindications(
+      [machineRowing, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(2)
+  })
+
+  it('does NOT exclude leg press (no lower_back contraindication) even with back pain', () => {
+    const legPress = makeExercise({
+      id: 32,
+      name: 'Leg press',
+      contraindications: [],
+    })
+    const conditions = [makeCondition('lower_back', 5)]
+    const result = filterExercisesByContraindications(
+      [legPress, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(2)
+  })
+
+  it('does NOT exclude hip thrust (no lower_back contraindication) even with back pain', () => {
+    const hipThrust = makeExercise({
+      id: 33,
+      name: 'Hip thrust smith machine',
+      contraindications: ['hip_left', 'hip_right'],
+    })
+    const conditions = [makeCondition('lower_back', 5)]
+    const result = filterExercisesByContraindications(
+      [hipThrust, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(2)
+  })
+
+  it('lower_back threshold does not affect other zones (knee pain 5 still allows)', () => {
+    const conditions = [makeCondition('knee_left', 5)]
+    const result = filterExercisesByContraindications(
+      [kneeExercise, safeExercise],
+      conditions,
+    )
+    // knee_left at painLevel 5 is below the >=7 threshold for non-lower_back zones
+    expect(result).toHaveLength(2)
+  })
+
+  it('excludes SDT with lower_back contraindication at moderate back pain', () => {
+    const sdt = makeExercise({
+      id: 34,
+      name: 'SDT smith machine (soulevé de terre)',
+      contraindications: ['lower_back'],
+    })
+    const conditions = [makeCondition('lower_back', 4)]
+    const result = filterExercisesByContraindications(
+      [sdt, safeExercise],
+      conditions,
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('Dead Bug')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -569,12 +669,14 @@ describe('Upper/Lower structured sessions', () => {
     makeExercise({
       id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
       equipmentNeeded: ['smith_machine'],
     }),
     makeExercise({
       id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
       equipmentNeeded: ['dumbbells'],
     }),
@@ -1174,12 +1276,14 @@ describe('Push/Pull/Legs structured sessions', () => {
     makeExercise({
       id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
       equipmentNeeded: ['smith_machine'],
     }),
     makeExercise({
       id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
       equipmentNeeded: ['dumbbells'],
     }),
@@ -1497,12 +1601,14 @@ describe('Full Body structured sessions', () => {
     makeExercise({
       id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
       equipmentNeeded: ['smith_machine'],
     }),
     makeExercise({
       id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
       equipmentNeeded: ['dumbbells'],
     }),
@@ -1789,11 +1895,12 @@ describe('Full Body structured sessions', () => {
 })
 
 // ---------------------------------------------------------------------------
-// SDT lower_back condition — hip hinge slot adaptation
+// Lower back contraindication filtering — hip hinge slot adaptation
 // ---------------------------------------------------------------------------
 
-describe('SDT lower_back condition — hip hinge slot adaptation', () => {
-  // Shared catalog with SDT exercises (111, 112) and hip thrust (113)
+describe('Lower back contraindication filtering — hip hinge slot adaptation', () => {
+  // Shared catalog with SDT exercises (111, 112) having lower_back contraindication
+  // and hip thrust (113) without lower_back contraindication
   const sdtCatalog: Exercise[] = [
     // === COMPOUND LOWER: Quad-dominant ===
     makeExercise({
@@ -1859,12 +1966,14 @@ describe('SDT lower_back condition — hip hinge slot adaptation', () => {
     makeExercise({
       id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
       equipmentNeeded: ['smith_machine'],
     }),
     makeExercise({
       id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
       primaryMuscles: ['ischio-jambiers', 'fessiers'],
+      contraindications: ['lower_back'],
       tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
       equipmentNeeded: ['dumbbells'],
     }),
@@ -2151,6 +2260,89 @@ describe('SDT lower_back condition — hip hinge slot adaptation', () => {
       const fbB = getSession(result, 'full body b')
       const ids = sessionExerciseIds(fbB)
       expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Broader lower_back filtering — exercises beyond SDT
+  // -----------------------------------------------------------------------
+  describe('Broader lower_back filtering', () => {
+    // Extended catalog that adds rowing barre (lower_back contraindicated)
+    // and rowing câble (no lower_back contraindication)
+    const extendedCatalog: Exercise[] = [
+      ...sdtCatalog,
+      makeExercise({
+        id: 301, name: 'Rowing barre', category: 'compound',
+        primaryMuscles: ['dorsaux', 'rhomboïdes'],
+        contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
+        tags: ['pull', 'upper_body', 'back', 'barbell'],
+        equipmentNeeded: ['barbell'],
+      }),
+      makeExercise({
+        id: 302, name: 'Rowing câble assis', category: 'compound',
+        primaryMuscles: ['dorsaux', 'rhomboïdes'],
+        contraindications: [],
+        tags: ['pull', 'upper_body', 'back', 'cable', 'posture'],
+        equipmentNeeded: ['cable'],
+      }),
+      makeExercise({
+        id: 303, name: 'Rowing machine (chest-supported)', category: 'compound',
+        primaryMuscles: ['dorsaux', 'rhomboïdes'],
+        contraindications: [],
+        tags: ['pull', 'upper_body', 'back', 'machine'],
+        equipmentNeeded: ['rowing_machine'],
+      }),
+    ]
+    const extendedEquipment = [
+      ...sdtEquipment,
+      makeEquipment('barbell'),
+      makeEquipment('rowing_machine'),
+    ]
+
+    it('with lower_back pain >= 3, rowing barre is excluded from all sessions', () => {
+      const conditions = [makeCondition('lower_back', 4)]
+      const result = generateProgram(
+        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
+        extendedCatalog,
+      )
+      for (const session of result.sessions) {
+        for (const ex of session.exercises) {
+          expect(ex.exerciseId).not.toBe(301)
+        }
+      }
+    })
+
+    it('with lower_back pain >= 3, rowing câble (no lower_back contraindication) survives filter', () => {
+      const conditions = [makeCondition('lower_back', 4)]
+      const rowingCable = extendedCatalog.find((e) => e.id === 302)!
+      const filtered = filterExercisesByContraindications([rowingCable], conditions)
+      expect(filtered).toHaveLength(1)
+    })
+
+    it('with lower_back pain >= 3, hip thrust (no lower_back contraindication) is NOT excluded', () => {
+      const conditions = [makeCondition('lower_back', 4)]
+      const result = generateProgram(
+        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
+        extendedCatalog,
+      )
+      const allIds = result.sessions.flatMap((s) => s.exercises.map((e) => e.exerciseId))
+      expect(allIds).toContain(hipThrustId)
+    })
+
+    it('with lower_back pain >= 3, leg press (no lower_back contraindication) is NOT excluded', () => {
+      const conditions = [makeCondition('lower_back', 4)]
+      const result = generateProgram(
+        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
+        extendedCatalog,
+      )
+      const allIds = result.sessions.flatMap((s) => s.exercises.map((e) => e.exerciseId))
+      expect(allIds).toContain(101) // Leg press
+    })
+
+    it('without lower_back condition, rowing barre survives filter', () => {
+      const rowingBarre = extendedCatalog.find((e) => e.id === 301)!
+      const filtered = filterExercisesByContraindications([rowingBarre], [])
+      expect(filtered).toHaveLength(1)
     })
   })
 })

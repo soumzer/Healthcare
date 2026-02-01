@@ -69,23 +69,40 @@ export function filterExercisesByEquipment(
  * add appropriate warmup/cooldown for those zones instead. This avoids
  * stripping all compound movements from users with common issues like mild
  * knee tendinitis or elbow pain.
+ *
+ * **Exception — lower_back:** exercises with `lower_back` in their
+ * contraindications are excluded at a lower threshold (painLevel >= 3).
+ * Spinal-loading movements like deadlifts, bent-over rows, and back squats
+ * are too aggravating for users with even moderate lower-back pain.
+ * Back-friendly alternatives (hip thrust, leg press, machine rowing) do NOT
+ * list `lower_back` as a contraindication and therefore remain available.
  */
 export function filterExercisesByContraindications(
   exercises: Exercise[],
   conditions: HealthCondition[],
 ): Exercise[] {
-  const painfulZones = new Set(
+  // Zones with severe pain (>= 7) — fully excluded
+  const severeZones = new Set(
     conditions
       .filter((c) => c.isActive && c.painLevel >= 7)
       .map((c) => c.bodyZone),
   )
 
+  // Zones with moderate pain (>= 3) — only lower_back gets this treatment
+  const moderateZones = new Set(
+    conditions
+      .filter((c) => c.isActive && c.painLevel >= 3 && c.bodyZone === 'lower_back')
+      .map((c) => c.bodyZone),
+  )
+
   // No painful zones → nothing to exclude
-  if (painfulZones.size === 0) return exercises
+  if (severeZones.size === 0 && moderateZones.size === 0) return exercises
 
   return exercises.filter((exercise) => {
-    // Keep exercises that have no overlap with painful zones
-    return !exercise.contraindications.some((zone) => painfulZones.has(zone))
+    const hasContraindication = exercise.contraindications.some(
+      (zone) => severeZones.has(zone) || moderateZones.has(zone),
+    )
+    return !hasContraindication
   })
 }
 
@@ -190,14 +207,7 @@ function hasLowerBackPain(conditions: HealthCondition[]): boolean {
   )
 }
 
-/** Filter out any SDT / deadlift exercise from a candidate list */
-function filterOutSDT(exercises: Exercise[]): Exercise[] {
-  const sdtPatterns = ['soulevé de terre', 'sdt', 'deadlift']
-  return exercises.filter((e) => {
-    const lower = e.name.toLowerCase()
-    return !sdtPatterns.some((p) => lower.includes(p))
-  })
-}
+
 
 // ---------------------------------------------------------------------------
 // 4d. Session slot definition for structured session building
@@ -460,8 +470,8 @@ function buildFullBodySessions(
 
   const fullBodyBSlots: ExerciseSlot[] = [
     {
-      label: 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
+      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
       preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
       reps: avoidSDT ? 10 : 8,
@@ -842,7 +852,7 @@ function buildUpperLowerSessions(
   const lower2Slots: ExerciseSlot[] = [
     {
       label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
       preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
       reps: avoidSDT ? 10 : 8,
@@ -1374,7 +1384,7 @@ function buildPushPullLegsSessions(
   const legsBSlots: ExerciseSlot[] = [
     {
       label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...filterOutSDT(hipHinges)] : hipHinges,
+      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
       preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
       sets: 4,
       reps: avoidSDT ? 10 : 8,
