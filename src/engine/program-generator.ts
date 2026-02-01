@@ -63,19 +63,18 @@ export function filterExercisesByEquipment(
 
 /**
  * Excludes exercises whose `contraindications` overlap with active health
- * conditions that have `painLevel >= 7` (severe pain).
+ * conditions that meet the pain threshold.
  *
- * Moderate pain (< 7) does NOT exclude exercises — the rehab integrator will
+ * Two tiers:
+ * - **Severe (painLevel >= 7):** exercises with that zone in their
+ *   contraindications are excluded.
+ * - **Moderate (painLevel >= 6):** exercises with that zone in their
+ *   contraindications are excluded. This applies to ALL body zones.
+ *
+ * Pain levels 1-5 do NOT exclude exercises — the rehab integrator will
  * add appropriate warmup/cooldown for those zones instead. This avoids
  * stripping all compound movements from users with common issues like mild
  * knee tendinitis or elbow pain.
- *
- * **Exception — lower_back:** exercises with `lower_back` in their
- * contraindications are excluded at a lower threshold (painLevel >= 3).
- * Spinal-loading movements like deadlifts, bent-over rows, and back squats
- * are too aggravating for users with even moderate lower-back pain.
- * Back-friendly alternatives (hip thrust, leg press, machine rowing) do NOT
- * list `lower_back` as a contraindication and therefore remain available.
  */
 export function filterExercisesByContraindications(
   exercises: Exercise[],
@@ -88,10 +87,10 @@ export function filterExercisesByContraindications(
       .map((c) => c.bodyZone),
   )
 
-  // Zones with moderate pain (>= 3) — only lower_back gets this treatment
+  // Zones with moderate pain (>= 6) — applies to ALL zones
   const moderateZones = new Set(
     conditions
-      .filter((c) => c.isActive && c.painLevel >= 3 && c.bodyZone === 'lower_back')
+      .filter((c) => c.isActive && c.painLevel >= 6)
       .map((c) => c.bodyZone),
   )
 
@@ -197,13 +196,13 @@ function pickPreferred(
 
 /**
  * Returns true when the user has an active lower_back condition with
- * painLevel >= 3.  In that case SDT (soulevé de terre / deadlift) variants
+ * painLevel >= 6.  In that case SDT (soulevé de terre / deadlift) variants
  * are too aggravating and the program should substitute hip thrust as the
  * primary hip-hinge compound.
  */
 function hasLowerBackPain(conditions: HealthCondition[]): boolean {
   return conditions.some(
-    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 3,
+    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 6,
   )
 }
 
