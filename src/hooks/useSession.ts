@@ -153,7 +153,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     : programSession.exercises.findIndex(
         (e) => e.exerciseId === currentExercise?.exerciseId
       )
-  const totalExercises = programSession.exercises.length
+  const totalExercises = engine.getAllExercises().length
 
   // Generate warmup sets for current exercise
   const warmupSets = currentExercise

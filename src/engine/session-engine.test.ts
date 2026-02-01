@@ -288,27 +288,128 @@ describe('SessionEngine - applyPainAdjustments', () => {
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(72)
   })
 
-  it('does not modify weight for skip or no_progression actions', () => {
+  it('no_progression resets weight to history lastWeightKg', () => {
     const history: ExerciseHistory = {
       1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
       2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
-    const beforeWeight = engine.getCurrentExercise().prescribedWeightKg
+    // Exercise 1 progressed to 102.5
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(102.5)
+
+    const adjustments: PainAdjustment[] = [
+      {
+        exerciseId: 1,
+        exerciseName: 'Back squat barre',
+        action: 'no_progression',
+        reason: 'Gene sur lower_back — progression bloquee',
+      },
+    ]
+
+    engine.applyPainAdjustments(adjustments)
+
+    // Should reset to history's lastWeightKg (100), undoing the progression
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(100)
+  })
+
+  it('no_progression resets reps to history prescribedReps', () => {
+    const history: ExerciseHistory = {
+      1: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2, prescribedReps: 8 },
+    }
+    // No weight above 60 within range -> increase reps to 9
+    const availableWeights = [20, 40, 60, 80]
+    const engine = new SessionEngine(mockSession, history, { availableWeights })
+    expect(engine.getCurrentExercise().prescribedReps).toBe(9)
+
+    const adjustments: PainAdjustment[] = [
+      {
+        exerciseId: 1,
+        exerciseName: 'Test',
+        action: 'no_progression',
+        reason: 'Gene',
+      },
+    ]
+
+    engine.applyPainAdjustments(adjustments)
+
+    // Should reset reps to history's prescribedReps (8)
+    expect(engine.getCurrentExercise().prescribedReps).toBe(8)
+  })
+
+  it('no_progression with no history entry does nothing', () => {
+    const engine = new SessionEngine(mockSession, {})
+    // No history -> prescribedWeightKg is 0, prescribedReps is 8 (from targetReps)
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(0)
+    expect(engine.getCurrentExercise().prescribedReps).toBe(8)
+
+    const adjustments: PainAdjustment[] = [
+      {
+        exerciseId: 1,
+        exerciseName: 'Test',
+        action: 'no_progression',
+        reason: 'Gene',
+      },
+    ]
+
+    engine.applyPainAdjustments(adjustments)
+
+    // Should remain unchanged (no history to reset to)
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(0)
+    expect(engine.getCurrentExercise().prescribedReps).toBe(8)
+  })
+
+  it('skip removes the exercise from the session', () => {
+    const history: ExerciseHistory = {
+      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+    }
+    const engine = new SessionEngine(mockSession, history)
+    expect(engine.getAllExercises().length).toBe(2)
 
     const adjustments: PainAdjustment[] = [
       {
         exerciseId: 1,
         exerciseName: 'Back squat barre',
         action: 'skip',
-        reason: 'Douleur elevee',
+        reason: 'Douleur severe sur lower_back — exercice deconseille',
       },
     ]
 
     engine.applyPainAdjustments(adjustments)
 
-    // Weight should remain unchanged for skip action
-    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(beforeWeight)
+    // Exercise 1 should be removed, exercise 2 becomes the first
+    expect(engine.getAllExercises().length).toBe(1)
+    expect(engine.getCurrentExercise().exerciseId).toBe(2)
+  })
+
+  it('skip reduces total exercise count', () => {
+    const history: ExerciseHistory = {
+      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+    }
+    const engine = new SessionEngine(mockSession, history)
+    expect(engine.getAllExercises().length).toBe(2)
+
+    const adjustments: PainAdjustment[] = [
+      {
+        exerciseId: 1,
+        exerciseName: 'Ex1',
+        action: 'skip',
+        reason: 'Douleur severe',
+      },
+      {
+        exerciseId: 2,
+        exerciseName: 'Ex2',
+        action: 'skip',
+        reason: 'Douleur severe',
+      },
+    ]
+
+    engine.applyPainAdjustments(adjustments)
+
+    // Both exercises skipped -> session is empty and complete
+    expect(engine.getAllExercises().length).toBe(0)
+    expect(engine.isSessionComplete()).toBe(true)
   })
 
   it('ignores adjustments for exercises not in the session', () => {

@@ -117,7 +117,23 @@ export class SessionEngine {
         exercise.prescribedWeightKg =
           Math.round(baseWeight * adj.weightMultiplier * 2) / 2
       }
-      // 'skip' and 'no_progression' are handled by SessionRunner UI
+
+      if (adj.action === 'no_progression') {
+        // Reset to last session's weight — undo any progression
+        const prev = this.history[exercise.exerciseId]
+        if (prev) {
+          exercise.prescribedWeightKg = prev.lastWeightKg
+          exercise.prescribedReps = prev.prescribedReps ?? exercise.prescribedReps
+        }
+      }
+    }
+
+    // Remove skipped exercises entirely
+    const skippedIds = new Set(
+      adjustments.filter((a) => a.action === 'skip').map((a) => a.exerciseId)
+    )
+    if (skippedIds.size > 0) {
+      this.exercises = this.exercises.filter((e) => !skippedIds.has(e.exerciseId))
     }
   }
 
