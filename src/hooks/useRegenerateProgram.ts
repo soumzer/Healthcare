@@ -54,6 +54,31 @@ export function useRegenerateProgram() {
         exerciseCatalog,
       )
 
+      // 6b. Merge: preserve exercises that didn't change (keeps progression history)
+      const oldProgram = await db.workoutPrograms
+        .where('userId').equals(userId)
+        .filter(p => p.isActive)
+        .first()
+
+      if (oldProgram?.sessions) {
+        for (let sIdx = 0; sIdx < generatedProgram.sessions.length; sIdx++) {
+          const oldSession = oldProgram.sessions[sIdx]
+          const newSession = generatedProgram.sessions[sIdx]
+          if (!oldSession || !newSession) continue
+
+          for (let eIdx = 0; eIdx < newSession.exercises.length; eIdx++) {
+            const oldEx = oldSession.exercises[eIdx]
+            const newEx = newSession.exercises[eIdx]
+            if (!oldEx || !newEx) continue
+
+            // Same exercise at same position — keep old params (progression continues)
+            if (oldEx.exerciseId === newEx.exerciseId) {
+              newSession.exercises[eIdx] = oldEx
+            }
+          }
+        }
+      }
+
       // 7. Deactivate all currently active programs (don't delete — preserve history)
       const activePrograms = await db.workoutPrograms
         .where('userId').equals(userId)
