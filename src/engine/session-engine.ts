@@ -1,4 +1,5 @@
 import { calculateProgression, type ProgressionResult } from './progression'
+import type { PainAdjustment } from './pain-feedback'
 import type { ProgramSession, ProgramExercise, SessionExercise, SessionSet } from '../db/types'
 
 export interface ExerciseHistoryEntry {
@@ -92,7 +93,9 @@ export class SessionEngine {
       avgRIR: prev.lastAvgRIR,
       avgRestSeconds: prev.lastAvgRestSeconds ?? pe.restSeconds,
       prescribedRestSeconds: prev.prescribedRestSeconds ?? pe.restSeconds,
-      availableWeights: this.options.availableWeights ?? generateDefaultWeights(prev.lastWeightKg),
+      availableWeights: this.options.availableWeights?.length
+        ? this.options.availableWeights
+        : generateDefaultWeights(prev.lastWeightKg),
       phase: this.options.phase ?? 'hypertrophy',
     })
 
@@ -102,6 +105,19 @@ export class SessionEngine {
 
   getProgressionResult(exerciseId: number): ProgressionResult | undefined {
     return this.progressionResults.get(exerciseId)
+  }
+
+  applyPainAdjustments(adjustments: PainAdjustment[]): void {
+    for (const adj of adjustments) {
+      const exercise = this.exercises.find((e) => e.exerciseId === adj.exerciseId)
+      if (!exercise) continue
+
+      if (adj.action === 'reduce_weight' && adj.weightMultiplier) {
+        exercise.prescribedWeightKg =
+          Math.round(exercise.prescribedWeightKg * adj.weightMultiplier * 2) / 2
+      }
+      // 'skip' and 'no_progression' are handled by SessionRunner UI
+    }
   }
 
   getCurrentExercise(): SessionExercise {
@@ -152,10 +168,11 @@ export class SessionEngine {
 /**
  * Generates a default set of available weights around the current weight.
  * Used when no explicit available weights are provided.
- * Generates weights in 2.5kg increments from 0 to currentWeight + 20kg.
+ * Generates weights in 2.5kg increments from 0 to at least 300kg
+ * (covers machine exercises like leg press).
  */
 function generateDefaultWeights(currentWeightKg: number): number[] {
-  const max = currentWeightKg + 20
+  const max = Math.max(currentWeightKg + 20, 300)
   const weights: number[] = []
   for (let w = 0; w <= max; w += 2.5) {
     weights.push(w)

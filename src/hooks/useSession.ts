@@ -5,6 +5,7 @@ import { suggestFiller, type FillerSuggestion } from '../engine/filler'
 import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
 import { getPhaseRecommendation } from '../engine/progression'
 import { db } from '../db'
+import type { PainAdjustment } from '../engine/pain-feedback'
 import type {
   ProgramSession,
   SessionExercise,
@@ -39,6 +40,7 @@ export interface UseSessionParams {
   healthConditions?: HealthCondition[]
   availableWeights?: number[]
   phase?: 'hypertrophy' | 'strength' | 'deload'
+  painAdjustments?: PainAdjustment[]
 }
 
 export interface UseSessionReturn {
@@ -88,6 +90,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     healthConditions,
     availableWeights,
     phase: trainingPhase,
+    painAdjustments,
   } = params
 
   // Build engine options from params
@@ -96,22 +99,16 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     phase: trainingPhase,
   }
 
-  const engineRef = useRef<SessionEngine>(new SessionEngine(programSession, history, engineOptions))
+  const engineRef = useRef<SessionEngine | null>(null)
+  if (engineRef.current === null) {
+    engineRef.current = new SessionEngine(programSession, history, engineOptions)
+    if (painAdjustments?.length) {
+      engineRef.current.applyPainAdjustments(painAdjustments)
+    }
+  }
   const engine = engineRef.current
 
-  const [phase, setPhase] = useState<SessionPhase>('warmup')
-  const [warmupSetIndex, setWarmupSetIndex] = useState(0)
-  const [restElapsed, setRestElapsed] = useState(0)
-  const [alternativeWeight, setAlternativeWeight] = useState<number | null>(null)
-  const [alternativeReps, setAlternativeReps] = useState<number | null>(null)
-  const [, forceUpdate] = useState(0)
-
-  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const sessionStartRef = useRef(new Date())
-  const setStartRef = useRef<Date | null>(null)
-  const lastRestElapsedRef = useRef<number>(0)
-
-  // Integrate rehab exercises into session
+  // Integrate rehab exercises into session (computed early for initial phase)
   const rehabIntegration = useMemo(() => {
     if (!healthConditions || healthConditions.length === 0) {
       return { warmupRehab: [], activeWaitPool: [], cooldownRehab: [] }
@@ -123,6 +120,29 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       cooldownRehab: integrated.cooldownRehab,
     }
   }, [programSession, healthConditions])
+
+  // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
+  const [phase, setPhase] = useState<SessionPhase>(() => {
+    if (rehabIntegration.warmupRehab.length > 0) return 'warmup_rehab'
+    const firstEx = engineRef.current.getCurrentExercise()
+    if (firstEx) {
+      const ws = generateWarmupSets(firstEx.prescribedWeightKg, availableWeights)
+      if (ws.length > 0) return 'warmup'
+    }
+    return 'exercise'
+  })
+  const [warmupSetIndex, setWarmupSetIndex] = useState(0)
+  const [restElapsed, setRestElapsed] = useState(0)
+  const [alternativeWeight, setAlternativeWeight] = useState<number | null>(null)
+  const [alternativeReps, setAlternativeReps] = useState<number | null>(null)
+  const [lastEnteredWeight, setLastEnteredWeight] = useState<number | null>(null)
+  const [lastEnteredReps, setLastEnteredReps] = useState<number | null>(null)
+  const [, forceUpdate] = useState(0)
+
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const sessionStartRef = useRef(new Date())
+  const setStartRef = useRef<Date | null>(null)
+  const lastRestElapsedRef = useRef<number>(0)
 
   // Derive current state from engine
   const currentExercise = engine.isSessionComplete() ? null : engine.getCurrentExercise()
@@ -350,6 +370,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   const advanceExerciseOrEnd = useCallback(async () => {
     engine.completeExercise()
+    setAlternativeWeight(null)
+    setAlternativeReps(null)
+    setLastEnteredWeight(null)
+    setLastEnteredReps(null)
     forceUpdate((n) => n + 1)
     if (engine.isSessionComplete()) {
       // If there are cooldown rehab exercises, show cooldown first
@@ -364,13 +388,23 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       }
     } else {
       setWarmupSetIndex(0)
-      setPhase('warmup')
+      const nextEx = engine.getCurrentExercise()
+      const nextWarmup = generateWarmupSets(nextEx.prescribedWeightKg, availableWeights)
+      if (nextWarmup.length > 0) {
+        setPhase('warmup')
+      } else {
+        setPhase('exercise')
+      }
     }
-  }, [engine, rehabIntegration.cooldownRehab.length, userConditions.length, saveSessionToDb])
+  }, [engine, rehabIntegration.cooldownRehab.length, userConditions.length, saveSessionToDb, availableWeights])
 
   const completeWarmupRehab = useCallback(() => {
-    setPhase('warmup')
-  }, [])
+    if (warmupSets.length > 0) {
+      setPhase('warmup')
+    } else {
+      setPhase('exercise')
+    }
+  }, [warmupSets.length])
 
   const completeWarmup = useCallback(() => {
     setPhase('exercise')
@@ -431,9 +465,9 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         })
       }
 
-      // Reset alternative weight
-      setAlternativeWeight(null)
-      setAlternativeReps(null)
+      // Remember entered values for next set of same exercise
+      setLastEnteredWeight(weightKg)
+      setLastEnteredReps(reps)
 
       forceUpdate((n) => n + 1)
 
@@ -512,9 +546,9 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
           ...currentExercise,
           exerciseName: exerciseNames[currentExercise.exerciseId] ?? '',
           prescribedWeightKg:
-            alternativeWeight ?? currentExercise.prescribedWeightKg,
+            alternativeWeight ?? lastEnteredWeight ?? currentExercise.prescribedWeightKg,
           prescribedReps:
-            alternativeReps ?? currentExercise.prescribedReps,
+            alternativeReps ?? lastEnteredReps ?? currentExercise.prescribedReps,
         }
       : null,
     currentSetNumber,

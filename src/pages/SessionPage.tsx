@@ -1,7 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useMemo } from 'react'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
 import { shouldDeload } from '../engine/progression'
+import { calculatePainAdjustments, type PainFeedbackEntry } from '../engine/pain-feedback'
 import type { ExerciseHistory } from '../engine/session-engine'
 import WarmupView from '../components/session/WarmupView'
 import WarmupRehabView from '../components/session/WarmupRehabView'
@@ -43,6 +45,19 @@ function SessionContent({
     () =>
       user?.id
         ? db.availableWeights.where('userId').equals(user.id).and((w) => w.isAvailable).toArray()
+        : [],
+    [user?.id]
+  )
+
+  // Load recent pain logs (last 7 days) for pain feedback loop
+  const recentPainLogs = useLiveQuery(
+    () =>
+      user?.id
+        ? db.painLogs
+            .where('userId')
+            .equals(user.id)
+            .and((p) => p.date >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+            .toArray()
         : [],
     [user?.id]
   )
@@ -106,7 +121,7 @@ function SessionContent({
 
   const programSession = program?.sessions?.[sessionIndex]
 
-  if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined) {
+  if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined || recentPainLogs === undefined) {
     return (
       <div className="p-4 text-center">
         <p className="text-zinc-400">Chargement de la seance...</p>
@@ -146,6 +161,40 @@ function SessionContent({
     if (ex.id !== undefined) exerciseNames[ex.id] = ex.name
   }
 
+  // Build pain feedback entries from recent pain logs
+  const painFeedback: PainFeedbackEntry[] = (() => {
+    if (!recentPainLogs || recentPainLogs.length === 0) return []
+    const byZone = new Map<string, { maxPain: number; duringExercises: Set<string> }>()
+    for (const log of recentPainLogs) {
+      const existing = byZone.get(log.zone) ?? { maxPain: 0, duringExercises: new Set<string>() }
+      existing.maxPain = Math.max(existing.maxPain, log.level)
+      if (log.context === 'during_set' && log.exerciseName) {
+        existing.duringExercises.add(log.exerciseName)
+      }
+      byZone.set(log.zone, existing)
+    }
+    return Array.from(byZone.entries()).map(([zone, data]) => ({
+      zone: zone as import('../db/types').BodyZone,
+      maxPainLevel: data.maxPain,
+      duringExercises: Array.from(data.duringExercises),
+    }))
+  })()
+
+  // Calculate pain adjustments for session exercises
+  const painAdjustments = (() => {
+    if (painFeedback.length === 0) return undefined
+    const sessionExercises = programSession.exercises.map((pe) => {
+      const ex = allExercises.find((e) => e.id === pe.exerciseId)
+      return {
+        exerciseId: pe.exerciseId,
+        exerciseName: ex?.name ?? exerciseNames[pe.exerciseId] ?? '',
+        contraindications: ex?.contraindications ?? [],
+      }
+    })
+    const adjustments = calculatePainAdjustments(painFeedback, sessionExercises)
+    return adjustments.length > 0 ? adjustments : undefined
+  })()
+
   return (
     <SessionRunner
       programSession={programSession}
@@ -157,6 +206,7 @@ function SessionContent({
       exerciseNames={exerciseNames}
       availableWeights={availableWeights}
       phase={phaseData.phase}
+      painAdjustments={painAdjustments}
     />
   )
 }
@@ -172,6 +222,7 @@ function SessionRunner({
   exerciseNames,
   availableWeights,
   phase: phaseFromData,
+  painAdjustments,
 }: {
   programSession: import('../db/types').ProgramSession
   history: ExerciseHistory
@@ -182,6 +233,7 @@ function SessionRunner({
   exerciseNames: Record<number, string>
   availableWeights: number[] | undefined
   phase: 'hypertrophy' | 'strength' | 'deload'
+  painAdjustments?: import('../engine/pain-feedback').PainAdjustment[]
 }) {
   const navigate = useNavigate()
 
@@ -196,6 +248,7 @@ function SessionRunner({
     healthConditions: conditions.length > 0 ? conditions : undefined,
     availableWeights,
     phase: phaseFromData,
+    painAdjustments,
   })
 
   if (session.phase === 'done') {
