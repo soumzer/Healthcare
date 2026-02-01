@@ -102,7 +102,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['quadriceps', 'fessiers'],
     secondaryMuscles: ['ischio-jambiers'],
     equipmentNeeded: ['leg_press'],
-    contraindications: ['knee_left', 'knee_right'],
+    contraindications: [],
     alternatives: ['Squat smith machine', 'Squat goblet', 'Squat hack'],
     instructions:
       'Placez les pieds largeur épaules sur la plateforme, milieu de la plateforme. Descendez jusqu\'à 90° aux genoux sans décoller le bas du dos. Poussez sans verrouiller complètement les genoux. Bonne alternative au squat si douleurs lombaires.',
@@ -379,7 +379,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['quadriceps'],
     secondaryMuscles: [],
     equipmentNeeded: ['leg_extension'],
-    contraindications: ['knee_left', 'knee_right'],
+    contraindications: [],
     alternatives: ['Squat goblet', 'Leg press'],
     instructions:
       'Assis à la machine, dos calé, coussin sur les tibias. Étendez les jambes en contractant les quadriceps. Contrôlez la descente sur 3 secondes. ATTENTION : réduire la charge si douleur au genou. Commencer en amplitude partielle si tendinite.',
@@ -392,7 +392,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['ischio-jambiers'],
     secondaryMuscles: ['mollets'],
     equipmentNeeded: ['leg_curl'],
-    contraindications: ['knee_left', 'knee_right'],
+    contraindications: [],
     alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine'],
     instructions:
       'Allongé ou assis à la machine, coussin sur les talons. Fléchissez les genoux en amenant les talons vers les fessiers. Contrôlez la phase excentrique sur 3 secondes. Bon complément au travail des quadriceps.',
@@ -891,6 +891,48 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     isRehab: true,
     rehabTarget: 'lower_back',
     tags: ['rehab', 'mobility', 'lower_back', 'stretch', 'cooldown', 'rest_day'],
+  },
+  {
+    name: 'Étirement ischio-jambiers (hamstring stretch)',
+    category: 'mobility',
+    primaryMuscles: ['ischio-jambiers'],
+    secondaryMuscles: ['mollets', 'érecteurs du rachis'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Étirement piriforme'],
+    instructions:
+      'Jambe tendue posée sur un support (banc, step) à hauteur de hanche. Gardez le dos bien droit et basculez le bassin vers l\'avant (antéversion). Ne pas arrondir le dos — le mouvement vient de la charnière de hanche, pas du dos. Maintenez 30 secondes, 3 séries par jambe. Alternez les deux jambes. Étirement passif, ne forcez jamais au-delà de la sensation d\'étirement confortable. Essentiel pour la chaîne postérieure, particulièrement important chez les grands gabarits (> 185 cm) qui ont souvent des ischio-jambiers raccourcis.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'mobility', 'sciatica', 'hamstring', 'stretch', 'posterior_chain', 'cooldown'],
+  },
+  {
+    name: 'Étirement fléchisseurs de hanche (hip flexor stretch)',
+    category: 'mobility',
+    primaryMuscles: ['psoas', 'iliaque', 'droit fémoral'],
+    secondaryMuscles: ['quadriceps', 'tenseur du fascia lata'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Child\'s pose (posture de l\'enfant)'],
+    instructions:
+      'En position de fente au sol, genou arrière posé sur un tapis. Avancez doucement les hanches vers l\'avant sans cambrer le dos. Contractez le fessier du côté étiré pour intensifier l\'étirement du psoas. Maintenez 30 secondes, 3 séries par côté. La raideur des fléchisseurs de hanche augmente la lordose lombaire et peut aggraver la compression sciatique. Faire des deux côtés même si un seul est symptomatique.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'mobility', 'sciatica', 'hip_flexor', 'stretch', 'posterior_chain', 'cooldown'],
+  },
+  {
+    name: 'Foam roll chaîne postérieure (ischios + mollets)',
+    category: 'mobility',
+    primaryMuscles: ['ischio-jambiers', 'mollets'],
+    secondaryMuscles: ['gastrocnémien', 'soléaire'],
+    equipmentNeeded: ['foam_roller'],
+    contraindications: [],
+    alternatives: ['Foam roll fessier'],
+    instructions:
+      'Assis au sol, placez le foam roller sous les ischio-jambiers. Roulez lentement du bas des fesses jusqu\'au-dessus du genou, en vous appuyant sur les mains derrière vous. Insistez sur les points sensibles (10-15 secondes par point). Puis placez le rouleau sous les mollets et roulez de la cheville au genou. 2 séries de 60 secondes par zone (ischios + mollets). Aide à relâcher la tension de la chaîne postérieure et améliore la mobilité pour le squat et le soulevé de terre. Idéal en début de séance pour préparer les tissus.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'mobility', 'sciatica', 'hamstring', 'calf', 'foam_roll', 'myofascial', 'posterior_chain', 'warmup'],
   },
 
   // =========================================================================

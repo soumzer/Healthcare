@@ -256,9 +256,21 @@ describe('integrateRehab', () => {
       expect(names).toContain('Child\'s pose (posture de l\'enfant)')
     })
 
-    it('cooldown returns all 3 exercises (under cap of 5)', () => {
+    it('cooldown contains hamstring stretch', () => {
       const result = integrateRehab(session, conditions)
-      expect(result.cooldownRehab).toHaveLength(3)
+      const names = exerciseNames(result.cooldownRehab)
+      expect(names).toContain('Étirement ischio-jambiers (hamstring stretch)')
+    })
+
+    it('cooldown contains hip flexor stretch', () => {
+      const result = integrateRehab(session, conditions)
+      const names = exerciseNames(result.cooldownRehab)
+      expect(names).toContain('Étirement fléchisseurs de hanche (hip flexor stretch)')
+    })
+
+    it('cooldown returns all 5 exercises (at cap of 5)', () => {
+      const result = integrateRehab(session, conditions)
+      expect(result.cooldownRehab).toHaveLength(5)
     })
   })
 
@@ -352,8 +364,8 @@ describe('integrateRehab', () => {
   describe('warmup cap at 8 exercises', () => {
     it('caps warmup to 8 when many conditions produce many warmup exercises', () => {
       // golf elbow (3 warmup) + lower_back (3 warmup) + knee (1 warmup)
-      // + foot (2 warmup) + posture (2 warmup) + sciatique (2 warmup)
-      // = 13 total warmup → capped to 8
+      // + foot (2 warmup) + posture (2 warmup) + sciatique (3 warmup)
+      // = 14 total warmup → capped to 8
       const conditions = [
         makeCondition('elbow_right', 'Golf elbow'),
         makeCondition('lower_back', 'Douleurs lombaires'),
@@ -413,7 +425,7 @@ describe('integrateRehab', () => {
       const session = makeSession('Full Body')
       const result = integrateRehab(session, conditions)
 
-      // 13 total warmup exercises across 6 conditions, capped at 8
+      // 14 total warmup exercises across 6 conditions, capped at 8
       expect(result.warmupRehab.length).toBeGreaterThan(5)
       expect(result.warmupRehab.length).toBeLessThanOrEqual(8)
     })
@@ -425,8 +437,8 @@ describe('integrateRehab', () => {
   describe('cooldown cap at 5 exercises', () => {
     it('cooldown is capped at 5 even with multiple conditions', () => {
       // posture: 1 cooldown (Etirement pectoral)
-      // sciatique: 2 cooldown (Etirement piriforme, Child's pose)
-      // total: 3, under cap of 5
+      // sciatique: 4 cooldown (Etirement piriforme, Child's pose, ischio-jambiers, fléchisseurs hanche)
+      // total: 5, at cap of 5
       const conditions = [
         makeCondition('upper_back', 'Posture'),
         makeCondition('hip_right', 'Sciatique'),

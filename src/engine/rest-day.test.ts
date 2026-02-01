@@ -6,7 +6,8 @@ describe('generateRestDayRoutine', () => {
   // Use conditions that have rest_day / cooldown exercises in the real rehab protocols:
   // - upper_back has cooldown: "Étirement pectoral (doorway stretch)"
   // - foot_left has rest_day: "Towel curl (curl serviette pied)"
-  // - hip_right has cooldown: "Étirement piriforme", "Child's pose (posture de l'enfant)"
+  // - hip_right has cooldown: "Étirement piriforme", "Child's pose (posture de l'enfant)",
+  //   "Étirement ischio-jambiers (hamstring stretch)", "Étirement fléchisseurs de hanche (hip flexor stretch)"
   const mockConditions: HealthCondition[] = [
     {
       id: 1, userId: 1, bodyZone: 'upper_back', label: 'Posture',
@@ -50,8 +51,11 @@ describe('generateRestDayRoutine', () => {
     // From hip_right (cooldown)
     expect(names).toContain('Étirement piriforme')
     expect(names).toContain('Child\'s pose (posture de l\'enfant)')
+    expect(names).toContain('Étirement ischio-jambiers (hamstring stretch)')
+    expect(names).toContain('Étirement fléchisseurs de hanche (hip flexor stretch)')
     // From hip_right (warmup)
     expect(names).toContain('Nerve flossing sciatique')
+    expect(names).toContain('Foam roll chaîne postérieure (ischios + mollets)')
   })
 
   it('excludes inactive conditions', () => {
@@ -183,6 +187,9 @@ describe('generateRestDayRoutine', () => {
       expect(names).toContain('Nerve flossing sciatique')
       expect(names).toContain('Étirement piriforme')
       expect(names).toContain('Child\'s pose (posture de l\'enfant)')
+      expect(names).toContain('Étirement ischio-jambiers (hamstring stretch)')
+      expect(names).toContain('Étirement fléchisseurs de hanche (hip flexor stretch)')
+      expect(names).toContain('Foam roll chaîne postérieure (ischios + mollets)')
 
       // Should NOT include elbow_right exercises
       expect(names).not.toContain('Tyler Twist inversé (golf elbow)')

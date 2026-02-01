@@ -276,7 +276,7 @@ export const rehabProtocols: RehabProtocol[] = [
     frequency: 'daily',
     priority: 2,
     progressionCriteria:
-      'Nerve flossing : augmenter de 5 à 10-15 répétitions quand bien toléré. Étirement piriforme : augmenter la durée de 30 à 60 secondes. Si la douleur sciatique diminue significativement (< 2/10), réduire à un programme d\'entretien (3x/semaine). Ajouter progressivement le renforcement des fessiers (ponts, hip thrust).',
+      'Nerve flossing : augmenter de 5 à 10-15 répétitions quand bien toléré. Étirement piriforme : augmenter la durée de 30 à 60 secondes. Si la douleur sciatique diminue significativement (< 2/10), réduire à un programme d\'entretien (3x/semaine). Ajouter progressivement le renforcement des fessiers (ponts, hip thrust). Pour les étirements chaîne postérieure : augmenter la durée de 30 à 45 sec quand l\'étirement est confortable. Objectif : toucher les orteils jambes tendues sans douleur.',
     exercises: [
       {
         exerciseName: 'Nerve flossing sciatique',
@@ -322,6 +322,33 @@ export const rehabProtocols: RehabProtocol[] = [
         notes:
           'Position de repos qui ouvre doucement l\'espace intervertébral. Idéal en fin de séance. Si les genoux sont douloureux, placer un coussin entre les fesses et les talons.',
         placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Étirement ischio-jambiers (hamstring stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Jambe tendue sur support (banc, step). Garder le dos droit, basculer le bassin vers l\'avant. Ne pas arrondir le dos. Alterner les deux jambes. Étirement passif, ne pas forcer. Essentiel pour la chaîne postérieure, surtout chez les grands gabarits.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Étirement fléchisseurs de hanche (hip flexor stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Position de fente au sol, genou arrière posé. Avancer les hanches vers l\'avant sans cambrer le dos. Contracter le fessier du côté étiré. La raideur des fléchisseurs aggrave la lordose et la compression sciatique. Faire des deux côtés.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Foam roll chaîne postérieure (ischios + mollets)',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Rouler lentement sur les ischio-jambiers puis les mollets. S\'attarder sur les points sensibles (10-15 sec). Aide à relâcher la tension de la chaîne postérieure et améliore la mobilité pour le squat et le deadlift. Faire avant la séance pour préparer les tissus.',
+        placement: 'warmup',
       },
     ],
   },
