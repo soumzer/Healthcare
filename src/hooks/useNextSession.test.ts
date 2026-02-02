@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react'
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useNextSession } from './useNextSession'
 import { db } from '../db'
 import type { WorkoutProgram, WorkoutSession } from '../db/types'
@@ -33,7 +33,7 @@ async function createTestProgram(userId: number): Promise<number> {
     ],
     isActive: true,
     createdAt: new Date(),
-  } as WorkoutProgram)
+  } as WorkoutProgram) as number
 }
 
 // Helper to create a 4-session Upper/Lower program
@@ -78,7 +78,7 @@ async function createUpperLowerProgram(userId: number): Promise<number> {
     ],
     isActive: true,
     createdAt: new Date(),
-  } as WorkoutProgram)
+  } as WorkoutProgram) as number
 }
 
 // Helper to create a completed workout session
@@ -97,7 +97,7 @@ async function createCompletedSession(
     exercises: [],
     endPainChecks: [],
     notes: '',
-  } as WorkoutSession)
+  } as WorkoutSession) as number
 }
 
 describe('useNextSession', () => {
@@ -130,7 +130,8 @@ describe('useNextSession', () => {
     expect(result.current!.nextSessionName).toBe('Push A')
     expect(result.current!.nextSessionIndex).toBe(0)
     expect(result.current!.exerciseCount).toBe(4)
-    expect(result.current!.estimatedMinutes).toBe(60)
+    // 4 exercises: 3×(45+120) + 3×(45+90) + 3×(45+90) + 3×(45+60) = 1620s = 27min + 5 = 32
+    expect(result.current!.estimatedMinutes).toBe(32)
   })
 
   it('returns session B after session A was completed', async () => {

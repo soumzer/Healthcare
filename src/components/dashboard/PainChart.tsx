@@ -104,10 +104,10 @@ export default function PainChart({ data }: PainChartProps) {
               color: '#ffffff',
             }}
             labelStyle={{ color: '#a1a1aa' }}
-            formatter={(value: number, name: string) => [
+            formatter={((value: number | string, name: string) => [
               value,
               ZONE_LABELS[name] ?? name,
-            ]}
+            ]) as never}
           />
           <Legend
             formatter={(value: string) => ZONE_LABELS[value] ?? value}

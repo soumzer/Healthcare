@@ -36,7 +36,7 @@ async function simulateOnboardingSubmit(state: SimulatedOnboardingState): Promis
     minutesPerSession: state.minutesPerSession,
     createdAt: now,
     updatedAt: now,
-  })
+  }) as number
 
   // 2. Bulk add health conditions
   if (state.conditions.length > 0) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateRestDayRoutine, type RestDayVariant } from './rest-day'
+import { generateRestDayRoutine } from './rest-day'
 import type { HealthCondition } from '../db/types'
 
 describe('generateRestDayRoutine', () => {

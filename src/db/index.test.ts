@@ -34,7 +34,7 @@ describe('HealthCoachDB', () => {
       name: 'Test', height: 196, weight: 112, age: 30, sex: 'male',
       goals: ['rehab'], daysPerWeek: 4, minutesPerSession: 90,
       createdAt: new Date(), updatedAt: new Date(),
-    })
+    }) as number
     await db.healthConditions.add({
       userId, bodyZone: 'elbow_right', label: 'Golf elbow',
       diagnosis: 'Epicondylite mediale', painLevel: 6,

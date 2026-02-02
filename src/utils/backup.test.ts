@@ -20,7 +20,7 @@ describe('backup', () => {
       minutesPerSession: 90,
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+    }) as number
     await db.healthConditions.add({
       userId,
       bodyZone: 'elbow_right',

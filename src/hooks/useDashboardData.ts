@@ -22,12 +22,18 @@ export interface PainData {
   entries: PainEntry[]
 }
 
+export interface RecentSessionExercise {
+  name: string
+  sets: { reps: number; weightKg: number; rir: number }[]
+}
+
 export interface RecentSession {
   id: number
   name: string
   date: Date
   exerciseCount: number
   duration: number // minutes
+  exercises: RecentSessionExercise[]
 }
 
 export interface AttendanceData {
@@ -157,6 +163,16 @@ export function useDashboardData(userId: number | undefined): DashboardData {
         date: startedAt,
         exerciseCount: s.exercises.length,
         duration: Math.round(durationMs / (1000 * 60)),
+        exercises: s.exercises
+          .filter((ex) => ex.status === 'completed' && ex.sets.length > 0)
+          .map((ex) => ({
+            name: ex.exerciseName,
+            sets: ex.sets.map((set) => ({
+              reps: set.actualReps ?? 0,
+              weightKg: set.actualWeightKg ?? 0,
+              rir: set.repsInReserve ?? 0,
+            })),
+          })),
       }
     })
 

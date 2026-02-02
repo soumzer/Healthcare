@@ -105,6 +105,7 @@ export default function HomePage() {
 
         <div className="mt-auto space-y-3 pb-8">
           <button
+            onClick={() => navigate('/rest-day')}
             className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
           >
             Faire la routine

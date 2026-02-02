@@ -4,6 +4,7 @@ import StepHealthConditions from '../components/onboarding/StepHealthConditions'
 import StepGymEquipment from '../components/onboarding/StepGymEquipment'
 import StepGoals from '../components/onboarding/StepGoals'
 import StepSchedule from '../components/onboarding/StepSchedule'
+import StepKnownWeights from '../components/onboarding/StepKnownWeights'
 import StepImportProgram from '../components/onboarding/StepImportProgram'
 
 export default function OnboardingPage() {
@@ -16,7 +17,8 @@ export default function OnboardingPage() {
     3: <StepGymEquipment {...onboarding} />,
     4: <StepGoals {...onboarding} />,
     5: <StepSchedule {...onboarding} />,
-    6: <StepImportProgram {...onboarding} />,
+    6: <StepKnownWeights {...onboarding} />,
+    7: <StepImportProgram {...onboarding} />,
   }
 
   return (

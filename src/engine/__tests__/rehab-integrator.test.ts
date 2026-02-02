@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { integrateRehab } from '../rehab-integrator'
-import type { IntegratedSession, RehabExerciseInfo } from '../rehab-integrator'
+import type { RehabExerciseInfo } from '../rehab-integrator'
 import { rehabProtocols } from '../../data/rehab-protocols'
 import type { HealthCondition, ProgramSession } from '../../db/types'
 
@@ -31,7 +31,7 @@ function makeSession(name: string, exerciseNames: string[] = []): ProgramSession
   return {
     name,
     order: 1,
-    exercises: exerciseNames.map((n, i) => ({
+    exercises: exerciseNames.map((_n, i) => ({
       exerciseId: i + 1,
       order: i + 1,
       sets: 3,
@@ -159,7 +159,7 @@ describe('integrateRehab', () => {
 
     it('warmup contains exercises from both protocols', () => {
       const result = integrateRehab(session, conditions)
-      const names = exerciseNames(result.warmupRehab)
+      exerciseNames(result.warmupRehab)
       const protocols = result.warmupRehab.map((e) => e.protocolName)
       expect(protocols).toContain('Épicondylite médiale (golf elbow)')
       expect(protocols).toContain('Core faible et douleurs lombaires')

@@ -105,8 +105,13 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
     const nextProgramSession = activeProgram.sessions[nextSessionIndex]
     const exerciseCount = nextProgramSession.exercises.length
 
-    // Estimate time: ~15 min per exercise (including rest)
-    const estimatedMinutes = exerciseCount * 15
+    // Estimate time from actual sets and rest per exercise
+    let totalSeconds = 0
+    for (const ex of nextProgramSession.exercises) {
+      const setDuration = 45 // ~45 sec per working set
+      totalSeconds += ex.sets * (setDuration + ex.restSeconds)
+    }
+    const estimatedMinutes = Math.round(totalSeconds / 60) + 5 // +5 min for transitions/warmup
 
     const minimumRestHours = 24
 

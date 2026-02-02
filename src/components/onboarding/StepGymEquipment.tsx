@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { GymEquipment } from '../../db/types'
 
@@ -5,55 +6,112 @@ type Props = ReturnType<typeof useOnboarding>
 
 type EquipmentItem = Omit<GymEquipment, 'id' | 'userId'>
 
+interface EquipmentOption {
+  /** Tag name saved to DB — must match exercise equipmentNeeded values */
+  tag: string
+  /** Human-readable label displayed in the UI */
+  label: string
+  type: GymEquipment['type']
+  /** Extra tags to add when this is selected (e.g. 'dumbbells' alias) */
+  alsoAdd?: string[]
+}
+
 interface Category {
   title: string
-  items: EquipmentItem[]
+  items: EquipmentOption[]
 }
 
 const categories: Category[] = [
   {
     title: 'Machines',
     items: [
-      { name: 'Presse a cuisses', type: 'machine', isAvailable: true, notes: '' },
-      { name: 'Machine developpe couche', type: 'machine', isAvailable: true, notes: '' },
-      { name: 'Poulie haute', type: 'cable', isAvailable: true, notes: '' },
-      { name: 'Poulie basse', type: 'cable', isAvailable: true, notes: '' },
-      { name: 'Machine leg curl', type: 'machine', isAvailable: true, notes: '' },
-      { name: 'Machine leg extension', type: 'machine', isAvailable: true, notes: '' },
-      { name: 'Smith machine', type: 'machine', isAvailable: true, notes: '' },
-      { name: 'Pec deck', type: 'machine', isAvailable: true, notes: '' },
+      { tag: 'leg_press', label: 'Presse a cuisses', type: 'machine' },
+      { tag: 'leg_curl', label: 'Leg curl', type: 'machine' },
+      { tag: 'leg_extension', label: 'Leg extension', type: 'machine' },
+      { tag: 'pec_press', label: 'Pec press', type: 'machine' },
+      { tag: 'pec_deck', label: 'Pec deck / butterfly', type: 'machine' },
+      { tag: 'shoulder_press', label: 'Dev militaire machine', type: 'machine' },
+      { tag: 'rowing_machine', label: 'Rowing assis machine', type: 'machine' },
+      { tag: 'lat_pulldown', label: 'Lat pulldown', type: 'machine' },
+      { tag: 'smith_machine', label: 'Smith machine (barre guidee)', type: 'machine' },
+      { tag: 'cable', label: 'Poulie / cable', type: 'cable', alsoAdd: ['rope_attachment'] },
+      { tag: 'hip_abduction', label: 'Machine abduction/adduction', type: 'machine' },
+      { tag: 'hack_squat', label: 'Hack squat', type: 'machine' },
     ],
   },
   {
     title: 'Poids libres',
     items: [
-      { name: 'Banc plat', type: 'free_weight', isAvailable: true, notes: '' },
-      { name: 'Banc incline', type: 'free_weight', isAvailable: true, notes: '' },
-      { name: 'Halteres', type: 'free_weight', isAvailable: true, notes: '' },
-      { name: 'Barre droite', type: 'free_weight', isAvailable: true, notes: '' },
-      { name: 'Barre EZ', type: 'free_weight', isAvailable: true, notes: '' },
-      { name: 'Rack a squat', type: 'free_weight', isAvailable: true, notes: '' },
+      { tag: 'dumbbell', label: 'Halteres', type: 'free_weight', alsoAdd: ['dumbbells'] },
+      { tag: 'barbell', label: 'Barres (droite/EZ)', type: 'free_weight' },
+      { tag: 'bench', label: 'Banc de musculation', type: 'free_weight' },
+      { tag: 'squat_rack', label: 'Rack a squat', type: 'free_weight' },
+      { tag: 'kettlebell', label: 'Kettlebell', type: 'free_weight' },
+      { tag: 'sandbag', label: 'Sac leste', type: 'free_weight' },
     ],
   },
   {
-    title: 'Autre',
+    title: 'Accessoires',
     items: [
-      { name: 'Bandes elastiques', type: 'band', isAvailable: true, notes: '' },
-      { name: 'TRX', type: 'bodyweight', isAvailable: true, notes: '' },
-      { name: 'Cables', type: 'cable', isAvailable: true, notes: '' },
+      { tag: 'mat', label: 'Tapis de sol', type: 'other' },
+      { tag: 'resistance_band', label: 'Bandes elastiques', type: 'band' },
+      { tag: 'pull_up_bar', label: 'Barre de traction', type: 'other' },
+      { tag: 'dip_station', label: 'Dip station', type: 'other' },
+      { tag: 'prowler', label: 'Prowler / sled', type: 'other' },
+      { tag: 'foam_roller', label: 'Rouleau de massage', type: 'other' },
+    ],
+  },
+  {
+    title: 'Cardio',
+    items: [
+      { tag: 'treadmill', label: 'Tapis de course', type: 'machine' },
+      { tag: 'bike', label: 'Velo', type: 'machine' },
+      { tag: 'elliptical', label: 'Elliptique', type: 'machine' },
     ],
   },
 ]
 
-export default function StepGymEquipment({ state, updateEquipment, nextStep, prevStep }: Props) {
-  const selectedNames = new Set(state.equipment.map(e => e.name))
+function tagsForOption(opt: EquipmentOption): string[] {
+  return [opt.tag, ...(opt.alsoAdd ?? [])]
+}
 
-  const toggleItem = (item: EquipmentItem) => {
-    if (selectedNames.has(item.name)) {
-      updateEquipment(state.equipment.filter(e => e.name !== item.name))
+export default function StepGymEquipment({ state, updateEquipment, nextStep, prevStep }: Props) {
+  const selectedTags = new Set(state.equipment.map(e => e.name))
+
+  // Dumbbell weight range state
+  const hasDumbbells = selectedTags.has('dumbbell')
+  const [dbMin, setDbMin] = useState(2)
+  const [dbMax, setDbMax] = useState(30)
+  const [dbStep, setDbStep] = useState(2)
+
+  const toggleItem = (opt: EquipmentOption) => {
+    const tags = tagsForOption(opt)
+    if (selectedTags.has(opt.tag)) {
+      // Remove all tags associated with this option
+      updateEquipment(state.equipment.filter(e => !tags.includes(e.name)))
     } else {
-      updateEquipment([...state.equipment, item])
+      // Add all tags
+      const newItems: EquipmentItem[] = tags.map(tag => ({
+        name: tag,
+        type: opt.type,
+        isAvailable: true,
+        notes: '',
+      }))
+      updateEquipment([...state.equipment, ...newItems])
     }
+  }
+
+  const handleNext = () => {
+    // If dumbbells selected, store the weight range in the first dumbbell equipment's notes
+    if (hasDumbbells) {
+      const updated = state.equipment.map(e =>
+        e.name === 'dumbbell'
+          ? { ...e, notes: JSON.stringify({ min: dbMin, max: dbMax, step: dbStep }) }
+          : e
+      )
+      updateEquipment(updated)
+    }
+    nextStep()
   }
 
   return (
@@ -67,36 +125,81 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
         <div key={cat.title}>
           <h3 className="text-sm font-semibold text-zinc-400 mb-2">{cat.title}</h3>
           <div className="space-y-1">
-            {cat.items.map(item => (
+            {cat.items.map(opt => (
               <button
-                key={item.name}
+                key={opt.tag}
                 type="button"
-                onClick={() => toggleItem(item)}
+                onClick={() => toggleItem(opt)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  selectedNames.has(item.name)
+                  selectedTags.has(opt.tag)
                     ? 'bg-zinc-800 text-white'
                     : 'bg-zinc-900 text-zinc-400'
                 }`}
               >
                 <div
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                    selectedNames.has(item.name)
+                    selectedTags.has(opt.tag)
                       ? 'bg-white border-white'
                       : 'border-zinc-600'
                   }`}
                 >
-                  {selectedNames.has(item.name) && (
+                  {selectedTags.has(opt.tag) && (
                     <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   )}
                 </div>
-                <span className="text-sm">{item.name}</span>
+                <span className="text-sm">{opt.label}</span>
               </button>
             ))}
           </div>
         </div>
       ))}
+
+      {/* Dumbbell weight range */}
+      {hasDumbbells && (
+        <div className="bg-zinc-900 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-zinc-300">Halteres disponibles</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-zinc-500 block mb-1">De (kg)</label>
+              <input
+                type="number"
+                min={1}
+                value={dbMin}
+                onChange={e => setDbMin(Number(e.target.value) || 1)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-500 block mb-1">A (kg)</label>
+              <input
+                type="number"
+                min={dbMin}
+                value={dbMax}
+                onChange={e => setDbMax(Number(e.target.value) || dbMin)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-500 block mb-1">Pas (kg)</label>
+              <input
+                type="number"
+                min={0.5}
+                step={0.5}
+                value={dbStep}
+                onChange={e => setDbStep(Number(e.target.value) || 1)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-zinc-500">
+            {Array.from({ length: Math.floor((dbMax - dbMin) / dbStep) + 1 }, (_, i) => dbMin + i * dbStep)
+              .filter(w => w <= dbMax)
+              .join(', ')} kg
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-3 mt-4">
         <button
@@ -108,7 +211,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
         </button>
         <button
           type="button"
-          onClick={nextStep}
+          onClick={handleNext}
           className="flex-1 bg-white text-black font-semibold py-3 rounded-lg"
         >
           Suivant

@@ -123,27 +123,7 @@ export function determineSplit(
 }
 
 // ---------------------------------------------------------------------------
-// 4. Helper — pick exercises for a muscle group / tag set
-// ---------------------------------------------------------------------------
-
-function exercisesWithTag(exercises: Exercise[], tag: string): Exercise[] {
-  return exercises.filter((e) => e.tags.includes(tag))
-}
-
-function pickUpTo(source: Exercise[], count: number, usedIds: Set<number>): Exercise[] {
-  const picked: Exercise[] = []
-  for (const ex of source) {
-    if (picked.length >= count) break
-    const id = ex.id ?? 0
-    if (usedIds.has(id)) continue
-    picked.push(ex)
-    usedIds.add(id)
-  }
-  return picked
-}
-
-// ---------------------------------------------------------------------------
-// 4b. Muscle-based exercise matching helpers
+// 4. Muscle-based exercise matching helpers
 // ---------------------------------------------------------------------------
 
 /** Exercises whose primaryMuscles include at least one of the given muscles */
@@ -261,39 +241,7 @@ function buildStructuredSession(
 }
 
 // ---------------------------------------------------------------------------
-// 5. Build session helpers (legacy — used by full_body and ppl)
-// ---------------------------------------------------------------------------
-
-function toProgramExercise(
-  exercise: Exercise,
-  order: number,
-  opts?: { sets?: number; reps?: number; rest?: number },
-): ProgramExercise {
-  const isRehab = exercise.isRehab
-  return {
-    exerciseId: exercise.id ?? 0,
-    order,
-    sets: opts?.sets ?? (isRehab ? 3 : exercise.category === 'compound' ? 4 : 3),
-    targetReps: opts?.reps ?? (isRehab ? 15 : exercise.category === 'compound' ? 8 : 12),
-    restSeconds: opts?.rest ?? (isRehab ? 60 : exercise.category === 'compound' ? 120 : 90),
-    isRehab,
-  }
-}
-
-function buildSession(
-  name: string,
-  order: number,
-  exercises: Exercise[],
-): ProgramSession {
-  return {
-    name,
-    order,
-    exercises: exercises.map((ex, i) => toProgramExercise(ex, i + 1)),
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 6. Build sessions per split type
+// 5. Build sessions per split type
 // ---------------------------------------------------------------------------
 
 function buildFullBodySessions(

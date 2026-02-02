@@ -52,7 +52,7 @@ export async function importData(json: string): Promise<number> {
 
       // Strip id so Dexie auto-increments a new one
       const { id: _id, ...profileData } = data.profile
-      const userId = await db.userProfiles.add(profileData as any)
+      const userId = await db.userProfiles.add(profileData as any) as number
 
       // Re-link all data to the new userId
       if (data.conditions?.length) await db.healthConditions.bulkAdd(

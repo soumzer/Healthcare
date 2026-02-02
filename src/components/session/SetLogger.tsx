@@ -40,8 +40,8 @@ export default function SetLogger({
   userConditions,
   onSubmit,
 }: SetLoggerProps) {
-  const [reps, setReps] = useState(prescribedReps)
-  const [weight, setWeight] = useState(prescribedWeightKg)
+  const [reps, setReps] = useState(prescribedReps > 0 ? String(prescribedReps) : '')
+  const [weight, setWeight] = useState(prescribedWeightKg > 0 ? String(prescribedWeightKg) : '')
   const [rir, setRir] = useState(2)
   const [hasPain, setHasPain] = useState(false)
   const [painZone, setPainZone] = useState<BodyZone | null>(
@@ -49,12 +49,15 @@ export default function SetLogger({
   )
   const [painLevel, setPainLevel] = useState(1)
 
+  const parsedReps = parseInt(reps) || 0
+  const parsedWeight = parseFloat(weight) || 0
+
   const handleSubmit = () => {
     const pain =
       hasPain && painZone
         ? { zone: painZone, level: painLevel }
         : undefined
-    onSubmit(reps, weight, rir, pain)
+    onSubmit(parsedReps, parsedWeight, rir, pain)
   }
 
   return (
@@ -69,8 +72,9 @@ export default function SetLogger({
             type="number"
             inputMode="numeric"
             value={reps}
-            onChange={(e) => setReps(parseInt(e.target.value) || 0)}
-            className="w-full bg-zinc-900 text-white text-4xl font-bold text-center rounded-xl py-4 border border-zinc-700 focus:border-white focus:outline-none"
+            onChange={(e) => setReps(e.target.value)}
+            placeholder="0"
+            className="w-full bg-zinc-900 text-white text-4xl font-bold text-center rounded-xl py-4 border border-zinc-700 focus:border-white focus:outline-none placeholder:text-zinc-600"
           />
         </div>
 
@@ -84,8 +88,9 @@ export default function SetLogger({
             inputMode="decimal"
             step="0.5"
             value={weight}
-            onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
-            className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700 focus:border-white focus:outline-none"
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="0"
+            className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700 focus:border-white focus:outline-none placeholder:text-zinc-600"
           />
         </div>
 

@@ -16,7 +16,7 @@ async function createUser(): Promise<number> {
     minutesPerSession: 60,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as UserProfile)
+  } as UserProfile) as number
 }
 
 function daysAgo(days: number): Date {

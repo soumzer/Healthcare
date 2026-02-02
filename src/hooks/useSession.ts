@@ -124,7 +124,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
   const [phase, setPhase] = useState<SessionPhase>(() => {
     if (rehabIntegration.warmupRehab.length > 0) return 'warmup_rehab'
-    const firstEx = engineRef.current.getCurrentExercise()
+    const firstEx = engineRef.current!.getCurrentExercise()
     if (firstEx) {
       const ws = generateWarmupSets(firstEx.prescribedWeightKg, availableWeights)
       if (ws.length > 0) return 'warmup'
@@ -161,7 +161,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     : []
 
   // Get filler suggestion for occupied state (uses rehab active wait pool)
-  const [completedFillers, setCompletedFillers] = useState<string[]>([])
+  const [completedFillers, _setCompletedFillers] = useState<string[]>([])
   const fillerSuggestion = currentExercise
     ? suggestFiller({
         activeWaitPool: rehabIntegration.activeWaitPool,
