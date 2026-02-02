@@ -94,6 +94,7 @@ function completeAllExercises(result: { current: ReturnType<typeof useSession> }
 
 describe('useSession', () => {
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
     vi.useFakeTimers()
@@ -262,6 +263,7 @@ describe('useSession', () => {
 
 describe('useSession - DB persistence', () => {
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
   })
@@ -300,6 +302,7 @@ describe('useSession - DB persistence', () => {
 
 describe('useSession - rehab integration', () => {
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
     vi.useFakeTimers()
@@ -375,6 +378,7 @@ describe('useSession - rehab integration', () => {
 
 describe('useSession - progression engine integration', () => {
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
     vi.useFakeTimers()
@@ -482,6 +486,7 @@ describe('useSession - cooldown phase', () => {
   }
 
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
     vi.useFakeTimers()
@@ -569,6 +574,7 @@ describe('useSession - cooldown with DB persistence', () => {
   ]
 
   beforeEach(async () => {
+    sessionStorage.clear()
     await db.delete()
     await db.open()
   })

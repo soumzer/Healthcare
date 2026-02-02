@@ -155,6 +155,10 @@ export class SessionEngine {
     return this.exercises[this.currentIndex]
   }
 
+  getCurrentExerciseIndex(): number {
+    return this.currentIndex
+  }
+
   getCurrentSetNumber(): number {
     const ex = this.exercises[this.currentIndex]
     return ex.sets.length + 1

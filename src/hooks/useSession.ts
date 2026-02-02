@@ -48,6 +48,19 @@ export interface SubstitutionSuggestion {
   exerciseId: number
 }
 
+interface SavedSessionState {
+  programId: number
+  sessionIndex: number
+  engineExerciseIndex: number
+  engineCompletedSets: number
+  phase: SessionPhase
+  alternativeWeight: number | null
+  alternativeReps: number | null
+  warmupSetIndex: number
+  sessionStartTime: string
+  timestamp: number
+}
+
 export interface UseSessionReturn {
   phase: SessionPhase
   currentExercise: SessionExercise | null
@@ -108,11 +121,25 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     sessionIntensity: programSession.intensity,
   }
 
+  // Restore session state from sessionStorage if available
+  const savedRaw = sessionStorage.getItem('activeSession')
+  const saved = savedRaw ? JSON.parse(savedRaw) as SavedSessionState : null
+  const isRestorable = saved
+    && saved.programId === programId
+    && saved.sessionIndex === programSession.order
+    && (Date.now() - saved.timestamp) < 3 * 60 * 60 * 1000 // expire after 3h
+
   const engineRef = useRef<SessionEngine | null>(null)
   if (engineRef.current === null) {
     engineRef.current = new SessionEngine(programSession, history, engineOptions)
     if (painAdjustments?.length) {
       engineRef.current.applyPainAdjustments(painAdjustments)
+    }
+    // Restore engine position if saved session is valid
+    if (isRestorable && saved) {
+      for (let i = 0; i < saved.engineExerciseIndex; i++) {
+        engineRef.current.completeExercise()
+      }
     }
   }
   const engine = engineRef.current
@@ -132,6 +159,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
   const [phase, setPhase] = useState<SessionPhase>(() => {
+    if (isRestorable && saved) return saved.phase
     if (rehabIntegration.warmupRehab.length > 0) return 'warmup_rehab'
     const firstEx = engineRef.current!.getCurrentExercise()
     if (firstEx) {
@@ -140,14 +168,22 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     }
     return 'exercise'
   })
-  const [warmupSetIndex, setWarmupSetIndex] = useState(0)
+  const [warmupSetIndex, setWarmupSetIndex] = useState(
+    isRestorable && saved ? saved.warmupSetIndex : 0
+  )
   const [restElapsed, setRestElapsed] = useState(0)
-  const [alternativeWeight, setAlternativeWeight] = useState<number | null>(null)
-  const [alternativeReps, setAlternativeReps] = useState<number | null>(null)
+  const [alternativeWeight, setAlternativeWeight] = useState<number | null>(
+    isRestorable && saved ? saved.alternativeWeight : null
+  )
+  const [alternativeReps, setAlternativeReps] = useState<number | null>(
+    isRestorable && saved ? saved.alternativeReps : null
+  )
   const [, forceUpdate] = useState(0)
 
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const sessionStartRef = useRef(new Date())
+  const sessionStartRef = useRef(
+    isRestorable && saved ? new Date(saved.sessionStartTime) : new Date()
+  )
   const setStartRef = useRef<Date | null>(null)
   const lastRestElapsedRef = useRef<number>(0)
 
@@ -194,6 +230,27 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       }
     }
   }, [])
+
+  // Persist session state to sessionStorage for navigation resilience
+  useEffect(() => {
+    if (phase === 'done' || engine.isSessionComplete()) {
+      sessionStorage.removeItem('activeSession')
+      return
+    }
+    const state: SavedSessionState = {
+      programId,
+      sessionIndex: programSession.order,
+      engineExerciseIndex: engine.getCurrentExerciseIndex(),
+      engineCompletedSets: engine.getCurrentSetNumber() - 1,
+      phase,
+      alternativeWeight,
+      alternativeReps,
+      warmupSetIndex,
+      sessionStartTime: sessionStartRef.current.toISOString(),
+      timestamp: Date.now(),
+    }
+    sessionStorage.setItem('activeSession', JSON.stringify(state))
+  }, [phase, alternativeWeight, alternativeReps, warmupSetIndex, programId, programSession.order, engine])
 
   const startRestTimer = useCallback(() => {
     setRestElapsed(0)
