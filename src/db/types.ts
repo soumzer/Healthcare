@@ -124,6 +124,7 @@ export interface SessionExercise {
   sets: SessionSet[]
   status: 'pending' | 'in_progress' | 'completed' | 'skipped'
   skippedReason?: 'occupied' | 'pain' | 'no_weight' | 'time'
+  instructions?: string
 }
 
 export interface SessionSet {

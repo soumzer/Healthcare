@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { SessionExercise } from '../../db/types'
 
 interface ExerciseViewProps {
-  exercise: SessionExercise & { instructions?: string }
+  exercise: SessionExercise
   currentSet: number
   totalSets: number
   exerciseIndex: number
