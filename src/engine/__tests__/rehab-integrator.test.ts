@@ -542,6 +542,58 @@ describe('integrateRehab', () => {
   })
 
   // -----------------------------------------------------------------------
+  // Mirrored zone matching (left ↔ right fallback)
+  // -----------------------------------------------------------------------
+  describe('mirrored zone matching', () => {
+    it('hip_left matches sciatique protocol (which targets hip_right)', () => {
+      const conditions = [makeCondition('hip_left', 'Sciatique gauche')]
+      const session = makeSession('Lower 1')
+      const result = integrateRehab(session, conditions)
+
+      const allNames = [
+        ...exerciseNames(result.warmupRehab),
+        ...exerciseNames(result.activeWaitPool),
+        ...exerciseNames(result.cooldownRehab),
+      ]
+      expect(allNames).toContain('Nerve flossing sciatique')
+      expect(allNames).toContain('Étirement piriforme')
+    })
+
+    it('knee_left matches tendinopathie rotulienne protocol (which targets knee_right)', () => {
+      const conditions = [makeCondition('knee_left', 'Tendinite genou gauche')]
+      const session = makeSession('Lower 1')
+      const result = integrateRehab(session, conditions)
+
+      const warmupNames = exerciseNames(result.warmupRehab)
+      expect(warmupNames).toContain('Spanish squat isométrique (tendinite rotulienne)')
+
+      const activeWaitNames = exerciseNames(result.activeWaitPool)
+      expect(activeWaitNames).toContain('Leg extension tempo lent (tendinite rotulienne)')
+    })
+
+    it('exact match takes precedence over mirrored match', () => {
+      // elbow_right has an exact protocol match, so mirroring should not be used
+      const conditions = [makeCondition('elbow_right', 'Golf elbow')]
+      const session = makeSession('Upper 1')
+      const result = integrateRehab(session, conditions)
+
+      const names = exerciseNames(result.warmupRehab)
+      expect(names).toContain('Tyler Twist inversé (golf elbow)')
+    })
+
+    it('zones without a mirror (e.g. neck) produce no rehab when no exact match', () => {
+      // neck has no mirror and no default protocol in rehabProtocols
+      const conditions = [makeCondition('neck', 'Cervicalgie')]
+      const session = makeSession('Upper 1')
+      const result = integrateRehab(session, conditions)
+
+      expect(result.warmupRehab).toHaveLength(0)
+      expect(result.activeWaitPool).toHaveLength(0)
+      expect(result.cooldownRehab).toHaveLength(0)
+    })
+  })
+
+  // -----------------------------------------------------------------------
   // Custom protocols parameter
   // -----------------------------------------------------------------------
   describe('custom protocols parameter', () => {

@@ -1,4 +1,4 @@
-import type { HealthCondition, ProgramSession } from '../db/types'
+import type { HealthCondition, ProgramSession, BodyZone } from '../db/types'
 import { rehabProtocols } from '../data/rehab-protocols'
 import type { RehabProtocol, RehabExercise } from '../data/rehab-protocols'
 
@@ -30,6 +30,30 @@ export interface RehabExerciseInfo {
 const MAX_WARMUP = 8
 const MAX_COOLDOWN = 5
 const MAX_ACTIVE_WAIT = 8
+
+// ---------------------------------------------------------------------------
+// Zone mirroring helper
+// ---------------------------------------------------------------------------
+
+function mirrorZone(zone: BodyZone): BodyZone | null {
+  const pairs: Record<string, string> = {
+    shoulder_left: 'shoulder_right',
+    shoulder_right: 'shoulder_left',
+    elbow_left: 'elbow_right',
+    elbow_right: 'elbow_left',
+    wrist_left: 'wrist_right',
+    wrist_right: 'wrist_left',
+    hip_left: 'hip_right',
+    hip_right: 'hip_left',
+    knee_left: 'knee_right',
+    knee_right: 'knee_left',
+    ankle_left: 'ankle_right',
+    ankle_right: 'ankle_left',
+    foot_left: 'foot_right',
+    foot_right: 'foot_left',
+  }
+  return (pairs[zone] as BodyZone) ?? null
+}
 
 // ---------------------------------------------------------------------------
 // Main function
@@ -72,9 +96,16 @@ export function integrateRehab(
   }
 
   // 2. For each active condition, find matching protocol by targetZone === condition.bodyZone
+  //    If no exact match, try the mirrored zone (e.g. hip_left → hip_right)
   const matchedProtocols: RehabProtocol[] = []
   for (const condition of activeConditions) {
-    const protocol = allProtocols.find((p) => p.targetZone === condition.bodyZone)
+    let protocol = allProtocols.find((p) => p.targetZone === condition.bodyZone)
+    if (!protocol) {
+      const mirror = mirrorZone(condition.bodyZone)
+      if (mirror) {
+        protocol = allProtocols.find((p) => p.targetZone === mirror)
+      }
+    }
     if (protocol && !matchedProtocols.includes(protocol)) {
       matchedProtocols.push(protocol)
     }
