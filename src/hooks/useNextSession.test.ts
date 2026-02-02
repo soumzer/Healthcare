@@ -246,7 +246,7 @@ describe('useNextSession - new integration fields', () => {
 
     expect(result.current!.canStart).toBe(false)
     expect(result.current!.restRecommendation).not.toBeNull()
-    expect(result.current!.restRecommendation).toContain('Repos recommande')
+    expect(result.current!.restRecommendation).toContain('Repos recommandé')
   })
 
   it('returns canStart=true and no rest recommendation when enough time elapsed', async () => {
@@ -409,7 +409,7 @@ describe('useNextSession - Upper/Lower 4-session rotation', () => {
 
     expect(result.current!.canStart).toBe(false)
     expect(result.current!.nextSessionName).toBe('Upper 1')
-    expect(result.current!.restRecommendation).toContain('Repos recommande')
+    expect(result.current!.restRecommendation).toContain('Repos recommandé')
     expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(9)
     expect(result.current!.hoursSinceLastSession).toBeLessThan(11)
   })

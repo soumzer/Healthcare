@@ -208,7 +208,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           minimumRestHours,
           nextSession: nextProgramSession,
           canStart: false,
-          restRecommendation: `Repos recommande : encore ${remainingHours}h avant la prochaine seance`,
+          restRecommendation: `Repos recommandé : encore ${remainingHours}h avant la prochaine séance`,
           program: activeProgram,
           preview,
           isDeload,
