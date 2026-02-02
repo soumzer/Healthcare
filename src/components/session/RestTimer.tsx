@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+
 interface RestTimerProps {
   restSeconds: number
   restElapsed: number
@@ -28,6 +30,12 @@ export default function RestTimer({
   const remaining = Math.max(0, restSeconds - restElapsed)
   const progress = Math.min(1, restElapsed / restSeconds)
   const isDone = remaining === 0
+
+  useEffect(() => {
+    if (remaining <= 0) {
+      navigator.vibrate?.(200)
+    }
+  }, [remaining <= 0])
 
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
