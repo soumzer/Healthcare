@@ -45,7 +45,7 @@ export default function StepBody({ state, updateBody, nextStep }: Props) {
         <h2 className="text-xl font-bold">Votre profil</h2>
 
         <div>
-          <label className="block text-sm text-zinc-400 mb-1">Nom / Prenom</label>
+          <label className="block text-sm text-zinc-400 mb-1">Nom / Prénom</label>
           <input
             type="text"
             value={body.name}
@@ -79,7 +79,7 @@ export default function StepBody({ state, updateBody, nextStep }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">Age</label>
+            <label className="block text-sm text-zinc-400 mb-1">Âge</label>
             <input
               type="text"
               inputMode="numeric"

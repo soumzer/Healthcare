@@ -61,7 +61,7 @@ export default function RestTimer({
         {/* Next set info */}
         <p className="text-zinc-400 text-sm mb-1">{exerciseName}</p>
         <p className="text-zinc-300 text-lg">
-          Serie suivante : {nextSet}/{totalSets} &middot;{' '}
+          Série suivante : {nextSet}/{totalSets} &middot;{' '}
           {nextWeightKg > 0 ? `${nextWeightKg}kg` : 'Poids du corps'} &times;{' '}
           {nextReps}
         </p>

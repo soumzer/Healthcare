@@ -2,8 +2,8 @@ import type { BodyZone } from '../db/types'
 
 export const bodyZones: { zone: BodyZone; label: string }[] = [
   { zone: 'neck', label: 'Cou' },
-  { zone: 'shoulder_left', label: 'Epaule G' },
-  { zone: 'shoulder_right', label: 'Epaule D' },
+  { zone: 'shoulder_left', label: 'Épaule G' },
+  { zone: 'shoulder_right', label: 'Épaule D' },
   { zone: 'elbow_left', label: 'Coude G' },
   { zone: 'elbow_right', label: 'Coude D' },
   { zone: 'wrist_left', label: 'Poignet G' },
@@ -23,16 +23,16 @@ export const bodyZones: { zone: BodyZone; label: string }[] = [
 
 export const painLabels: Record<number, string> = {
   0: 'Aucune',
-  1: 'Tres legere',
-  2: 'Legere',
-  3: 'Moderee — progression bloquee',
-  4: 'Moderee — progression bloquee',
-  5: 'Forte — charge reduite',
-  6: 'Forte — exercices adaptes',
-  7: 'Severe — exercice remplace',
-  8: 'Severe — exercice remplace',
-  9: 'Severe — exercice remplace',
-  10: 'Severe — exercice remplace',
+  1: 'Très légère',
+  2: 'Légère',
+  3: 'Modérée — progression bloquée',
+  4: 'Modérée — progression bloquée',
+  5: 'Forte — charge réduite',
+  6: 'Forte — exercices adaptés',
+  7: 'Sévère — exercice remplacé',
+  8: 'Sévère — exercice remplacé',
+  9: 'Sévère — exercice remplacé',
+  10: 'Sévère — exercice remplacé',
 }
 
 export const bodyZoneLabels: Record<string, string> = Object.fromEntries(

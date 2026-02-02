@@ -15,8 +15,8 @@ interface SetLoggerProps {
 
 const bodyZoneLabels: Record<string, string> = {
   neck: 'Cou',
-  shoulder_left: 'Epaule gauche',
-  shoulder_right: 'Epaule droite',
+  shoulder_left: 'Épaule gauche',
+  shoulder_right: 'Épaule droite',
   elbow_left: 'Coude gauche',
   elbow_right: 'Coude droit',
   wrist_left: 'Poignet gauche',
@@ -75,7 +75,7 @@ export default function SetLogger({
         {/* Reps */}
         <div>
           <label className="block text-zinc-400 text-sm mb-2">
-            Reps reussies
+            Reps réussies
           </label>
           <input
             type="number"
@@ -106,7 +106,7 @@ export default function SetLogger({
         {/* RIR */}
         <div>
           <label className="block text-zinc-400 text-sm mb-2">
-            En reserve (RIR)
+            En réserve (RIR)
             <button
               onClick={() => setShowRirHelp(v => !v)}
               className="text-zinc-400 text-xs ml-1"
@@ -185,7 +185,7 @@ export default function SetLogger({
               {/* Pain level */}
               <div>
                 <label className="block text-zinc-400 text-xs mb-2">
-                  Intensite (1-5)
+                  Intensité (1-5)
                 </label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((level) => (

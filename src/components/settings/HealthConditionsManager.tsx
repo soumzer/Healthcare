@@ -176,7 +176,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
 
         <div>
           <label className="block text-xs text-zinc-400 mb-1">
-            Quand est-ce que ca fait mal ?
+            Quand est-ce que ça fait mal ?
           </label>
           <input
             type="text"
@@ -231,7 +231,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
               onClick={() => handleDeactivate(existingId)}
               className="px-4 py-2 bg-red-900 text-red-200 rounded-lg text-sm"
             >
-              Gueri
+              Guéri
             </button>
           )}
           <button
@@ -250,7 +250,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-          Mes conditions de sante
+          Mes conditions de santé
         </h3>
       </div>
 
@@ -288,7 +288,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
       {/* Add new condition — zone picker */}
       {addingNew && (
         <div className="space-y-3">
-          <p className="text-sm text-zinc-400">Touchez la zone concernee :</p>
+          <p className="text-sm text-zinc-400">Touchez la zone concernée :</p>
           <div className="flex flex-wrap gap-2">
             {bodyZones.map(({ zone, label }) => (
               <button
@@ -327,7 +327,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
       {conditionsChanged && !regenerateResult?.success && (
         <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-2">
           <p className="text-sm text-white">
-            Tes conditions ont change. Veux-tu regenerer ton programme ?
+            Tes conditions ont changé. Veux-tu régénérer ton programme ?
           </p>
           {regenerateResult?.error && (
             <p className="text-sm text-red-400">{regenerateResult.error}</p>
@@ -346,7 +346,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
             }}
             className="w-full py-2 bg-white text-black font-semibold rounded-lg text-sm disabled:opacity-50"
           >
-            {isRegenerating ? 'Regeneration en cours...' : 'Regenerer le programme'}
+            {isRegenerating ? 'Régénération en cours...' : 'Régénérer le programme'}
           </button>
         </div>
       )}
@@ -354,7 +354,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
       {/* Success feedback */}
       {regenerateResult?.success && (
         <div className="bg-emerald-900 border border-emerald-700 rounded-xl p-4">
-          <p className="text-sm text-emerald-200">Programme regenere avec succes !</p>
+          <p className="text-sm text-emerald-200">Programme régénéré avec succès !</p>
         </div>
       )}
     </div>

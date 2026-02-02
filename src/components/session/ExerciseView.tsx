@@ -48,12 +48,12 @@ export default function ExerciseView({
         {substitutionSuggestion && (
           <div className="w-full max-w-md bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-3">
             <p className="text-amber-400 text-sm font-medium mb-1">
-              Progression bloquee
+              Progression bloquée
             </p>
             <p className="text-zinc-400 text-xs mb-2">
-              Poids max atteint. Passe a{' '}
+              Poids max atteint. Passe à{' '}
               <span className="text-white font-semibold">{substitutionSuggestion.name}</span>{' '}
-              pour continuer a progresser.
+              pour continuer à progresser.
             </p>
             {onSubstitute && (
               <button
@@ -95,7 +95,7 @@ export default function ExerciseView({
             onClick={onOccupied}
             className="bg-zinc-800 text-white rounded-xl py-4 text-base"
           >
-            Occupe
+            Occupé
           </button>
           <button
             onClick={onNoWeight}

@@ -5,7 +5,7 @@ import { generateRestDayRoutine, type RestDayExercise, type RestDayVariant } fro
 const VARIANT_LABELS: Record<RestDayVariant, string> = {
   upper: 'Haut du corps',
   lower: 'Bas du corps',
-  all: 'Routine complete',
+  all: 'Routine complète',
 }
 
 interface Props {
@@ -49,7 +49,7 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
           {VARIANT_LABELS[variant]} &middot; ~{routine.totalMinutes} min
         </h2>
         <p className="text-zinc-400 text-sm mt-1">
-          Appuie sur un exercice pour voir les details
+          Appuie sur un exercice pour voir les détails
         </p>
       </div>
 
@@ -92,9 +92,9 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
 }
 
 const INTENSITY_LABELS: Record<string, { label: string; className: string }> = {
-  very_light: { label: 'Tres leger', className: 'text-emerald-400 bg-emerald-900/30' },
-  light: { label: 'Leger', className: 'text-blue-400 bg-blue-900/30' },
-  moderate: { label: 'Modere', className: 'text-amber-400 bg-amber-900/30' },
+  very_light: { label: 'Très léger', className: 'text-emerald-400 bg-emerald-900/30' },
+  light: { label: 'Léger', className: 'text-blue-400 bg-blue-900/30' },
+  moderate: { label: 'Modéré', className: 'text-amber-400 bg-amber-900/30' },
 }
 
 function ExerciseRow({

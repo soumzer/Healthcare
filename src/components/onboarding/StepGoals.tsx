@@ -6,9 +6,9 @@ type Props = ReturnType<typeof useOnboarding>
 const goalOptions: { value: Goal; label: string }[] = [
   { value: 'weight_loss', label: 'Perte de poids' },
   { value: 'muscle_gain', label: 'Prise de masse' },
-  { value: 'rehab', label: 'Reeducation' },
-  { value: 'posture', label: 'Ameliorer posture' },
-  { value: 'mobility', label: 'Mobilite' },
+  { value: 'rehab', label: 'Rééducation' },
+  { value: 'posture', label: 'Améliorer posture' },
+  { value: 'mobility', label: 'Mobilité' },
 ]
 
 export default function StepGoals({ state, updateGoals, nextStep, prevStep }: Props) {
@@ -24,7 +24,7 @@ export default function StepGoals({ state, updateGoals, nextStep, prevStep }: Pr
     <div className="space-y-5">
       <h2 className="text-xl font-bold">Vos objectifs</h2>
       <p className="text-sm text-zinc-400">
-        Selectionnez un ou plusieurs objectifs.
+        Sélectionnez un ou plusieurs objectifs.
       </p>
 
       <div className="flex flex-wrap gap-3">

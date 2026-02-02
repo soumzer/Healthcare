@@ -25,7 +25,7 @@ const categories: Category[] = [
   {
     title: 'Machines',
     items: [
-      { tag: 'leg_press', label: 'Presse a cuisses', type: 'machine' },
+      { tag: 'leg_press', label: 'Presse à cuisses', type: 'machine' },
       { tag: 'leg_curl', label: 'Leg curl', type: 'machine' },
       { tag: 'leg_extension', label: 'Leg extension', type: 'machine' },
       { tag: 'pec_press', label: 'Pec press', type: 'machine' },
@@ -33,7 +33,7 @@ const categories: Category[] = [
       { tag: 'shoulder_press', label: 'Dev militaire machine', type: 'machine' },
       { tag: 'rowing_machine', label: 'Rowing assis machine', type: 'machine' },
       { tag: 'lat_pulldown', label: 'Lat pulldown', type: 'machine' },
-      { tag: 'smith_machine', label: 'Smith machine (barre guidee)', type: 'machine' },
+      { tag: 'smith_machine', label: 'Smith machine (barre guidée)', type: 'machine' },
       { tag: 'cable', label: 'Poulie / cable', type: 'cable', alsoAdd: ['rope_attachment'] },
       { tag: 'hip_abduction', label: 'Machine abduction/adduction', type: 'machine' },
       { tag: 'hack_squat', label: 'Hack squat', type: 'machine' },
@@ -42,19 +42,19 @@ const categories: Category[] = [
   {
     title: 'Poids libres',
     items: [
-      { tag: 'dumbbell', label: 'Halteres', type: 'free_weight', alsoAdd: ['dumbbells'] },
+      { tag: 'dumbbell', label: 'Haltères', type: 'free_weight', alsoAdd: ['dumbbells'] },
       { tag: 'barbell', label: 'Barres (droite/EZ)', type: 'free_weight' },
       { tag: 'bench', label: 'Banc de musculation', type: 'free_weight' },
-      { tag: 'squat_rack', label: 'Rack a squat', type: 'free_weight' },
+      { tag: 'squat_rack', label: 'Rack à squat', type: 'free_weight' },
       { tag: 'kettlebell', label: 'Kettlebell', type: 'free_weight' },
-      { tag: 'sandbag', label: 'Sac leste', type: 'free_weight' },
+      { tag: 'sandbag', label: 'Sac lesté', type: 'free_weight' },
     ],
   },
   {
     title: 'Accessoires',
     items: [
       { tag: 'mat', label: 'Tapis de sol', type: 'other' },
-      { tag: 'resistance_band', label: 'Bandes elastiques', type: 'band' },
+      { tag: 'resistance_band', label: 'Bandes élastiques', type: 'band' },
       { tag: 'pull_up_bar', label: 'Barre de traction', type: 'other' },
       { tag: 'dip_station', label: 'Dip station', type: 'other' },
       { tag: 'prowler', label: 'Prowler / sled', type: 'other' },
@@ -65,7 +65,7 @@ const categories: Category[] = [
     title: 'Cardio',
     items: [
       { tag: 'treadmill', label: 'Tapis de course', type: 'machine' },
-      { tag: 'bike', label: 'Velo', type: 'machine' },
+      { tag: 'bike', label: 'Vélo', type: 'machine' },
       { tag: 'elliptical', label: 'Elliptique', type: 'machine' },
     ],
   },
@@ -128,9 +128,9 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold">Equipement disponible</h2>
+      <h2 className="text-xl font-bold">Équipement disponible</h2>
       <p className="text-sm text-zinc-400">
-        Cochez le materiel auquel vous avez acces.
+        Cochez le matériel auquel vous avez accès.
       </p>
 
       {/* Preset buttons */}
@@ -189,7 +189,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
       {/* Dumbbell weight range */}
       {hasDumbbells && (
         <div className="bg-zinc-900 rounded-lg p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-zinc-300">Halteres disponibles</h3>
+          <h3 className="text-sm font-semibold text-zinc-300">Haltères disponibles</h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-zinc-400 block mb-1">De (kg)</label>
@@ -202,7 +202,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-400 block mb-1">A (kg)</label>
+              <label className="text-xs text-zinc-400 block mb-1">À (kg)</label>
               <input
                 type="number"
                 min={dbMin}

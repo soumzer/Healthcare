@@ -222,7 +222,7 @@ function SessionContent({
   if (!programSession.exercises || programSession.exercises.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
-        <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice dans cette seance</p>
+        <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice dans cette séance</p>
         <p className="text-zinc-400 text-xs mb-4">
           program={programId} session={sessionIndex} sessions={program.sessions.length}
         </p>
@@ -293,7 +293,7 @@ function SessionRunner({
     return (
       <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 items-center justify-center text-center overflow-hidden">
         <p className="text-3xl font-bold mb-4">Bravo !</p>
-        <p className="text-zinc-400 mb-8">Seance enregistree avec succes.</p>
+        <p className="text-zinc-400 mb-8">Séance enregistrée avec succès.</p>
         <button
           onClick={() => navigate('/')}
           className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
@@ -329,7 +329,7 @@ function SessionRunner({
     if (!session.currentExercise) {
       return (
         <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center overflow-hidden">
-          <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice trouve</p>
+          <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice trouvé</p>
           <p className="text-zinc-400 text-xs mb-1">
             engineTotal={session.totalExercises} idx={session.exerciseIndex}
           </p>

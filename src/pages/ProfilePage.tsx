@@ -8,16 +8,16 @@ import { useRegenerateProgram } from '../hooks/useRegenerateProgram'
 const goalLabels: Record<string, string> = {
   weight_loss: 'Perte de poids',
   muscle_gain: 'Prise de masse',
-  rehab: 'Reeducation',
+  rehab: 'Rééducation',
   posture: 'Posture',
-  mobility: 'Mobilite',
+  mobility: 'Mobilité',
 }
 
 const splitLabels: Record<string, string> = {
   upper_lower: 'Upper / Lower',
   full_body: 'Full Body',
   push_pull_legs: 'Push / Pull / Legs',
-  custom: 'Personnalise',
+  custom: 'Personnalisé',
 }
 
 function TrainingSettings({
@@ -62,7 +62,7 @@ function TrainingSettings({
 
   return (
     <div className="bg-zinc-900 rounded-xl p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Entrainement</h3>
+      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Entraînement</h3>
 
       {/* Days per week */}
       <div>
@@ -86,7 +86,7 @@ function TrainingSettings({
 
       {/* Minutes per session */}
       <div>
-        <p className="text-sm text-zinc-400 mb-2">Duree par seance</p>
+        <p className="text-sm text-zinc-400 mb-2">Durée par séance</p>
         <div className="flex gap-2">
           {minutesOptions.map(m => (
             <button
@@ -111,7 +111,7 @@ function TrainingSettings({
           disabled={saving || isRegenerating}
           className="w-full py-3 bg-white text-black font-semibold rounded-lg disabled:opacity-50"
         >
-          {saving || isRegenerating ? 'Mise a jour du programme...' : 'Appliquer les changements'}
+          {saving || isRegenerating ? 'Mise à jour du programme...' : 'Appliquer les changements'}
         </button>
       )}
 
@@ -119,10 +119,10 @@ function TrainingSettings({
       <div className="text-sm space-y-1">
         {programType && (
           <p className="text-zinc-300">
-            Programme : {splitLabels[programType] ?? programType} ({programSessionCount} seances)
+            Programme : {splitLabels[programType] ?? programType} ({programSessionCount} séances)
           </p>
         )}
-        <p className="text-zinc-400">{sessionCount} seance{sessionCount > 1 ? 's' : ''} completee{sessionCount > 1 ? 's' : ''}</p>
+        <p className="text-zinc-400">{sessionCount} séance{sessionCount > 1 ? 's' : ''} complétée{sessionCount > 1 ? 's' : ''}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {goals.map(g => (
@@ -201,11 +201,11 @@ export default function ProfilePage() {
 
       {/* Reset */}
       <div className="bg-zinc-900 rounded-xl p-4 space-y-3">
-        <h3 className="text-lg font-semibold text-white">Reinitialiser</h3>
-        <p className="text-sm text-zinc-400">Supprime toutes les donnees et relance l'onboarding.</p>
+        <h3 className="text-lg font-semibold text-white">Réinitialiser</h3>
+        <p className="text-sm text-zinc-400">Supprime toutes les données et relance l'onboarding.</p>
         <button
           onClick={async () => {
-            if (window.confirm('Supprimer toutes les donnees ?')) {
+            if (window.confirm('Supprimer toutes les données ?')) {
               await db.delete()
               await db.open()
               window.location.href = '/'
@@ -219,7 +219,7 @@ export default function ProfilePage() {
 
       {/* App info */}
       <p className="text-center text-xs text-zinc-600 pt-4">
-        Health Coach · Donnees 100% locales
+        Health Coach · Données 100% locales
       </p>
     </div>
   )

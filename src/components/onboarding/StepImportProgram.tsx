@@ -29,8 +29,8 @@ export default function StepImportProgram({ state, updateProgramText, prevStep, 
     <div className="space-y-5">
       <h2 className="text-xl font-bold">Importer un programme</h2>
       <p className="text-sm text-zinc-400">
-        Si vous avez deja un programme, collez-le ci-dessous.
-        Sinon, passez cette etape.
+        Si vous avez déjà un programme, collez-le ci-dessous.
+        Sinon, passez cette étape.
       </p>
 
       <textarea

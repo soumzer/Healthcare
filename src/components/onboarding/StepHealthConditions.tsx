@@ -67,7 +67,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Zones douloureuses</h2>
       <p className="text-sm text-zinc-400">
-        Touchez les zones ou vous avez mal ou un probleme. Pas besoin de connaitre le nom medical.
+        Touchez les zones où vous avez mal ou un problème. Pas besoin de connaître le nom médical.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -110,7 +110,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
           <div>
             <label className="block text-xs text-zinc-400 mb-1">
-              Quand est-ce que ca fait mal ?
+              Quand est-ce que ça fait mal ?
             </label>
             <input
               type="text"
@@ -174,7 +174,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
       {state.conditions.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm text-zinc-400">{state.conditions.length} zone{state.conditions.length > 1 ? 's' : ''} ajoutee{state.conditions.length > 1 ? 's' : ''}</h3>
+          <h3 className="text-sm text-zinc-400">{state.conditions.length} zone{state.conditions.length > 1 ? 's' : ''} ajoutée{state.conditions.length > 1 ? 's' : ''}</h3>
           {state.conditions.map(c => (
             <button
               key={c.bodyZone}
@@ -211,7 +211,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
         onClick={handleSkip}
         className="w-full text-center text-sm text-zinc-400 py-2"
       >
-        Pas de probleme de sante
+        Pas de problème de santé
       </button>
     </div>
   )

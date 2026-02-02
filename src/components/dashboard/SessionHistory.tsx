@@ -22,7 +22,7 @@ export default function SessionHistory({ sessions }: SessionHistoryProps) {
 
       {sessions.length === 0 ? (
         <p className="text-zinc-400 text-sm">
-          Aucune seance enregistree pour le moment.
+          Aucune séance enregistrée pour le moment.
         </p>
       ) : (
         <div className="space-y-2">

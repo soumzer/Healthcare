@@ -24,7 +24,7 @@ export default function OnboardingPage() {
   return (
     <div className="h-[100dvh] bg-zinc-950 text-white p-4 pt-[max(env(safe-area-inset-top),2rem)] flex flex-col overflow-hidden">
       <div className="text-sm text-zinc-400 mb-4">
-        Etape {state.step} / {totalSteps}
+        Étape {state.step} / {totalSteps}
       </div>
       <div className="w-full bg-zinc-800 rounded-full h-1 mb-6">
         <div

@@ -68,7 +68,7 @@ export default function RestDayPage() {
   if (conditions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-        <p className="text-zinc-400 mb-4">Aucune condition de sante active — pas de routine de repos personnalisee.</p>
+        <p className="text-zinc-400 mb-4">Aucune condition de santé active — pas de routine de repos personnalisée.</p>
         <button
           onClick={() => navigate('/')}
           className="bg-zinc-800 text-white font-semibold rounded-xl py-3 px-6"

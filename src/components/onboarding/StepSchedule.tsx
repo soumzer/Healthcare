@@ -34,7 +34,7 @@ export default function StepSchedule({ state, updateSchedule, nextStep, prevStep
 
       <div>
         <label className="block text-sm text-zinc-400 mb-3">
-          Minutes par seance: <span className="text-white font-semibold">{state.minutesPerSession}</span>
+          Minutes par séance : <span className="text-white font-semibold">{state.minutesPerSession}</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
           {minutesOptions.map(m => (

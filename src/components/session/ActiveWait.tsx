@@ -13,7 +13,7 @@ export default function ActiveWait({
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center">
         <p className="text-zinc-400 text-sm uppercase tracking-wider mb-2">
-          Machine occupee
+          Machine occupée
         </p>
         <h2 className="text-lg font-bold mb-8 text-center">En attendant :</h2>
 
@@ -43,7 +43,7 @@ export default function ActiveWait({
           <p className="text-zinc-400 text-center">
             Pas d&apos;exercice de remplissage disponible.
             <br />
-            Profitez-en pour vous etirer !
+            Profitez-en pour vous étirer !
           </p>
         )}
       </div>

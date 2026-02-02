@@ -16,7 +16,7 @@ export default function StepKnownWeights({ state, updateKnownWeights, nextStep, 
       <h2 className="text-xl font-bold">Vos poids actuels</h2>
       <p className="text-sm text-zinc-400">
         Renseignez les poids que vous utilisez actuellement.
-        Laissez vide si vous ne savez pas — vous les ajusterez en seance.
+        Laissez vide si vous ne savez pas — vous les ajusterez en séance.
       </p>
 
       <div className="space-y-3">
@@ -41,7 +41,7 @@ export default function StepKnownWeights({ state, updateKnownWeights, nextStep, 
 
       {filledCount > 0 && (
         <p className="text-xs text-zinc-400">
-          {filledCount} exercice{filledCount > 1 ? 's' : ''} renseigne{filledCount > 1 ? 's' : ''}
+          {filledCount} exercice{filledCount > 1 ? 's' : ''} renseigné{filledCount > 1 ? 's' : ''}
         </p>
       )}
 

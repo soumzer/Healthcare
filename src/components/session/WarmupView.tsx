@@ -22,7 +22,7 @@ export default function WarmupView({
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center text-center">
         <p className="text-zinc-400 text-sm uppercase tracking-wider mb-2">
-          Echauffement
+          Échauffement
         </p>
         <h2 className="text-lg font-bold mb-6">{exerciseName}</h2>
 
@@ -30,7 +30,7 @@ export default function WarmupView({
           {currentIndex + 1}/{warmupSets.length} &middot; {current.label}
         </p>
         <p className="text-3xl font-bold">
-          {current.weightKg > 0 ? `${current.weightKg}kg` : 'Barre a vide'}{' '}
+          {current.weightKg > 0 ? `${current.weightKg}kg` : 'Barre à vide'}{' '}
           &times; {current.reps}
         </p>
       </div>
@@ -46,7 +46,7 @@ export default function WarmupView({
           onClick={onSkip}
           className="w-full bg-zinc-800 text-white rounded-xl py-4 text-lg"
         >
-          Passer l&apos;echauffement
+          Passer l&apos;échauffement
         </button>
       </div>
     </div>

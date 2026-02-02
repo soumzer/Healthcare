@@ -19,10 +19,10 @@ export default function WarmupRehabView({
       <div className="flex-1">
         <div className="text-center mb-6">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-2">
-            Echauffement rehab
+            Échauffement rehab
           </p>
           <p className="text-lg font-bold">
-            Exercices de preparation
+            Exercices de préparation
           </p>
         </div>
 

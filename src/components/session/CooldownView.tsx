@@ -22,7 +22,7 @@ export default function CooldownView({
             Retour au calme
           </p>
           <p className="text-lg font-bold">
-            Exercices de recuperation
+            Exercices de récupération
           </p>
         </div>
 

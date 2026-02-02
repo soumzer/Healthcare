@@ -102,7 +102,7 @@ export default function EndSessionPainCheck({
     <div className="flex flex-col min-h-[80vh] p-4">
       <div className="flex-1">
         <div className="text-center mb-8">
-          <p className="text-3xl mb-2">Seance terminee</p>
+          <p className="text-3xl mb-2">Séance terminée</p>
           <p className="text-zinc-400">
             Comment vont tes zones sensibles ?
           </p>
@@ -136,7 +136,7 @@ export default function EndSessionPainCheck({
         {/* New pain zone picker */}
         {showZonePicker && (
           <div className="mt-6 space-y-3">
-            <p className="text-sm text-zinc-400">Ou as-tu mal ?</p>
+            <p className="text-sm text-zinc-400">Où as-tu mal ?</p>
             <div className="flex flex-wrap gap-2">
               {availableZones.map(({ zone, label }) => (
                 <button
