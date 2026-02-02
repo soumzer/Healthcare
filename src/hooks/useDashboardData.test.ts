@@ -218,12 +218,17 @@ describe('useDashboardData', () => {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
 
-    // Make sure both are within the current week
-    const sessionsThisWeek = [today, yesterday].filter((d) => {
-      const dayOfWeek = d.getDay()
-      // Only count if it's still the same week (Mon-Sun)
-      return dayOfWeek >= 0
-    })
+    // Use same week boundary logic as the hook (Monday = start of week)
+    const getStartOfWeek = (date: Date): Date => {
+      const d = new Date(date)
+      const day = d.getDay()
+      const diff = day === 0 ? 6 : day - 1
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - diff)
+      return d
+    }
+    const weekStart = getStartOfWeek(today)
+    const sessionsThisWeek = [today, yesterday].filter((d) => d >= weekStart)
 
     for (const date of sessionsThisWeek) {
       const startedAt = new Date(date)

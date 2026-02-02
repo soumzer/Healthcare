@@ -102,7 +102,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['quadriceps', 'fessiers'],
     secondaryMuscles: ['ischio-jambiers'],
     equipmentNeeded: ['leg_press'],
-    contraindications: [],
+    contraindications: ['knee_left', 'knee_right'],
     alternatives: ['Squat smith machine', 'Squat goblet', 'Squat hack'],
     instructions:
       'Placez les pieds largeur épaules sur la plateforme, milieu de la plateforme. Descendez jusqu\'à 90° aux genoux sans décoller le bas du dos. Poussez sans verrouiller complètement les genoux. Bonne alternative au squat si douleurs lombaires.',
@@ -129,7 +129,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['trapèzes', 'quadriceps', 'avant-bras', 'core'],
     equipmentNeeded: ['barbell'],
     contraindications: ['lower_back', 'hip_left', 'hip_right', 'knee_left', 'knee_right'],
-    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine', 'Hip thrust smith machine'],
+    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine (soulevé de terre jambes tendues)', 'Hip thrust smith machine'],
     instructions:
       'Barre au-dessus du milieu des pieds, pieds largeur hanches. Descendez en cassant aux hanches, dos neutre, omoplates au-dessus de la barre. Poussez le sol avec les pieds et verrouillez les hanches en haut. ATTENTION : contre-indiqué si douleurs lombaires actives.',
     isRehab: false,
@@ -142,7 +142,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['érecteurs du rachis', 'core'],
     equipmentNeeded: ['barbell'],
     contraindications: ['lower_back'],
-    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine', 'Hip thrust smith machine'],
+    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine (soulevé de terre jambes tendues)', 'Hip thrust smith machine'],
     instructions:
       'Debout avec la barre, descendez en poussant les hanches vers l\'arrière, genoux légèrement fléchis. Gardez la barre proche du corps et le dos neutre. Descendez jusqu\'à sentir l\'étirement des ischio-jambiers puis remontez en contractant les fessiers.',
     isRehab: false,
@@ -379,7 +379,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     primaryMuscles: ['quadriceps'],
     secondaryMuscles: [],
     equipmentNeeded: ['leg_extension'],
-    contraindications: [],
+    contraindications: ['knee_left', 'knee_right'],
     alternatives: ['Squat goblet', 'Leg press'],
     instructions:
       'Assis à la machine, dos calé, coussin sur les tibias. Étendez les jambes en contractant les quadriceps. Contrôlez la descente sur 3 secondes. ATTENTION : réduire la charge si douleur au genou. Commencer en amplitude partielle si tendinite.',
@@ -393,7 +393,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['mollets'],
     equipmentNeeded: ['leg_curl'],
     contraindications: [],
-    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine'],
+    alternatives: ['Soulevé de terre roumain haltères', 'SDT smith machine (soulevé de terre jambes tendues)'],
     instructions:
       'Allongé ou assis à la machine, coussin sur les talons. Fléchissez les genoux en amenant les talons vers les fessiers. Contrôlez la phase excentrique sur 3 secondes. Bon complément au travail des quadriceps.',
     isRehab: false,
@@ -445,7 +445,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['deltoïdes antérieurs'],
     equipmentNeeded: ['cable'],
     contraindications: ['shoulder_left', 'shoulder_right'],
-    alternatives: ['Écartés haltères', 'Pec deck machine'],
+    alternatives: ['Écartés haltères (dumbbell fly)', 'Pec deck machine'],
     instructions:
       'Debout entre deux câbles hauts, un pas en avant. Amenez les mains ensemble devant la poitrine en gardant les coudes légèrement fléchis. Ouvrez lentement en étirant les pectoraux. Tension constante grâce aux câbles.',
     isRehab: false,
@@ -637,7 +637,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['avant-bras'],
     equipmentNeeded: ['flexbar'],
     contraindications: [],
-    alternatives: ['Curl poignet excentrique'],
+    alternatives: ['Curl poignet excentrique (golf elbow)'],
     instructions:
       'Tenez la FlexBar avec la main affectée en flexion maximale du poignet. Torsadez la barre avec l\'autre main. Bras devant vous, coudes tendus, relâchez lentement la torsion avec la main affectée sur 4-5 secondes (phase excentrique). 3 séries de 15 répétitions. Protocole Tyler et al. : progression de résistance toutes les 3 semaines.',
     isRehab: true,
@@ -681,7 +681,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['fessiers'],
     equipmentNeeded: ['resistance_band', 'rack_or_post'],
     contraindications: [],
-    alternatives: ['Leg extension tempo lent'],
+    alternatives: ['Leg extension tempo lent (tendinite rotulienne)'],
     instructions:
       'Attachez une bande épaisse derrière les genoux à un point fixe. Reculez pour créer une tension, pieds largeur épaules. Descendez à 70-90° de flexion du genou, dos droit grâce à la bande qui vous tire vers l\'avant. Tenez 45 secondes. 5 répétitions, repos 2 minutes entre chaque. Intensité 7/10 effort. Protocole basé sur Rio et al. pour la modulation de la douleur tendineuse.',
     isRehab: true,
@@ -1027,7 +1027,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['érecteurs du rachis', 'core'],
     equipmentNeeded: ['dumbbells'],
     contraindications: ['lower_back'],
-    alternatives: ['SDT smith machine', 'Soulevé de terre roumain barre', 'Leg curl (ischio-jambiers)'],
+    alternatives: ['SDT smith machine (soulevé de terre jambes tendues)', 'Soulevé de terre roumain barre', 'Leg curl (ischio-jambiers)'],
     instructions:
       'Debout, un haltère dans chaque main devant les cuisses. Descendez en poussant les hanches vers l\'arrière, genoux légèrement fléchis. Gardez les haltères proches du corps et le dos neutre. Descendez jusqu\'à sentir l\'étirement des ischio-jambiers puis remontez en contractant les fessiers. Bonne alternative au soulevé de terre barre quand celle-ci n\'est pas disponible.',
     isRehab: false,
@@ -1249,7 +1249,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['petit rond', 'deltoïde postérieur'],
     equipmentNeeded: [],
     contraindications: [],
-    alternatives: ['Cross-body stretch'],
+    alternatives: ['Rotation externe haltère (couché)'],
     instructions:
       'Allongé sur le côté affecté, épaule à 90° de flexion, coude à 90°. Avec la main opposée, poussez doucement l\'avant-bras vers le sol (rotation interne). Maintenez 30 secondes, 3 répétitions. Ne forcez JAMAIS — arrêtez à la sensation d\'étirement. Adresse la raideur de la capsule postérieure, fréquente dans les tendinopathies de la coiffe des rotateurs.',
     isRehab: true,
@@ -1411,7 +1411,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['moyen fessier', 'rotateurs externes de hanche'],
     equipmentNeeded: ['foam_roller'],
     contraindications: [],
-    alternatives: ['Balle de tennis massage fessier'],
+    alternatives: ['Étirement piriforme assis'],
     instructions:
       'Assis sur le foam roller, croisez une cheville sur le genou opposé. Penchez-vous du côté de la jambe croisée. Roulez lentement sur le fessier en insistant sur les points sensibles (15-30 secondes par point). 2 séries de 60 secondes par côté. Cible le piriforme et les rotateurs profonds de la hanche. Pour plus de pression localisée, utilisez une balle de tennis ou de lacrosse à la place du rouleau.',
     isRehab: true,
@@ -1485,7 +1485,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['soléaire'],
     equipmentNeeded: ['step'],
     contraindications: [],
-    alternatives: ['Mollets excentriques genou fléchi'],
+    alternatives: ['Mollets excentriques genou fléchi (soleus heel drop)'],
     instructions:
       'Debout sur un step, avant-pied en appui, talon dans le vide, GENOU TENDU. Montez sur la pointe des deux pieds, puis levez le pied sain et descendez LENTEMENT sur une jambe sur 3-5 secondes (phase excentrique) en laissant le talon descendre sous le niveau du step. Remontez sur deux pieds. 3 séries de 15 répétitions, 2x par jour. Protocole Alfredson (1998) : gold standard pour la tendinopathie d\'Achille. 12 semaines minimum. La douleur légère (< 5/10) pendant l\'exercice est acceptable et même attendue au début.',
     isRehab: true,
@@ -1607,7 +1607,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['trapèzes', 'rhomboïdes'],
     equipmentNeeded: ['dumbbells'],
     contraindications: ['shoulder_left', 'shoulder_right', 'lower_back'],
-    alternatives: ['Face pull', 'Oiseau câble'],
+    alternatives: ['Face pull', 'Oiseau câble (rear delt fly)'],
     instructions:
       'Penché en avant à 45-60°, dos plat, haltères sous la poitrine. Ouvrez les bras sur les côtés en serrant les omoplates, coudes légèrement fléchis. Descendez lentement. Ne pas arrondir le dos. 3-4 séries de 12-15 reps.',
     isRehab: false,
@@ -1635,7 +1635,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['avant-bras'],
     equipmentNeeded: ['dumbbells'],
     contraindications: ['elbow_left', 'elbow_right'],
-    alternatives: ['Curl biceps haltères', 'Curl marteau câble'],
+    alternatives: ['Curl biceps haltères', 'Curl concentré haltère'],
     instructions:
       'Debout, haltères le long du corps, paumes face à face (prise neutre). Fléchissez les coudes sans tourner les poignets. Le curl marteau cible le brachial et le brachio-radial en plus du biceps — bras plus épais vu de côté. 3-4 séries de 10-12 reps.',
     isRehab: false,
@@ -1663,7 +1663,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: [],
     equipmentNeeded: ['cable', 'rope_attachment'],
     contraindications: ['elbow_left', 'elbow_right'],
-    alternatives: ['Extension triceps haltère', 'Dips'],
+    alternatives: ['Extension triceps haltère (overhead)', 'Dips'],
     instructions:
       'Debout face au câble haut, corde en mains. Gardez les coudes collés au corps. Poussez vers le bas en écartant les mains en fin de mouvement pour maximiser la contraction du chef latéral. Remontez lentement. 3-4 séries de 12-15 reps.',
     isRehab: false,
@@ -1678,7 +1678,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: [],
     equipmentNeeded: ['barbell'],
     contraindications: ['wrist_left', 'wrist_right'],
-    alternatives: ['Farmer walk'],
+    alternatives: ['Farmer walk haltères'],
     instructions:
       'Avant-bras posés sur un banc ou les cuisses, poignets dépassant du bord, barre en prise supination. Fléchissez les poignets vers le haut puis descendez lentement. Important pour l\'équilibre fléchisseurs/extenseurs du poignet. 3 séries de 15-20 reps.',
     isRehab: false,

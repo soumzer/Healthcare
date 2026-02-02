@@ -309,6 +309,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
             sessionId: 0,
             weightKg,
             reps: avgReps,
+            repsPerSet: ex.sets.map((s) => s.actualReps ?? 0),
             sets: ex.sets.length,
             avgRepsInReserve: hadPain ? -1 : avgRIR, // -1 signals pain occurred
             avgRestSeconds: avgRest,
@@ -528,7 +529,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       if (!currentExercise) return
       const oldExerciseId = currentExercise.exerciseId
 
-      // 1. Update the active program in DB — swap exerciseId in this slot
+      // 1. Update the active program in DB FIRST — swap exerciseId in this slot
       const activeProgram = await db.workoutPrograms
         .where('userId').equals(userId)
         .filter(p => p.isActive)
@@ -546,12 +547,11 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
       }
 
-      // 2. Update the engine's current exercise in-place
+      // 2. Only update engine state AFTER DB write succeeds
       const newExData = availableExercises.find(e => e.id === newExerciseId)
-      // Estimate starting weight: 70% of old exercise weight (conservative ratio for exercise swap)
       const estimatedWeight = Math.round(currentExercise.prescribedWeightKg * 0.7 * 2) / 2
-      if (engine.getCurrentExercise()) {
-        const ex = engine.getCurrentExercise()
+      const ex = engine.getCurrentExercise()
+      if (ex) {
         ex.exerciseId = newExerciseId
         ex.exerciseName = newExData?.name ?? ''
         ex.prescribedWeightKg = estimatedWeight
@@ -598,9 +598,9 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
           ...currentExercise,
           exerciseName: exerciseNames[currentExercise.exerciseId] ?? '',
           prescribedWeightKg:
-            alternativeWeight ?? lastEnteredWeight ?? currentExercise.prescribedWeightKg,
+            alternativeWeight ?? currentExercise.prescribedWeightKg,
           prescribedReps:
-            alternativeReps ?? lastEnteredReps ?? currentExercise.prescribedReps,
+            alternativeReps ?? currentExercise.prescribedReps,
           instructions:
             availableExercises.find((e) => e.id === currentExercise.exerciseId)?.instructions ?? '',
         }

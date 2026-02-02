@@ -165,7 +165,7 @@ function SessionContent({
   for (const [exerciseId, p] of latestByExercise) {
     history[exerciseId] = {
       lastWeightKg: p.weightKg,
-      lastReps: Array(p.sets).fill(p.reps),
+      lastReps: p.repsPerSet ?? Array(p.sets).fill(p.reps),
       lastAvgRIR: p.avgRepsInReserve,
       lastAvgRestSeconds: p.avgRestSeconds,
       prescribedSets: p.sets,

@@ -232,15 +232,15 @@ describe('Progression integration: deload after 5 weeks', () => {
     // 60 * 0.6 = 36 -> closest available at or below = 35
     expect(ex1.prescribedWeightKg).toBeLessThanOrEqual(36)
     expect(ex1.prescribedWeightKg).toBeGreaterThanOrEqual(30) // Reasonable deload range
-    // Reps should stay at program target (8)
-    expect(ex1.prescribedReps).toBe(8)
+    // Deload reps: max(targetReps, 10) — ensures moderate effort at reduced weight
+    expect(ex1.prescribedReps).toBe(10) // max(8, 10) = 10
 
     // Check exercise 2: 40 * 0.6 = 24 -> closest at or below = 22.5
     deloadEngine.completeExercise()
     const ex2 = deloadEngine.getCurrentExercise()
     expect(ex2.prescribedWeightKg).toBeLessThanOrEqual(24)
     expect(ex2.prescribedWeightKg).toBeGreaterThanOrEqual(20)
-    expect(ex2.prescribedReps).toBe(12) // Program target reps
+    expect(ex2.prescribedReps).toBe(12) // max(12, 10) = 12, program target already >= 10
 
     // Check exercise 3: 30 * 0.6 = 18 -> closest at or below = 17.5
     deloadEngine.completeExercise()

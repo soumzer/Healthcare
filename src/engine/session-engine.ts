@@ -72,9 +72,9 @@ export class SessionEngine {
     const prev = this.history[pe.exerciseId]
     if (!prev) return pe.targetReps
 
-    // During deload, maintain same reps as prescribed in the program
+    // During deload, use moderate rep range (10) — 60% weight at original reps would be too easy
     if (this.options.phase === 'deload') {
-      return pe.targetReps
+      return Math.max(pe.targetReps, 10)
     }
 
     const result = this.runProgression(pe, prev)
@@ -135,7 +135,19 @@ export class SessionEngine {
       adjustments.filter((a) => a.action === 'skip').map((a) => a.exerciseId)
     )
     if (skippedIds.size > 0) {
+      // Track which exercise is current before removing
+      const currentExerciseId = this.currentIndex < this.exercises.length
+        ? this.exercises[this.currentIndex].exerciseId
+        : null
       this.exercises = this.exercises.filter((e) => !skippedIds.has(e.exerciseId))
+      // Recalculate currentIndex: find the current exercise in the filtered list
+      if (currentExerciseId !== null && !skippedIds.has(currentExerciseId)) {
+        this.currentIndex = this.exercises.findIndex((e) => e.exerciseId === currentExerciseId)
+        if (this.currentIndex < 0) this.currentIndex = 0
+      } else {
+        // Current exercise was skipped — reset to 0 (next available)
+        this.currentIndex = 0
+      }
     }
   }
 

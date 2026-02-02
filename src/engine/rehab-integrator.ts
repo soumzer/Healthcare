@@ -29,6 +29,7 @@ export interface RehabExerciseInfo {
 
 const MAX_WARMUP = 8
 const MAX_COOLDOWN = 5
+const MAX_ACTIVE_WAIT = 8
 
 // ---------------------------------------------------------------------------
 // Main function
@@ -131,11 +132,13 @@ export function integrateRehab(
   const warmupRehab = warmupAll.slice(0, MAX_WARMUP)
   const cooldownRehab = cooldownAll.slice(0, MAX_COOLDOWN)
 
-  // 7. activeWaitPool has no cap
+  // 7. Cap activeWaitPool to avoid overwhelming the user
+  const activeWaitPool = activeWaitAll.slice(0, MAX_ACTIVE_WAIT)
+
   return {
     session,
     warmupRehab,
-    activeWaitPool: activeWaitAll,
+    activeWaitPool,
     cooldownRehab,
   }
 }

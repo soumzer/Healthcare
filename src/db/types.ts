@@ -160,6 +160,7 @@ export interface ExerciseProgress {
   sessionId: number
   weightKg: number
   reps: number // average reps per set
+  repsPerSet?: number[] // actual reps per set (for accurate progression)
   sets: number
   avgRepsInReserve: number // -1 if pain was reported
   avgRestSeconds: number
