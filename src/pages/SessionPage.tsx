@@ -123,8 +123,12 @@ function SessionContent({
 
   if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined || recentPainLogs === undefined) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-zinc-400">Chargement de la seance...</p>
+      <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
+        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-white text-lg">Chargement...</p>
+        <p className="text-zinc-500 text-xs mt-2">
+          {!program ? 'programme' : !programSession ? 'session' : !user ? 'profil' : !allExercises ? 'exercices' : !progressData ? 'progression' : !phaseData ? 'phase' : conditions === undefined ? 'conditions' : 'douleurs'}
+        </p>
       </div>
     )
   }
