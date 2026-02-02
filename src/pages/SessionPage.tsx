@@ -121,6 +121,26 @@ function SessionContent({
 
   const programSession = program?.sessions?.[sessionIndex]
 
+  // useMemo MUST be called before any early return (Rules of Hooks)
+  const referenceWeights = useMemo(() => {
+    if (!progressData || progressData.length === 0) return new Map<number, number>()
+    const refMap = new Map<number, number>()
+    const byExercise = new Map<number, typeof progressData>()
+    for (const p of progressData) {
+      const list = byExercise.get(p.exerciseId) ?? []
+      list.push(p)
+      byExercise.set(p.exerciseId, list)
+    }
+    for (const [exerciseId, entries] of byExercise) {
+      const sorted = entries.sort((a, b) => b.date.getTime() - a.date.getTime())
+      const healthyEntry = sorted.find((e) => e.avgRepsInReserve >= 0)
+      if (healthyEntry) {
+        refMap.set(exerciseId, healthyEntry.weightKg)
+      }
+    }
+    return refMap
+  }, [progressData])
+
   if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined || recentPainLogs === undefined) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
@@ -183,29 +203,6 @@ function SessionContent({
       duringExercises: Array.from(data.duringExercises),
     }))
   })()
-
-  // Build reference weights map: for each exercise, find the most recent
-  // ExerciseProgress entry where avgRepsInReserve >= 0 (no pain reported;
-  // pain is recorded as -1). This is the last "healthy" weight.
-  const referenceWeights = useMemo(() => {
-    if (!progressData || progressData.length === 0) return new Map<number, number>()
-    const refMap = new Map<number, number>()
-    // Group progress entries by exerciseId, sorted by date descending
-    const byExercise = new Map<number, typeof progressData>()
-    for (const p of progressData) {
-      const list = byExercise.get(p.exerciseId) ?? []
-      list.push(p)
-      byExercise.set(p.exerciseId, list)
-    }
-    for (const [exerciseId, entries] of byExercise) {
-      const sorted = entries.sort((a, b) => b.date.getTime() - a.date.getTime())
-      const healthyEntry = sorted.find((e) => e.avgRepsInReserve >= 0)
-      if (healthyEntry) {
-        refMap.set(exerciseId, healthyEntry.weightKg)
-      }
-    }
-    return refMap
-  }, [progressData])
 
   // Calculate pain adjustments for session exercises
   const painAdjustments = (() => {
