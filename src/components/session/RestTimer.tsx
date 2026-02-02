@@ -32,10 +32,10 @@ export default function RestTimer({
   const isDone = remaining === 0
 
   useEffect(() => {
-    if (remaining <= 0) {
+    if (isDone) {
       navigator.vibrate?.(200)
     }
-  }, [remaining <= 0])
+  }, [isDone])
 
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
