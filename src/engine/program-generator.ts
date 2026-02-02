@@ -166,7 +166,7 @@ function pickPreferred(
 // 4d. Session slot definition for structured session building
 // ---------------------------------------------------------------------------
 
-interface ExerciseSlot {
+export interface ExerciseSlot {
   /** Human-readable description of this slot */
   label: string
   /** Function that returns candidate exercises for this slot */
@@ -179,6 +179,59 @@ interface ExerciseSlot {
   reps: number
   /** Rest in seconds */
   rest: number
+}
+
+// ---------------------------------------------------------------------------
+// 4e. Time budget helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Estimate session duration in minutes from exercise slots.
+ * Formula matches useNextSession.ts:108-114:
+ *   Per exercise: sets × (45s work + restSeconds)
+ *   Total = sum / 60 + 5 (warmup overhead)
+ */
+export function estimateSlotMinutes(slots: ExerciseSlot[]): number {
+  let totalSec = 0
+  for (const s of slots) totalSec += s.sets * (45 + s.rest)
+  return Math.round(totalSec / 60) + 5
+}
+
+/**
+ * Trim exercise slots to fit within a time budget (minutesPerSession).
+ *
+ * Phase 1: Remove accessory exercises from the end (keep minimum 3 compounds).
+ * Phase 2: Reduce sets by 1 per exercise (minimum 2 sets).
+ * Phase 3: Reduce rest for isolation exercises (index >= 3) by 30s (minimum 45s).
+ */
+export function trimSlotsToTimeBudget(
+  slots: ExerciseSlot[],
+  minutesPerSession: number,
+): ExerciseSlot[] {
+  let trimmed = [...slots]
+
+  // Phase 1: Remove accessory exercises from the end, keep minimum 3
+  while (estimateSlotMinutes(trimmed) > minutesPerSession && trimmed.length > 3) {
+    trimmed.pop()
+  }
+
+  // Phase 2: Reduce sets by 1 per exercise (minimum 2 sets)
+  if (estimateSlotMinutes(trimmed) > minutesPerSession) {
+    trimmed = trimmed.map((s) => ({
+      ...s,
+      sets: Math.max(2, s.sets - 1),
+    }))
+  }
+
+  // Phase 3: Reduce rest for isolation exercises (index >= 3) by 30s (minimum 45s)
+  if (estimateSlotMinutes(trimmed) > minutesPerSession) {
+    trimmed = trimmed.map((s, i) => ({
+      ...s,
+      rest: i >= 3 ? Math.max(45, s.rest - 30) : s.rest,
+    }))
+  }
+
+  return trimmed
 }
 
 function buildStructuredSession(
@@ -236,6 +289,7 @@ function buildStructuredSession(
 function buildFullBodySessions(
   available: Exercise[],
   daysPerWeek: number,
+  minutesPerSession: number,
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -528,14 +582,18 @@ function buildFullBodySessions(
   // -----------------------------------------------------------------------
 
   // DUP: Day A = heavy, Day B = volume, Day C = moderate
+  const trimmedA = trimSlotsToTimeBudget(fullBodyASlots, minutesPerSession)
+  const trimmedB = trimSlotsToTimeBudget(fullBodyBSlots, minutesPerSession)
+
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Full Body A — Force', 1, fullBodyASlots, available, 'heavy'),
-    buildStructuredSession('Full Body B — Volume', 2, fullBodyBSlots, available, 'volume'),
+    buildStructuredSession('Full Body A — Force', 1, trimmedA, available, 'heavy'),
+    buildStructuredSession('Full Body B — Volume', 2, trimmedB, available, 'volume'),
   ]
 
   if (daysPerWeek >= 3) {
+    const trimmedC = trimSlotsToTimeBudget(fullBodyCSlots, minutesPerSession)
     sessions.push(
-      buildStructuredSession('Full Body C — Moderé', 3, fullBodyCSlots, available, 'moderate'),
+      buildStructuredSession('Full Body C — Moderé', 3, trimmedC, available, 'moderate'),
     )
   }
 
@@ -544,6 +602,7 @@ function buildFullBodySessions(
 
 function buildUpperLowerSessions(
   available: Exercise[],
+  minutesPerSession: number,
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -890,11 +949,16 @@ function buildUpperLowerSessions(
 
   // DUP: Session 1 & 2 = heavy (fewer reps, more weight)
   //      Session 3 & 4 = volume (more reps, less weight)
+  const trimmedLower1 = trimSlotsToTimeBudget(lower1Slots, minutesPerSession)
+  const trimmedUpper1 = trimSlotsToTimeBudget(upper1Slots, minutesPerSession)
+  const trimmedLower2 = trimSlotsToTimeBudget(lower2Slots, minutesPerSession)
+  const trimmedUpper2 = trimSlotsToTimeBudget(upper2Slots, minutesPerSession)
+
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Lower 1 — Force', 1, lower1Slots, available, 'heavy'),
-    buildStructuredSession('Upper 1 — Force', 2, upper1Slots, available, 'heavy'),
-    buildStructuredSession('Lower 2 — Volume', 3, lower2Slots, available, 'volume'),
-    buildStructuredSession('Upper 2 — Volume', 4, upper2Slots, available, 'volume'),
+    buildStructuredSession('Lower 1 — Force', 1, trimmedLower1, available, 'heavy'),
+    buildStructuredSession('Upper 1 — Force', 2, trimmedUpper1, available, 'heavy'),
+    buildStructuredSession('Lower 2 — Volume', 3, trimmedLower2, available, 'volume'),
+    buildStructuredSession('Upper 2 — Volume', 4, trimmedUpper2, available, 'volume'),
   ]
 
   return sessions
@@ -902,6 +966,7 @@ function buildUpperLowerSessions(
 
 function buildPushPullLegsSessions(
   available: Exercise[],
+  minutesPerSession: number,
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -1366,13 +1431,20 @@ function buildPushPullLegsSessions(
   // -----------------------------------------------------------------------
 
   // DUP: A sessions = heavy, B sessions = volume
+  const trimmedPushA = trimSlotsToTimeBudget(pushASlots, minutesPerSession)
+  const trimmedPullA = trimSlotsToTimeBudget(pullASlots, minutesPerSession)
+  const trimmedLegsA = trimSlotsToTimeBudget(legsASlots, minutesPerSession)
+  const trimmedPushB = trimSlotsToTimeBudget(pushBSlots, minutesPerSession)
+  const trimmedPullB = trimSlotsToTimeBudget(pullBSlots, minutesPerSession)
+  const trimmedLegsB = trimSlotsToTimeBudget(legsBSlots, minutesPerSession)
+
   return [
-    buildStructuredSession('Push A — Force', 1, pushASlots, available, 'heavy'),
-    buildStructuredSession('Pull A — Force', 2, pullASlots, available, 'heavy'),
-    buildStructuredSession('Legs A — Force', 3, legsASlots, available, 'heavy'),
-    buildStructuredSession('Push B — Volume', 4, pushBSlots, available, 'volume'),
-    buildStructuredSession('Pull B — Volume', 5, pullBSlots, available, 'volume'),
-    buildStructuredSession('Legs B — Volume', 6, legsBSlots, available, 'volume'),
+    buildStructuredSession('Push A — Force', 1, trimmedPushA, available, 'heavy'),
+    buildStructuredSession('Pull A — Force', 2, trimmedPullA, available, 'heavy'),
+    buildStructuredSession('Legs A — Force', 3, trimmedLegsA, available, 'heavy'),
+    buildStructuredSession('Push B — Volume', 4, trimmedPushB, available, 'volume'),
+    buildStructuredSession('Pull B — Volume', 5, trimmedPullB, available, 'volume'),
+    buildStructuredSession('Legs B — Volume', 6, trimmedLegsB, available, 'volume'),
   ]
 }
 
@@ -1420,16 +1492,17 @@ export function generateProgram(
   const splitType = determineSplit(input.daysPerWeek)
 
   // Step 6 — build sessions
+  const { minutesPerSession } = input
   let sessions: ProgramSession[]
   switch (splitType) {
     case 'full_body':
-      sessions = buildFullBodySessions(eligible, input.daysPerWeek)
+      sessions = buildFullBodySessions(eligible, input.daysPerWeek, minutesPerSession)
       break
     case 'upper_lower':
-      sessions = buildUpperLowerSessions(eligible)
+      sessions = buildUpperLowerSessions(eligible, minutesPerSession)
       break
     case 'push_pull_legs':
-      sessions = buildPushPullLegsSessions(eligible)
+      sessions = buildPushPullLegsSessions(eligible, minutesPerSession)
       break
   }
 
