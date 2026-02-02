@@ -143,8 +143,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const [restElapsed, setRestElapsed] = useState(0)
   const [alternativeWeight, setAlternativeWeight] = useState<number | null>(null)
   const [alternativeReps, setAlternativeReps] = useState<number | null>(null)
-  const [lastEnteredWeight, setLastEnteredWeight] = useState<number | null>(null)
-  const [lastEnteredReps, setLastEnteredReps] = useState<number | null>(null)
   const [, forceUpdate] = useState(0)
 
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -381,8 +379,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     engine.completeExercise()
     setAlternativeWeight(null)
     setAlternativeReps(null)
-    setLastEnteredWeight(null)
-    setLastEnteredReps(null)
     forceUpdate((n) => n + 1)
     if (engine.isSessionComplete()) {
       // If there are cooldown rehab exercises, show cooldown first
@@ -474,10 +470,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         })
       }
 
-      // Remember entered values for next set of same exercise
-      setLastEnteredWeight(weightKg)
-      setLastEnteredReps(reps)
-
       forceUpdate((n) => n + 1)
 
       // Check if exercise is complete
@@ -560,8 +552,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
       setAlternativeWeight(null)
       setAlternativeReps(null)
-      setLastEnteredWeight(null)
-      setLastEnteredReps(null)
       forceUpdate(n => n + 1)
     },
     [currentExercise, userId, engine, availableExercises]
