@@ -75,6 +75,18 @@ function tagsForOption(opt: EquipmentOption): string[] {
   return [opt.tag, ...(opt.alsoAdd ?? [])]
 }
 
+/** All equipment items derived from categories – used for the "select all" preset. */
+const ALL_EQUIPMENT: EquipmentItem[] = categories.flatMap(cat =>
+  cat.items.flatMap(opt =>
+    tagsForOption(opt).map(tag => ({
+      name: tag,
+      type: opt.type,
+      isAvailable: true,
+      notes: '',
+    }))
+  )
+)
+
 export default function StepGymEquipment({ state, updateEquipment, nextStep, prevStep }: Props) {
   const selectedTags = new Set(state.equipment.map(e => e.name))
 
@@ -120,6 +132,24 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
       <p className="text-sm text-zinc-400">
         Cochez le materiel auquel vous avez acces.
       </p>
+
+      {/* Preset buttons */}
+      <div className="flex gap-3 mb-4">
+        <button
+          type="button"
+          onClick={() => updateEquipment(ALL_EQUIPMENT)}
+          className="flex-1 py-3 rounded-lg bg-zinc-800 text-white text-sm"
+        >
+          Salle complète
+        </button>
+        <button
+          type="button"
+          onClick={() => updateEquipment([])}
+          className="flex-1 py-3 rounded-lg bg-zinc-800 text-white text-sm"
+        >
+          Aucun
+        </button>
+      </div>
 
       {categories.map(cat => (
         <div key={cat.title}>
