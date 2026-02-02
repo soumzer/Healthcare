@@ -122,8 +122,13 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }
 
   // Restore session state from sessionStorage if available
-  const savedRaw = sessionStorage.getItem('activeSession')
-  const saved = savedRaw ? JSON.parse(savedRaw) as SavedSessionState : null
+  let saved: SavedSessionState | null = null
+  try {
+    const savedRaw = sessionStorage.getItem('activeSession')
+    saved = savedRaw ? JSON.parse(savedRaw) as SavedSessionState : null
+  } catch {
+    sessionStorage.removeItem('activeSession')
+  }
   const isRestorable = saved
     && saved.programId === programId
     && saved.sessionIndex === programSession.order
