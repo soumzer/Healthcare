@@ -22,7 +22,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4">
+    <div className="min-h-screen bg-zinc-950 text-white p-4 pt-[max(env(safe-area-inset-top),2rem)]">
       <div className="text-sm text-zinc-500 mb-4">
         Etape {state.step} / {totalSteps}
       </div>
