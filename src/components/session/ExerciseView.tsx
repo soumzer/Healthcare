@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { SessionExercise } from '../../db/types'
+import type { SubstitutionSuggestion } from '../../hooks/useSession'
 
 interface ExerciseViewProps {
   exercise: SessionExercise
@@ -7,6 +8,7 @@ interface ExerciseViewProps {
   totalSets: number
   exerciseIndex: number
   totalExercises: number
+  substitutionSuggestion?: SubstitutionSuggestion | null
   onDone: () => void
   onOccupied: () => void
   onNoWeight: () => void
@@ -18,6 +20,7 @@ export default function ExerciseView({
   totalSets,
   exerciseIndex,
   totalExercises,
+  substitutionSuggestion,
   onDone,
   onOccupied,
   onNoWeight,
@@ -39,6 +42,19 @@ export default function ExerciseView({
             : 'Poids du corps'}{' '}
           &times; {exercise.prescribedReps}
         </p>
+
+        {substitutionSuggestion && (
+          <div className="w-full max-w-md bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-3">
+            <p className="text-amber-400 text-sm font-medium mb-1">
+              Progression bloquee
+            </p>
+            <p className="text-zinc-400 text-xs">
+              Poids max atteint. Passe a{' '}
+              <span className="text-white font-semibold">{substitutionSuggestion.name}</span>{' '}
+              pour continuer a progresser.
+            </p>
+          </div>
+        )}
 
         {exercise.instructions && (
           <div className="w-full max-w-md">

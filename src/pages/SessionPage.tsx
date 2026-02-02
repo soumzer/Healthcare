@@ -352,6 +352,7 @@ function SessionRunner({
         totalSets={session.totalSets}
         exerciseIndex={session.exerciseIndex}
         totalExercises={session.totalExercises}
+        substitutionSuggestion={session.substitutionSuggestion}
         onDone={session.startSet}
         onOccupied={session.markOccupied}
         onNoWeight={session.openWeightPicker}

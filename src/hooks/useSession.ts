@@ -43,6 +43,11 @@ export interface UseSessionParams {
   painAdjustments?: PainAdjustment[]
 }
 
+export interface SubstitutionSuggestion {
+  name: string
+  exerciseId: number
+}
+
 export interface UseSessionReturn {
   phase: SessionPhase
   currentExercise: SessionExercise | null
@@ -51,6 +56,7 @@ export interface UseSessionReturn {
   warmupSets: WarmupSet[]
   warmupSetIndex: number
   fillerSuggestion: FillerSuggestion | null
+  substitutionSuggestion: SubstitutionSuggestion | null
   restSeconds: number
   restElapsed: number
   userConditions: BodyZone[]
@@ -553,6 +559,21 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
             availableExercises.find((e) => e.id === currentExercise.exerciseId)?.instructions ?? '',
         }
       : null,
+    substitutionSuggestion: (() => {
+      if (!currentExercise) return null
+      const result = engine.getProgressionResult(currentExercise.exerciseId)
+      if (!result || result.action !== 'maintain' || !result.reason.includes('Plafond')) return null
+      const exerciseData = availableExercises.find((e) => e.id === currentExercise.exerciseId)
+      if (!exerciseData?.alternatives?.length) return null
+      // Find an alternative that exists in the catalog
+      for (const altName of exerciseData.alternatives) {
+        const alt = availableExercises.find(
+          (e) => e.name === altName && !e.isRehab
+        )
+        if (alt) return { name: altName, exerciseId: alt.id! }
+      }
+      return null
+    })(),
     currentSetNumber,
     totalSets,
     warmupSets,
