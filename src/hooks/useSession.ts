@@ -547,11 +547,13 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
       // 2. Update the engine's current exercise in-place
       const newExData = availableExercises.find(e => e.id === newExerciseId)
+      // Estimate starting weight: 70% of old exercise weight (conservative ratio for exercise swap)
+      const estimatedWeight = Math.round(currentExercise.prescribedWeightKg * 0.7 * 2) / 2
       if (engine.getCurrentExercise()) {
         const ex = engine.getCurrentExercise()
         ex.exerciseId = newExerciseId
         ex.exerciseName = newExData?.name ?? ''
-        ex.prescribedWeightKg = 0 // No history — start fresh
+        ex.prescribedWeightKg = estimatedWeight
         ex.prescribedReps = currentExercise.prescribedReps
       }
 
