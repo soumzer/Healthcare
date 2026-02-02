@@ -32,7 +32,7 @@ export default function OnboardingPage() {
           style={{ width: `${(state.step / totalSteps) * 100}%` }}
         />
       </div>
-      <div className="flex-1 overflow-y-auto">{steps[state.step]}</div>
+      <div className="flex-1 overflow-y-auto overscroll-none">{steps[state.step]}</div>
     </div>
   )
 }
