@@ -35,7 +35,7 @@ function App() {
 
 export default function AppWrapper() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Healthcare">
       <App />
     </BrowserRouter>
   )
