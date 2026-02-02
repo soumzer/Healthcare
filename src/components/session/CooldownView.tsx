@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { RehabExerciseInfo } from '../../engine/rehab-integrator'
 
 interface CooldownViewProps {
@@ -9,6 +10,8 @@ export default function CooldownView({
   cooldownExercises,
   onComplete,
 }: CooldownViewProps) {
+  const [done, setDone] = useState<Set<number>>(new Set())
+
   if (cooldownExercises.length === 0) return null
 
   return (
@@ -25,9 +28,20 @@ export default function CooldownView({
 
         <div className="space-y-4">
           {cooldownExercises.map((ex, index) => (
-            <div key={index} className="bg-zinc-900 rounded-xl p-4">
+            <button
+              key={index}
+              onClick={() => setDone(prev => {
+                const next = new Set(prev)
+                next.has(index) ? next.delete(index) : next.add(index)
+                return next
+              })}
+              className={`w-full text-left rounded-xl p-4 transition-opacity ${done.has(index) ? 'bg-zinc-800 opacity-60' : 'bg-zinc-900'}`}
+            >
               <div className="flex items-center justify-between mb-1">
-                <p className="text-white font-medium">{ex.exerciseName}</p>
+                <p className="text-white font-medium">
+                  {done.has(index) && <span className="text-emerald-400 mr-2">✓</span>}
+                  {ex.exerciseName}
+                </p>
                 <span className="bg-emerald-900/40 text-emerald-400 text-xs px-2 py-0.5 rounded-full">
                   {ex.protocolName}
                 </span>
@@ -38,7 +52,7 @@ export default function CooldownView({
               {ex.notes && (
                 <p className="text-zinc-400 text-sm">{ex.notes}</p>
               )}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -48,7 +62,7 @@ export default function CooldownView({
           onClick={onComplete}
           className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
         >
-          Terminer le retour au calme
+          Terminer le retour au calme ({done.size}/{cooldownExercises.length})
         </button>
       </div>
     </div>
