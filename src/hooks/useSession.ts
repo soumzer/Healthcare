@@ -79,6 +79,7 @@ export interface UseSessionReturn {
   markMachineFree: () => void
   openWeightPicker: () => void
   selectAlternativeWeight: (weightKg: number, adjustedReps: number) => void
+  substituteExercise: (newExerciseId: number) => Promise<void>
   completeCooldown: () => Promise<void> | void
   completeRestTimer: () => void
   submitPainChecks: (checks: PainCheck[]) => Promise<void>
@@ -521,6 +522,48 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     []
   )
 
+  const substituteExercise = useCallback(
+    async (newExerciseId: number) => {
+      if (!currentExercise) return
+      const oldExerciseId = currentExercise.exerciseId
+
+      // 1. Update the active program in DB — swap exerciseId in this slot
+      const activeProgram = await db.workoutPrograms
+        .where('userId').equals(userId)
+        .filter(p => p.isActive)
+        .first()
+
+      if (activeProgram?.id !== undefined) {
+        const updatedSessions = activeProgram.sessions.map(s => ({
+          ...s,
+          exercises: s.exercises.map(pe =>
+            pe.exerciseId === oldExerciseId
+              ? { ...pe, exerciseId: newExerciseId }
+              : pe
+          ),
+        }))
+        await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+      }
+
+      // 2. Update the engine's current exercise in-place
+      const newExData = availableExercises.find(e => e.id === newExerciseId)
+      if (engine.getCurrentExercise()) {
+        const ex = engine.getCurrentExercise()
+        ex.exerciseId = newExerciseId
+        ex.exerciseName = newExData?.name ?? ''
+        ex.prescribedWeightKg = 0 // No history — start fresh
+        ex.prescribedReps = currentExercise.prescribedReps
+      }
+
+      setAlternativeWeight(null)
+      setAlternativeReps(null)
+      setLastEnteredWeight(null)
+      setLastEnteredReps(null)
+      forceUpdate(n => n + 1)
+    },
+    [currentExercise, userId, engine, availableExercises]
+  )
+
   const completeCooldown = useCallback(async () => {
     if (userConditions.length > 0) {
       setPhase('end_pain_check')
@@ -600,6 +643,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     markMachineFree,
     openWeightPicker,
     selectAlternativeWeight,
+    substituteExercise,
     completeCooldown,
     completeRestTimer,
     submitPainChecks,

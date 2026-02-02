@@ -356,6 +356,7 @@ function SessionRunner({
         onDone={session.startSet}
         onOccupied={session.markOccupied}
         onNoWeight={session.openWeightPicker}
+        onSubstitute={session.substituteExercise}
       />
     )
   }

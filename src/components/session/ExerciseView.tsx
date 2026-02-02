@@ -12,6 +12,7 @@ interface ExerciseViewProps {
   onDone: () => void
   onOccupied: () => void
   onNoWeight: () => void
+  onSubstitute?: (exerciseId: number) => void
 }
 
 export default function ExerciseView({
@@ -24,6 +25,7 @@ export default function ExerciseView({
   onDone,
   onOccupied,
   onNoWeight,
+  onSubstitute,
 }: ExerciseViewProps) {
   const [showInstructions, setShowInstructions] = useState(false)
 
@@ -48,11 +50,19 @@ export default function ExerciseView({
             <p className="text-amber-400 text-sm font-medium mb-1">
               Progression bloquee
             </p>
-            <p className="text-zinc-400 text-xs">
+            <p className="text-zinc-400 text-xs mb-2">
               Poids max atteint. Passe a{' '}
               <span className="text-white font-semibold">{substitutionSuggestion.name}</span>{' '}
               pour continuer a progresser.
             </p>
+            {onSubstitute && (
+              <button
+                onClick={() => onSubstitute(substitutionSuggestion.exerciseId)}
+                className="w-full py-2 bg-amber-700 text-white text-sm font-semibold rounded-lg"
+              >
+                Changer pour {substitutionSuggestion.name}
+              </button>
+            )}
           </div>
         )}
 
