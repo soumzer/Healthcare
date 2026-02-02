@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import type { SessionExercise } from '../../db/types'
 
 interface ExerciseViewProps {
-  exercise: SessionExercise
+  exercise: SessionExercise & { instructions?: string }
   currentSet: number
   totalSets: number
   exerciseIndex: number
@@ -21,21 +22,39 @@ export default function ExerciseView({
   onOccupied,
   onNoWeight,
 }: ExerciseViewProps) {
+  const [showInstructions, setShowInstructions] = useState(false)
+
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
-      <div className="flex-1 flex flex-col items-center justify-center text-center">
+      <div className="flex-1 flex flex-col items-center justify-center text-center overflow-hidden">
         <p className="text-zinc-400 text-sm mb-1">
           Exercice {exerciseIndex + 1}/{totalExercises}
         </p>
-        <h2 className="text-lg font-bold mb-6">{exercise.exerciseName}</h2>
+        <h2 className="text-lg font-bold mb-4">{exercise.exerciseName}</h2>
 
-        <p className="text-3xl font-bold">
+        <p className="text-3xl font-bold mb-4">
           {currentSet}/{totalSets} &middot;{' '}
           {exercise.prescribedWeightKg > 0
             ? `${exercise.prescribedWeightKg}kg`
             : 'Poids du corps'}{' '}
           &times; {exercise.prescribedReps}
         </p>
+
+        {exercise.instructions && (
+          <div className="w-full max-w-md">
+            <button
+              onClick={() => setShowInstructions(!showInstructions)}
+              className="text-zinc-500 text-sm underline underline-offset-2"
+            >
+              {showInstructions ? 'Masquer les consignes' : 'Voir les consignes'}
+            </button>
+            {showInstructions && (
+              <p className="mt-3 text-zinc-400 text-sm text-left leading-relaxed overflow-y-auto max-h-40 px-2">
+                {exercise.instructions}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 pb-4">

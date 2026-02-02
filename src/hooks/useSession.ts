@@ -549,6 +549,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
             alternativeWeight ?? lastEnteredWeight ?? currentExercise.prescribedWeightKg,
           prescribedReps:
             alternativeReps ?? lastEnteredReps ?? currentExercise.prescribedReps,
+          instructions:
+            availableExercises.find((e) => e.id === currentExercise.exerciseId)?.instructions ?? '',
         }
       : null,
     currentSetNumber,
