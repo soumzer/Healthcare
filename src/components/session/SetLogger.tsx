@@ -185,14 +185,14 @@ export default function SetLogger({
               {/* Pain level */}
               <div>
                 <label className="block text-zinc-400 text-xs mb-2">
-                  Intensité (1-5)
+                  Intensité (1-10)
                 </label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
+                <div className="grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
                     <button
                       key={level}
                       onClick={() => setPainLevel(level)}
-                      className={`flex-1 rounded-xl py-2 text-lg font-semibold ${
+                      className={`rounded-xl py-2 text-sm font-semibold ${
                         painLevel === level
                           ? `${painColor(level)} text-white`
                           : 'bg-zinc-800 text-white'

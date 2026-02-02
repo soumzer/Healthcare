@@ -114,12 +114,12 @@ export default function EndSessionPainCheck({
               <p className="text-white font-medium mb-2">
                 {bodyZoneLabels[zone] ?? zone}
               </p>
-              <div className="flex gap-2">
-                {[0, 1, 2, 3, 4, 5].map((level) => (
+              <div className="grid grid-cols-6 gap-2">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
                   <button
                     key={level}
                     onClick={() => handleLevelChange(zone, level)}
-                    className={`flex-1 rounded-xl py-4 text-lg font-semibold ${
+                    className={`rounded-xl py-2 text-sm font-semibold ${
                       levels[zone] === level
                         ? `${painColor(level)} text-white`
                         : 'bg-zinc-800 text-white'
@@ -129,6 +129,11 @@ export default function EndSessionPainCheck({
                   </button>
                 ))}
               </div>
+              {(levels[zone] ?? 0) >= 7 && (
+                <p className="text-red-400 text-xs mt-1">
+                  Douleur sévère — l&apos;exercice sera adapté
+                </p>
+              )}
             </div>
           ))}
         </div>
