@@ -19,7 +19,7 @@ export default function WarmupView({
   if (!current) return null
 
   return (
-    <div className="flex flex-col min-h-[80vh] p-4">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center text-center">
         <p className="text-zinc-400 text-sm uppercase tracking-wider mb-2">
           Echauffement

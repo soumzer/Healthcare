@@ -276,7 +276,7 @@ function SessionRunner({
 
   if (session.phase === 'done') {
     return (
-      <div className="flex flex-col min-h-[80vh] p-4 items-center justify-center text-center">
+      <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 items-center justify-center text-center overflow-hidden">
         <p className="text-3xl font-bold mb-4">Bravo !</p>
         <p className="text-zinc-400 mb-8">Seance enregistree avec succes.</p>
         <button

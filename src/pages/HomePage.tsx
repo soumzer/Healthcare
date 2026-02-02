@@ -43,7 +43,7 @@ export default function HomePage() {
   // Loading
   if (!user || info === undefined) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center h-[calc(100dvh-4rem)] overflow-hidden">
         <p className="text-zinc-500">Chargement...</p>
       </div>
     )
@@ -52,7 +52,7 @@ export default function HomePage() {
   // No program — user hasn't completed onboarding
   if (info.status === 'no_program') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] px-6 text-center overflow-hidden">
         <p className="text-2xl font-bold mb-2">Bienvenue !</p>
         <p className="text-zinc-400 mb-8">
           {"Compl\u00E9tez votre profil pour commencer."}
@@ -72,7 +72,7 @@ export default function HomePage() {
     const hoursAgo = Math.round(info.hoursSinceLastSession ?? 0)
 
     return (
-      <div className="flex flex-col min-h-[70vh] px-6 pt-12">
+      <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
         <p className="text-2xl font-bold mb-2">{"Repos recommand\u00E9"}</p>
         <p className="text-zinc-400 mb-6">
           {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
@@ -127,7 +127,7 @@ export default function HomePage() {
 
   // Ready — show session preview
   return (
-    <div className="flex flex-col min-h-[70vh] px-6 pt-12">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
       <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
       <p className="text-3xl font-bold mb-6">{info.nextSessionName}</p>
 
