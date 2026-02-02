@@ -44,6 +44,7 @@ export default function SetLogger({
   const [weight, setWeight] = useState(prescribedWeightKg > 0 ? String(prescribedWeightKg) : '')
   const [rir, setRir] = useState(2)
   const [hasPain, setHasPain] = useState(false)
+  const [showRirHelp, setShowRirHelp] = useState(false)
   const [painZone, setPainZone] = useState<BodyZone | null>(
     userConditions[0] ?? null
   )
@@ -98,7 +99,21 @@ export default function SetLogger({
         <div>
           <label className="block text-zinc-400 text-sm mb-2">
             En reserve (RIR)
+            <button
+              onClick={() => setShowRirHelp(v => !v)}
+              className="text-zinc-400 text-xs ml-1"
+              type="button"
+              aria-label="Aide RIR"
+            >
+              ?
+            </button>
           </label>
+          {showRirHelp && (
+            <p className="text-zinc-400 text-xs mt-1 mb-2">
+              Reps In Reserve = répétitions que tu aurais pu faire en plus.
+              0 = échec, 1 = il en restait 1, 2 = confortable, 3 = facile.
+            </p>
+          )}
           <div className="flex gap-2">
             {[0, 1, 2, 3, 4].map((value) => (
               <button
