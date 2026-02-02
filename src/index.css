@@ -1,27 +1,24 @@
 @import "tailwindcss";
 
-html, body {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
-
-/* Prevent iOS text size adjust and double-tap zoom */
 html {
+  overflow: hidden;
+  height: 100%;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-/* Prevent iOS pull-to-refresh */
 body {
-  overflow-y: auto;
+  overflow: hidden;
+  height: 100%;
   position: fixed;
   width: 100%;
-  height: 100%;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
 }
