@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo } from 'react'
+import { useMemo, Component, type ReactNode } from 'react'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
 import { shouldDeload } from '../engine/progression'
@@ -311,9 +311,19 @@ function SessionRunner({
   }
 
   if (session.phase === 'exercise') {
+    if (!session.currentExercise) {
+      return (
+        <div className="p-4 text-center">
+          <p className="text-red-400">Erreur : aucun exercice trouve.</p>
+          <button onClick={() => navigate('/')} className="mt-4 bg-white text-black font-semibold rounded-xl py-3 px-6">
+            Retour
+          </button>
+        </div>
+      )
+    }
     return (
       <ExerciseView
-        exercise={session.currentExercise!}
+        exercise={session.currentExercise}
         currentSet={session.currentSetNumber}
         totalSets={session.totalSets}
         exerciseIndex={session.exerciseIndex}
@@ -393,6 +403,33 @@ function SessionRunner({
   return null
 }
 
+class SessionErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 text-center">
+          <p className="text-red-400 text-lg font-bold mb-2">Erreur de session</p>
+          <p className="text-zinc-400 text-sm mb-4">{this.state.error.message}</p>
+          <button
+            onClick={() => { window.location.href = window.location.pathname.replace(/\/session.*/, '/') }}
+            className="bg-white text-black font-semibold rounded-xl py-3 px-6"
+          >
+            Retour
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export default function SessionPage() {
   const [searchParams] = useSearchParams()
   const programId = parseInt(searchParams.get('programId') ?? '1')
@@ -400,7 +437,9 @@ export default function SessionPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <SessionContent programId={programId} sessionIndex={sessionIndex} />
+      <SessionErrorBoundary>
+        <SessionContent programId={programId} sessionIndex={sessionIndex} />
+      </SessionErrorBoundary>
     </div>
   )
 }
