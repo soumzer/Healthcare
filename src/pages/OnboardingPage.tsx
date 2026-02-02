@@ -22,7 +22,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 pt-[max(env(safe-area-inset-top),2rem)]">
+    <div className="h-[100dvh] bg-zinc-950 text-white p-4 pt-[max(env(safe-area-inset-top),2rem)] flex flex-col overflow-hidden">
       <div className="text-sm text-zinc-500 mb-4">
         Etape {state.step} / {totalSteps}
       </div>
@@ -32,7 +32,7 @@ export default function OnboardingPage() {
           style={{ width: `${(state.step / totalSteps) * 100}%` }}
         />
       </div>
-      {steps[state.step]}
+      <div className="flex-1 overflow-y-auto">{steps[state.step]}</div>
     </div>
   )
 }
