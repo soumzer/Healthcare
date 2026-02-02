@@ -137,14 +137,14 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                  className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                     selectedTags.has(opt.tag)
                       ? 'bg-white border-white'
                       : 'border-zinc-600'
                   }`}
                 >
                   {selectedTags.has(opt.tag) && (
-                    <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   )}

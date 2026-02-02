@@ -76,7 +76,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
             key={zone}
             type="button"
             onClick={() => handleZoneTap(zone)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
               existingZones.has(zone)
                 ? 'bg-white text-black'
                 : expandedZone === zone

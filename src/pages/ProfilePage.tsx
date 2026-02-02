@@ -72,7 +72,7 @@ function TrainingSettings({
             <button
               key={d}
               onClick={() => setEditDays(d)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${
                 editDays === d
                   ? 'bg-white text-black'
                   : 'bg-zinc-800 text-zinc-400'
@@ -92,7 +92,7 @@ function TrainingSettings({
             <button
               key={m}
               onClick={() => setEditMinutes(m)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${
                 editMinutes === m
                   ? 'bg-white text-black'
                   : 'bg-zinc-800 text-zinc-400'

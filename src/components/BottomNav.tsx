@@ -5,7 +5,7 @@ export default function BottomNav() {
     `flex flex-col items-center text-xs ${isActive ? 'text-white' : 'text-zinc-500'}`
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 flex justify-around py-2 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 flex justify-around py-3 pb-[env(safe-area-inset-bottom)]">
       <NavLink to="/" className={linkClass}>
         <span className="text-lg">{'\u25B6'}</span>
         <span>Séance</span>

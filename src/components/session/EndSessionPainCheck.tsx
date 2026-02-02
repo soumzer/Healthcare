@@ -111,7 +111,7 @@ export default function EndSessionPainCheck({
                   <button
                     key={level}
                     onClick={() => handleLevelChange(zone, level)}
-                    className={`flex-1 rounded-xl py-3 text-lg font-semibold ${
+                    className={`flex-1 rounded-xl py-4 text-lg font-semibold ${
                       levels[zone] === level
                         ? level === 0
                           ? 'bg-emerald-600 text-white'
@@ -139,7 +139,7 @@ export default function EndSessionPainCheck({
                   key={zone}
                   type="button"
                   onClick={() => handleAddZone(zone)}
-                  className="px-3 py-2 rounded-lg text-sm font-medium bg-zinc-800 text-white transition-colors"
+                  className="px-3 py-3 rounded-lg text-sm font-medium bg-zinc-800 text-white transition-colors"
                 >
                   {label}
                 </button>
