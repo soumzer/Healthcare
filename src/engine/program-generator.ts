@@ -176,13 +176,12 @@ function pickPreferred(
 
 /**
  * Returns true when the user has an active lower_back condition with
- * painLevel >= 6.  In that case SDT (soulevé de terre / deadlift) variants
- * are too aggravating and the program should substitute hip thrust as the
- * primary hip-hinge compound.
+ * painLevel >= 3.  SDT is high-risk for lower back / sciatica profiles,
+ * so even mild discomfort triggers hip thrust as primary hip-hinge compound.
  */
 function hasLowerBackPain(conditions: HealthCondition[]): boolean {
   return conditions.some(
-    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 6,
+    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 3,
   )
 }
 

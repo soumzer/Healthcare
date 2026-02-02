@@ -2195,8 +2195,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       expect(lower2.exercises[0].exerciseId).toBe(hipThrustId)
     })
 
-    it('with lower_back painLevel=6 (boundary), Lower 2 still avoids SDT', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back painLevel=3 (boundary), Lower 2 avoids SDT', () => {
+      const conditions = [makeCondition('lower_back', 3)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
@@ -2209,8 +2209,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       expect(lower2.exercises[0].exerciseId).toBe(hipThrustId)
     })
 
-    it('with lower_back painLevel=5, Lower 2 keeps SDT (below threshold)', () => {
-      const conditions = [makeCondition('lower_back', 5)]
+    it('with lower_back painLevel=2, Lower 2 keeps SDT (below threshold)', () => {
+      const conditions = [makeCondition('lower_back', 2)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
