@@ -9,6 +9,14 @@ interface EndSessionPainCheckProps {
   userId?: number
 }
 
+function painColor(level: number): string {
+  if (level === 0) return 'bg-emerald-600'
+  if (level <= 2) return 'bg-emerald-700'
+  if (level <= 4) return 'bg-amber-500'
+  if (level <= 6) return 'bg-orange-500'
+  return 'bg-red-600'
+}
+
 export default function EndSessionPainCheck({
   userConditions,
   onSubmit,
@@ -113,11 +121,7 @@ export default function EndSessionPainCheck({
                     onClick={() => handleLevelChange(zone, level)}
                     className={`flex-1 rounded-xl py-4 text-lg font-semibold ${
                       levels[zone] === level
-                        ? level === 0
-                          ? 'bg-emerald-600 text-white'
-                          : level <= 2
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-red-600 text-white'
+                        ? `${painColor(level)} text-white`
                         : 'bg-zinc-800 text-white'
                     }`}
                   >

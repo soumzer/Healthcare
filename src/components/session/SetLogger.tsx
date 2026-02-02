@@ -34,6 +34,14 @@ const bodyZoneLabels: Record<string, string> = {
   other: 'Autre',
 }
 
+function painColor(level: number): string {
+  if (level === 0) return 'bg-emerald-600'
+  if (level <= 2) return 'bg-emerald-700'
+  if (level <= 4) return 'bg-amber-500'
+  if (level <= 6) return 'bg-orange-500'
+  return 'bg-red-600'
+}
+
 export default function SetLogger({
   prescribedReps,
   prescribedWeightKg,
@@ -186,7 +194,7 @@ export default function SetLogger({
                       onClick={() => setPainLevel(level)}
                       className={`flex-1 rounded-xl py-2 text-lg font-semibold ${
                         painLevel === level
-                          ? 'bg-red-600 text-white'
+                          ? `${painColor(level)} text-white`
                           : 'bg-zinc-800 text-white'
                       }`}
                     >
