@@ -94,15 +94,17 @@ function estimateDuration(ex: RehabExercise): string {
 }
 
 function parseDuration(d: string): number {
-  if (d.includes('15')) return 12
-  if (d.includes('10')) return 10
+  // Check for seconds first (e.g., "30 sec", "15s")
+  if (d.includes('s') && !d.includes('min')) {
+    const match = d.match(/(\d+)/)
+    return match ? parseInt(match[1]) / 60 : 0.5
+  }
+  // Check for minutes (e.g., "10 min", "10-15 min")
   if (d.includes('min')) {
     const match = d.match(/(\d+)/)
     return match ? parseInt(match[1]) : 2
   }
-  if (d.includes('s')) {
-    const match = d.match(/(\d+)/)
-    return match ? parseInt(match[1]) / 60 : 0.5
-  }
-  return 1
+  // Plain number — assume minutes
+  const match = d.match(/(\d+)/)
+  return match ? parseInt(match[1]) : 1
 }
