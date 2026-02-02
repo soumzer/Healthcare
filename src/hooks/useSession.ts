@@ -78,6 +78,7 @@ export interface UseSessionReturn {
   markOccupied: () => void
   markMachineFree: () => void
   openWeightPicker: () => void
+  cancelWeightPicker: () => void
   selectAlternativeWeight: (weightKg: number, adjustedReps: number) => void
   substituteExercise: (newExerciseId: number) => Promise<void>
   completeCooldown: () => Promise<void> | void
@@ -507,6 +508,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     setPhase('weight_picker')
   }, [])
 
+  const cancelWeightPicker = useCallback(() => {
+    setPhase('exercise')
+  }, [])
+
   const selectAlternativeWeight = useCallback(
     (weightKg: number, adjustedReps: number) => {
       setAlternativeWeight(weightKg)
@@ -635,6 +640,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     markOccupied,
     markMachineFree,
     openWeightPicker,
+    cancelWeightPicker,
     selectAlternativeWeight,
     substituteExercise,
     completeCooldown,

@@ -5,6 +5,7 @@ interface WeightPickerProps {
   prescribedReps: number
   availableWeights?: number[]
   onSelect: (weightKg: number, adjustedReps: number) => void
+  onCancel: () => void
 }
 
 function adjustRepsForWeight(
@@ -25,6 +26,7 @@ export default function WeightPicker({
   prescribedReps,
   availableWeights,
   onSelect,
+  onCancel,
 }: WeightPickerProps) {
   const [customWeight, setCustomWeight] = useState('')
 
@@ -113,6 +115,13 @@ export default function WeightPicker({
             </button>
           </div>
         </div>
+
+        <button
+          onClick={onCancel}
+          className="w-full py-4 text-zinc-400 text-base mt-4"
+        >
+          Garder {currentWeightKg}kg
+        </button>
       </div>
     </div>
   )

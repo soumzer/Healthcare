@@ -403,6 +403,7 @@ function SessionRunner({
         prescribedReps={session.currentExercise?.prescribedReps ?? 0}
         availableWeights={availableWeights}
         onSelect={session.selectAlternativeWeight}
+        onCancel={session.cancelWeightPicker}
       />
     )
   }
