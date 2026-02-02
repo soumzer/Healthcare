@@ -80,28 +80,18 @@ export function filterExercisesByContraindications(
   exercises: Exercise[],
   conditions: HealthCondition[],
 ): Exercise[] {
-  // Zones with severe pain (>= 7) — fully excluded
-  const severeZones = new Set(
+  // Zones with painLevel >= 7 (severe) — exercise is skipped during sessions,
+  // so exclude it from the program entirely. Same threshold as session skip.
+  const painfulZones = new Set(
     conditions
       .filter((c) => c.isActive && c.painLevel >= 7)
       .map((c) => c.bodyZone),
   )
 
-  // Zones with moderate pain (>= 6) — applies to ALL zones
-  const moderateZones = new Set(
-    conditions
-      .filter((c) => c.isActive && c.painLevel >= 6)
-      .map((c) => c.bodyZone),
-  )
-
-  // No painful zones → nothing to exclude
-  if (severeZones.size === 0 && moderateZones.size === 0) return exercises
+  if (painfulZones.size === 0) return exercises
 
   return exercises.filter((exercise) => {
-    const hasContraindication = exercise.contraindications.some(
-      (zone) => severeZones.has(zone) || moderateZones.has(zone),
-    )
-    return !hasContraindication
+    return !exercise.contraindications.some((zone) => painfulZones.has(zone))
   })
 }
 
@@ -168,21 +158,6 @@ function pickPreferred(
     }
   }
   return pickOne(fallbackSource, usedIds)
-}
-
-// ---------------------------------------------------------------------------
-// 4c. Lower-back condition helper
-// ---------------------------------------------------------------------------
-
-/**
- * Returns true when the user has an active lower_back condition with
- * painLevel >= 3.  SDT is high-risk for lower back / sciatica profiles,
- * so even mild discomfort triggers hip thrust as primary hip-hinge compound.
- */
-function hasLowerBackPain(conditions: HealthCondition[]): boolean {
-  return conditions.some(
-    (c) => c.bodyZone === 'lower_back' && c.isActive && c.painLevel >= 3,
-  )
 }
 
 
@@ -261,7 +236,6 @@ function buildStructuredSession(
 function buildFullBodySessions(
   available: Exercise[],
   daysPerWeek: number,
-  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -427,15 +401,13 @@ function buildFullBodySessions(
   // Full Body B
   // -----------------------------------------------------------------------
 
-  const avoidSDT = hasLowerBackPain(conditions)
-
   const fullBodyBSlots: ExerciseSlot[] = [
     {
-      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
-      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'sdt smith',
       sets: 4,
-      reps: avoidSDT ? 10 : 8,
+      reps: 8,
       rest: 150,
     },
     {
@@ -572,7 +544,6 @@ function buildFullBodySessions(
 
 function buildUpperLowerSessions(
   available: Exercise[],
-  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -809,25 +780,23 @@ function buildUpperLowerSessions(
   // Lower 2 — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
-  const avoidSDT = hasLowerBackPain(conditions)
-
   const lower2Slots: ExerciseSlot[] = [
     {
-      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
-      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'sdt smith',
       sets: 4,
-      reps: avoidSDT ? 10 : 8,
+      reps: 8,
       rest: 150,
     },
-    ...(avoidSDT ? [] : [{
+    {
       label: 'Hip thrust',
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
       reps: 10,
       rest: 120,
-    } as ExerciseSlot]),
+    },
     {
       label: 'Leg curl',
       candidates: () => legCurls,
@@ -933,7 +902,6 @@ function buildUpperLowerSessions(
 
 function buildPushPullLegsSessions(
   available: Exercise[],
-  conditions: HealthCondition[] = [],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -1343,25 +1311,23 @@ function buildPushPullLegsSessions(
   // Legs B — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
-  const avoidSDT = hasLowerBackPain(conditions)
-
   const legsBSlots: ExerciseSlot[] = [
     {
-      label: avoidSDT ? 'Hip thrust (primary compound)' : 'Hip hinge',
-      candidates: () => avoidSDT ? [...hipThrusts, ...hipHinges] : hipHinges,
-      preferredName: avoidSDT ? 'hip thrust' : 'sdt smith',
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'sdt smith',
       sets: 4,
-      reps: avoidSDT ? 10 : 8,
+      reps: 8,
       rest: 150,
     },
-    ...(avoidSDT ? [] : [{
+    {
       label: 'Hip thrust',
       candidates: () => hipThrusts,
       preferredName: 'hip thrust',
       sets: 4,
       reps: 10,
       rest: 120,
-    } as ExerciseSlot]),
+    },
     {
       label: 'Leg curl',
       candidates: () => legCurls,
@@ -1457,13 +1423,13 @@ export function generateProgram(
   let sessions: ProgramSession[]
   switch (splitType) {
     case 'full_body':
-      sessions = buildFullBodySessions(eligible, input.daysPerWeek, input.conditions)
+      sessions = buildFullBodySessions(eligible, input.daysPerWeek)
       break
     case 'upper_lower':
-      sessions = buildUpperLowerSessions(eligible, input.conditions)
+      sessions = buildUpperLowerSessions(eligible)
       break
     case 'push_pull_legs':
-      sessions = buildPushPullLegsSessions(eligible, input.conditions)
+      sessions = buildPushPullLegsSessions(eligible)
       break
   }
 

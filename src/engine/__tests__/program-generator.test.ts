@@ -201,14 +201,13 @@ describe('filterExercisesByContraindications', () => {
     expect(result[0].name).toBe('Dead Bug')
   })
 
-  it('handles exact boundary: painLevel 6 excludes (moderate threshold)', () => {
+  it('handles exact boundary: painLevel 6 allows (below threshold)', () => {
     const conditions = [makeCondition('knee_right', 6)]
     const result = filterExercisesByContraindications(
       [kneeExercise, safeExercise],
       conditions,
     )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
+    expect(result).toHaveLength(2)
   })
 
   it('handles exact boundary: painLevel 5 allows', () => {
@@ -243,16 +242,16 @@ describe('filterExercisesByContraindications', () => {
   })
 
   // -----------------------------------------------------------------------
-  // Moderate threshold (>= 6) — applies to ALL zones
+  // Threshold >= 7 — aligned with session "skip" tier
   // -----------------------------------------------------------------------
 
-  it('excludes exercises with lower_back contraindication at painLevel >= 6', () => {
+  it('excludes exercises with lower_back contraindication at painLevel >= 7', () => {
     const rowingBarre = makeExercise({
       id: 30,
       name: 'Rowing barre',
       contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
     })
-    const conditions = [makeCondition('lower_back', 6)]
+    const conditions = [makeCondition('lower_back', 7)]
     const result = filterExercisesByContraindications(
       [rowingBarre, safeExercise],
       conditions,
@@ -261,13 +260,13 @@ describe('filterExercisesByContraindications', () => {
     expect(result[0].name).toBe('Dead Bug')
   })
 
-  it('allows exercises with lower_back contraindication at painLevel 5 (below threshold)', () => {
+  it('allows exercises with lower_back contraindication at painLevel 6 (below threshold)', () => {
     const rowingBarre = makeExercise({
       id: 30,
       name: 'Rowing barre',
       contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
     })
-    const conditions = [makeCondition('lower_back', 5)]
+    const conditions = [makeCondition('lower_back', 6)]
     const result = filterExercisesByContraindications(
       [rowingBarre, safeExercise],
       conditions,
@@ -281,7 +280,7 @@ describe('filterExercisesByContraindications', () => {
       name: 'Rowing machine (chest-supported)',
       contraindications: [],
     })
-    const conditions = [makeCondition('lower_back', 6)]
+    const conditions = [makeCondition('lower_back', 7)]
     const result = filterExercisesByContraindications(
       [machineRowing, safeExercise],
       conditions,
@@ -295,7 +294,7 @@ describe('filterExercisesByContraindications', () => {
       name: 'Leg press',
       contraindications: [],
     })
-    const conditions = [makeCondition('lower_back', 6)]
+    const conditions = [makeCondition('lower_back', 7)]
     const result = filterExercisesByContraindications(
       [legPress, safeExercise],
       conditions,
@@ -309,7 +308,7 @@ describe('filterExercisesByContraindications', () => {
       name: 'Hip thrust smith machine',
       contraindications: ['hip_left', 'hip_right'],
     })
-    const conditions = [makeCondition('lower_back', 6)]
+    const conditions = [makeCondition('lower_back', 7)]
     const result = filterExercisesByContraindications(
       [hipThrust, safeExercise],
       conditions,
@@ -317,18 +316,17 @@ describe('filterExercisesByContraindications', () => {
     expect(result).toHaveLength(2)
   })
 
-  it('knee pain at 5 does NOT trigger moderate filtering (below threshold)', () => {
-    const conditions = [makeCondition('knee_left', 5)]
+  it('knee pain at 6 does NOT trigger filtering (below threshold)', () => {
+    const conditions = [makeCondition('knee_left', 6)]
     const result = filterExercisesByContraindications(
       [kneeExercise, safeExercise],
       conditions,
     )
-    // knee_left at painLevel 5 is below the >=6 moderate threshold
     expect(result).toHaveLength(2)
   })
 
-  it('knee pain at 6 excludes exercises with knee contraindication', () => {
-    const conditions = [makeCondition('knee_left', 6)]
+  it('knee pain at 7 excludes exercises with knee contraindication', () => {
+    const conditions = [makeCondition('knee_left', 7)]
     const result = filterExercisesByContraindications(
       [kneeExercise, safeExercise],
       conditions,
@@ -337,8 +335,8 @@ describe('filterExercisesByContraindications', () => {
     expect(result[0].name).toBe('Dead Bug')
   })
 
-  it('shoulder pain at 6 excludes exercises with shoulder contraindication', () => {
-    const conditions = [makeCondition('shoulder_left', 6)]
+  it('shoulder pain at 7 excludes exercises with shoulder contraindication', () => {
+    const conditions = [makeCondition('shoulder_left', 7)]
     const result = filterExercisesByContraindications(
       [shoulderExercise, safeExercise],
       conditions,
@@ -347,13 +345,13 @@ describe('filterExercisesByContraindications', () => {
     expect(result[0].name).toBe('Dead Bug')
   })
 
-  it('elbow pain at 6 excludes exercises with elbow contraindication', () => {
+  it('elbow pain at 7 excludes exercises with elbow contraindication', () => {
     const elbowExercise = makeExercise({
       id: 35,
       name: 'Curl biceps barre',
       contraindications: ['elbow_left', 'elbow_right'],
     })
-    const conditions = [makeCondition('elbow_left', 6)]
+    const conditions = [makeCondition('elbow_left', 7)]
     const result = filterExercisesByContraindications(
       [elbowExercise, safeExercise],
       conditions,
@@ -362,13 +360,13 @@ describe('filterExercisesByContraindications', () => {
     expect(result[0].name).toBe('Dead Bug')
   })
 
-  it('excludes SDT with lower_back contraindication at painLevel 6', () => {
+  it('excludes SDT with lower_back contraindication at painLevel 7', () => {
     const sdt = makeExercise({
       id: 34,
       name: 'SDT smith machine (soulevé de terre)',
       contraindications: ['lower_back'],
     })
-    const conditions = [makeCondition('lower_back', 6)]
+    const conditions = [makeCondition('lower_back', 7)]
     const result = filterExercisesByContraindications(
       [sdt, safeExercise],
       conditions,
@@ -2172,8 +2170,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
     })
 
-    it('with lower_back painLevel=6, Lower 2 does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back painLevel=7, Lower 2 does NOT contain any SDT exercise', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
@@ -2185,18 +2183,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       }
     })
 
-    it('with lower_back painLevel=6, Lower 2 has hip thrust as first compound', () => {
-      const conditions = [makeCondition('lower_back', 6)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      expect(lower2.exercises[0].exerciseId).toBe(hipThrustId)
-    })
-
-    it('with lower_back painLevel=3 (boundary), Lower 2 avoids SDT', () => {
-      const conditions = [makeCondition('lower_back', 3)]
+    it('with lower_back painLevel=7 (boundary), Lower 2 excludes SDT', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
@@ -2206,11 +2194,10 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       for (const sdtId of sdtExerciseIds) {
         expect(ids).not.toContain(sdtId)
       }
-      expect(lower2.exercises[0].exerciseId).toBe(hipThrustId)
     })
 
-    it('with lower_back painLevel=2, Lower 2 keeps SDT (below threshold)', () => {
-      const conditions = [makeCondition('lower_back', 2)]
+    it('with lower_back painLevel=6, Lower 2 keeps SDT (below threshold)', () => {
+      const conditions = [makeCondition('lower_back', 6)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
@@ -2220,8 +2207,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
     })
 
-    it('with inactive lower_back condition (painLevel=6), Lower 2 keeps SDT', () => {
-      const conditions = [makeCondition('lower_back', 6, false)]
+    it('with inactive lower_back condition (painLevel=7), Lower 2 keeps SDT', () => {
+      const conditions = [makeCondition('lower_back', 7, false)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions },
         sdtCatalog,
@@ -2236,8 +2223,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
   // PPL split — Legs B
   // -----------------------------------------------------------------------
   describe('PPL — Legs B', () => {
-    it('with lower_back painLevel=6, Legs B does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back painLevel=7, Legs B does NOT contain any SDT exercise', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 5, conditions },
         sdtCatalog,
@@ -2247,16 +2234,6 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       for (const sdtId of sdtExerciseIds) {
         expect(ids).not.toContain(sdtId)
       }
-    })
-
-    it('with lower_back painLevel=6, Legs B has hip thrust as first compound', () => {
-      const conditions = [makeCondition('lower_back', 6)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 5, conditions },
-        sdtCatalog,
-      )
-      const legsB = getSession(result, 'legs b')
-      expect(legsB.exercises[0].exerciseId).toBe(hipThrustId)
     })
 
     it('without lower_back condition, Legs B contains SDT', () => {
@@ -2274,8 +2251,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
   // Full Body split — Full Body B
   // -----------------------------------------------------------------------
   describe('Full Body — Full Body B', () => {
-    it('with lower_back painLevel=6, Full Body B does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back painLevel=7, Full Body B does NOT contain any SDT exercise', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 2, conditions },
         sdtCatalog,
@@ -2285,16 +2262,6 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       for (const sdtId of sdtExerciseIds) {
         expect(ids).not.toContain(sdtId)
       }
-    })
-
-    it('with lower_back painLevel=6, Full Body B has hip thrust as first exercise', () => {
-      const conditions = [makeCondition('lower_back', 6)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 2, conditions },
-        sdtCatalog,
-      )
-      const fbB = getSession(result, 'full body b')
-      expect(fbB.exercises[0].exerciseId).toBe(hipThrustId)
     })
 
     it('without lower_back condition, Full Body B contains SDT', () => {
@@ -2344,8 +2311,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       makeEquipment('rowing_machine'),
     ]
 
-    it('with lower_back pain >= 6, rowing barre is excluded from all sessions', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back pain >= 7, rowing barre is excluded from all sessions', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
         extendedCatalog,
@@ -2357,15 +2324,15 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       }
     })
 
-    it('with lower_back pain >= 6, rowing câble (no lower_back contraindication) survives filter', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back pain >= 7, rowing câble (no lower_back contraindication) survives filter', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const rowingCable = extendedCatalog.find((e) => e.id === 302)!
       const filtered = filterExercisesByContraindications([rowingCable], conditions)
       expect(filtered).toHaveLength(1)
     })
 
-    it('with lower_back pain >= 6, hip thrust (no lower_back contraindication) is NOT excluded', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back pain >= 7, hip thrust (no lower_back contraindication) is NOT excluded', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
         extendedCatalog,
@@ -2374,8 +2341,8 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
       expect(allIds).toContain(hipThrustId)
     })
 
-    it('with lower_back pain >= 6, leg press (no lower_back contraindication) is NOT excluded', () => {
-      const conditions = [makeCondition('lower_back', 6)]
+    it('with lower_back pain >= 7, leg press (no lower_back contraindication) is NOT excluded', () => {
+      const conditions = [makeCondition('lower_back', 7)]
       const result = generateProgram(
         { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
         extendedCatalog,

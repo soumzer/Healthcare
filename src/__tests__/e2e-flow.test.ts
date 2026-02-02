@@ -390,11 +390,11 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       const exercise = exerciseCatalog.find(e => e.id === firstExercise.exerciseId)
       expect(exercise).toBeDefined()
 
-      // Program generator only excludes exercises when painLevel >= 6 for that zone
+      // Program generator only excludes exercises when painLevel >= 7 for that zone
       // User has: elbow_right=4, knee_right=3, lower_back=5 — none reach the threshold
       // So exercises MAY have contraindications for those zones but still be included
-      // Only check zones with painLevel >= 6 (none in this test case)
-      const severeZones = new Set<string>() // No zones at painLevel >= 6
+      // Only check zones with painLevel >= 7 (none in this test case)
+      const severeZones = new Set<string>() // No zones at painLevel >= 7
       const hasContraindication = exercise!.contraindications.some(z => severeZones.has(z))
       expect(hasContraindication).toBe(false)
     })
