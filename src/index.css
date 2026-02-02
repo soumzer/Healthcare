@@ -3,6 +3,7 @@
 html {
   overflow: hidden;
   height: 100%;
+  background-color: #09090b;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -12,6 +13,7 @@ body {
   height: 100%;
   position: fixed;
   width: 100%;
+  background-color: #09090b;
   overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
 }
