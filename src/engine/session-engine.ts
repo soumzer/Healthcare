@@ -19,6 +19,7 @@ export interface ExerciseHistory {
 export interface SessionEngineOptions {
   availableWeights?: number[]
   phase?: 'hypertrophy' | 'strength' | 'deload'
+  sessionIntensity?: import('../db/types').SessionIntensity
 }
 
 export class SessionEngine {
@@ -97,6 +98,7 @@ export class SessionEngine {
         ? this.options.availableWeights
         : generateDefaultWeights(prev.lastWeightKg),
       phase: this.options.phase ?? 'hypertrophy',
+      sessionIntensity: this.options.sessionIntensity,
     })
 
     this.progressionResults.set(pe.exerciseId, result)

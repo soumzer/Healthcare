@@ -86,9 +86,12 @@ export interface WorkoutProgram {
   createdAt: Date
 }
 
+export type SessionIntensity = 'heavy' | 'moderate' | 'volume'
+
 export interface ProgramSession {
   name: string
   order: number
+  intensity?: SessionIntensity
   exercises: ProgramExercise[]
 }
 

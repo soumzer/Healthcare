@@ -212,6 +212,7 @@ function buildStructuredSession(
   order: number,
   slots: ExerciseSlot[],
   pool: Exercise[],
+  intensity?: import('../db/types').SessionIntensity,
 ): ProgramSession {
   const usedIds = new Set<number>()
   const programExercises: ProgramExercise[] = []
@@ -226,18 +227,32 @@ function buildStructuredSession(
       picked = pickOne(candidates, usedIds)
     }
     if (picked) {
+      // Adjust reps and rest based on session intensity
+      let reps = slot.reps
+      let rest = slot.rest
+      let sets = slot.sets
+      if (intensity === 'heavy' && !picked.isRehab) {
+        // Heavy: fewer reps, more rest, +1 set for compounds
+        reps = Math.min(slot.reps, picked.category === 'compound' ? 6 : 8)
+        rest = Math.max(slot.rest, 150)
+        if (picked.category === 'compound') sets = Math.max(slot.sets, 4)
+      } else if (intensity === 'volume' && !picked.isRehab) {
+        // Volume: more reps, less rest
+        reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
+        rest = Math.min(slot.rest, 90)
+      }
       programExercises.push({
         exerciseId: picked.id ?? 0,
         order: exerciseOrder++,
-        sets: slot.sets,
-        targetReps: slot.reps,
-        restSeconds: slot.rest,
+        sets,
+        targetReps: reps,
+        restSeconds: rest,
         isRehab: picked.isRehab,
       })
     }
   }
 
-  return { name, order, exercises: programExercises }
+  return { name, order, intensity, exercises: programExercises }
 }
 
 // ---------------------------------------------------------------------------
@@ -541,14 +556,15 @@ function buildFullBodySessions(
   // Build sessions based on daysPerWeek (2 or 3)
   // -----------------------------------------------------------------------
 
+  // DUP: Day A = heavy, Day B = volume, Day C = moderate
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Full Body A', 1, fullBodyASlots, available),
-    buildStructuredSession('Full Body B', 2, fullBodyBSlots, available),
+    buildStructuredSession('Full Body A — Force', 1, fullBodyASlots, available, 'heavy'),
+    buildStructuredSession('Full Body B — Volume', 2, fullBodyBSlots, available, 'volume'),
   ]
 
   if (daysPerWeek >= 3) {
     sessions.push(
-      buildStructuredSession('Full Body C', 3, fullBodyCSlots, available),
+      buildStructuredSession('Full Body C — Moderé', 3, fullBodyCSlots, available, 'moderate'),
     )
   }
 
@@ -904,11 +920,13 @@ function buildUpperLowerSessions(
   // Build the 4 sessions (order: Lower 1, Upper 1, Lower 2, Upper 2)
   // -----------------------------------------------------------------------
 
+  // DUP: Session 1 & 2 = heavy (fewer reps, more weight)
+  //      Session 3 & 4 = volume (more reps, less weight)
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Lower 1 — Quadriceps', 1, lower1Slots, available),
-    buildStructuredSession('Upper 1 — Push', 2, upper1Slots, available),
-    buildStructuredSession('Lower 2 — Hamstring / Glutes', 3, lower2Slots, available),
-    buildStructuredSession('Upper 2 — Pull', 4, upper2Slots, available),
+    buildStructuredSession('Lower 1 — Force', 1, lower1Slots, available, 'heavy'),
+    buildStructuredSession('Upper 1 — Force', 2, upper1Slots, available, 'heavy'),
+    buildStructuredSession('Lower 2 — Volume', 3, lower2Slots, available, 'volume'),
+    buildStructuredSession('Upper 2 — Volume', 4, upper2Slots, available, 'volume'),
   ]
 
   return sessions
@@ -1382,13 +1400,14 @@ function buildPushPullLegsSessions(
   // Build the 6 sessions
   // -----------------------------------------------------------------------
 
+  // DUP: A sessions = heavy, B sessions = volume
   return [
-    buildStructuredSession('Push A', 1, pushASlots, available),
-    buildStructuredSession('Pull A', 2, pullASlots, available),
-    buildStructuredSession('Legs A — Quadriceps', 3, legsASlots, available),
-    buildStructuredSession('Push B', 4, pushBSlots, available),
-    buildStructuredSession('Pull B', 5, pullBSlots, available),
-    buildStructuredSession('Legs B — Hamstring / Glutes', 6, legsBSlots, available),
+    buildStructuredSession('Push A — Force', 1, pushASlots, available, 'heavy'),
+    buildStructuredSession('Pull A — Force', 2, pullASlots, available, 'heavy'),
+    buildStructuredSession('Legs A — Force', 3, legsASlots, available, 'heavy'),
+    buildStructuredSession('Push B — Volume', 4, pushBSlots, available, 'volume'),
+    buildStructuredSession('Pull B — Volume', 5, pullBSlots, available, 'volume'),
+    buildStructuredSession('Legs B — Volume', 6, legsBSlots, available, 'volume'),
   ]
 }
 

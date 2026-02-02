@@ -104,6 +104,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const engineOptions: SessionEngineOptions = {
     availableWeights,
     phase: trainingPhase,
+    sessionIntensity: programSession.intensity,
   }
 
   const engineRef = useRef<SessionEngine | null>(null)

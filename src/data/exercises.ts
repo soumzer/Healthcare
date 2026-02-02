@@ -1579,4 +1579,109 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     rehabTarget: 'shoulder_right',
     tags: ['rehab', 'shoulder', 'rotator_cuff', 'stability', 'cable'],
   },
+
+  // =========================================================================
+  // ADDITIONAL EXERCISES — filling catalog gaps
+  // =========================================================================
+
+  // --- Back: unilateral lat pulldown ---
+  {
+    name: 'Tirage vertical unilatéral câble',
+    category: 'compound',
+    primaryMuscles: ['dorsaux', 'grand rond'],
+    secondaryMuscles: ['biceps', 'rhomboïdes'],
+    equipmentNeeded: ['lat_pulldown'],
+    contraindications: ['shoulder_left', 'shoulder_right'],
+    alternatives: ['Tirage vertical (lat pulldown)', 'Traction (pull-up)'],
+    instructions:
+      'Asseyez-vous face à la poulie haute avec une poignée unilatérale. Tirez la poignée vers l\'épaule en serrant l\'omoplate, coude vers la hanche. Contrôlez la remontée sur 2-3 secondes. Le travail unilatéral corrige les déséquilibres gauche/droite et augmente l\'amplitude de mouvement. 3-4 séries de 10-12 reps par côté.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'back', 'cable', 'unilateral'],
+  },
+
+  // --- Rear delts: oiseau ---
+  {
+    name: 'Oiseau haltères (rear delt fly)',
+    category: 'isolation',
+    primaryMuscles: ['deltoïdes postérieurs'],
+    secondaryMuscles: ['trapèzes', 'rhomboïdes'],
+    equipmentNeeded: ['dumbbells'],
+    contraindications: ['shoulder_left', 'shoulder_right', 'lower_back'],
+    alternatives: ['Face pull', 'Oiseau câble'],
+    instructions:
+      'Penché en avant à 45-60°, dos plat, haltères sous la poitrine. Ouvrez les bras sur les côtés en serrant les omoplates, coudes légèrement fléchis. Descendez lentement. Ne pas arrondir le dos. 3-4 séries de 12-15 reps.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'shoulders', 'rear_delt', 'dumbbell'],
+  },
+  {
+    name: 'Oiseau câble (rear delt fly)',
+    category: 'isolation',
+    primaryMuscles: ['deltoïdes postérieurs'],
+    secondaryMuscles: ['trapèzes', 'rhomboïdes'],
+    equipmentNeeded: ['cable'],
+    contraindications: ['shoulder_left', 'shoulder_right'],
+    alternatives: ['Oiseau haltères (rear delt fly)', 'Face pull'],
+    instructions:
+      'Câbles croisés à hauteur d\'épaule. Attrapez le câble gauche avec la main droite et vice-versa. Ouvrez les bras en tirant vers l\'arrière, omoplates serrées. Tension constante = meilleur stimulus que les haltères pour les deltoïdes postérieurs. 3-4 séries de 12-15 reps.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'shoulders', 'rear_delt', 'cable'],
+  },
+
+  // --- Biceps: curl marteau + curl concentré ---
+  {
+    name: 'Curl marteau haltères',
+    category: 'isolation',
+    primaryMuscles: ['biceps', 'brachial', 'brachio-radial'],
+    secondaryMuscles: ['avant-bras'],
+    equipmentNeeded: ['dumbbells'],
+    contraindications: ['elbow_left', 'elbow_right'],
+    alternatives: ['Curl biceps haltères', 'Curl marteau câble'],
+    instructions:
+      'Debout, haltères le long du corps, paumes face à face (prise neutre). Fléchissez les coudes sans tourner les poignets. Le curl marteau cible le brachial et le brachio-radial en plus du biceps — bras plus épais vu de côté. 3-4 séries de 10-12 reps.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'biceps', 'forearm', 'dumbbell'],
+  },
+  {
+    name: 'Curl concentré haltère',
+    category: 'isolation',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['brachial'],
+    equipmentNeeded: ['dumbbell'],
+    contraindications: ['elbow_left', 'elbow_right'],
+    alternatives: ['Curl biceps haltères', 'Curl marteau haltères'],
+    instructions:
+      'Assis, coude appuyé contre l\'intérieur de la cuisse. Fléchissez le bras en contractant le biceps au sommet (2 sec de pause). Meilleure activation EMG du biceps selon Boeckh-Behrens (2000). 3-4 séries de 10-12 reps par bras.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'biceps', 'dumbbell', 'unilateral'],
+  },
+
+  // --- Triceps: dips + extension poulie haute ---
+  {
+    name: 'Extension triceps poulie haute (corde)',
+    category: 'isolation',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: [],
+    equipmentNeeded: ['cable', 'rope_attachment'],
+    contraindications: ['elbow_left', 'elbow_right'],
+    alternatives: ['Extension triceps haltère', 'Dips'],
+    instructions:
+      'Debout face au câble haut, corde en mains. Gardez les coudes collés au corps. Poussez vers le bas en écartant les mains en fin de mouvement pour maximiser la contraction du chef latéral. Remontez lentement. 3-4 séries de 12-15 reps.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'triceps', 'cable'],
+  },
+
+  // --- Forearms: curl poignet ---
+  {
+    name: 'Curl poignet barre',
+    category: 'isolation',
+    primaryMuscles: ['fléchisseurs du poignet', 'avant-bras'],
+    secondaryMuscles: [],
+    equipmentNeeded: ['barbell'],
+    contraindications: ['wrist_left', 'wrist_right'],
+    alternatives: ['Farmer walk'],
+    instructions:
+      'Avant-bras posés sur un banc ou les cuisses, poignets dépassant du bord, barre en prise supination. Fléchissez les poignets vers le haut puis descendez lentement. Important pour l\'équilibre fléchisseurs/extenseurs du poignet. 3 séries de 15-20 reps.',
+    isRehab: false,
+    tags: ['upper_body', 'forearm', 'grip', 'barbell'],
+  },
 ]

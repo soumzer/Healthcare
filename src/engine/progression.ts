@@ -8,6 +8,8 @@ export interface ProgressionInput {
   prescribedRestSeconds: number
   availableWeights: number[]
   phase: 'hypertrophy' | 'strength' | 'deload'
+  /** Session intensity override for DUP (daily undulating periodization) */
+  sessionIntensity?: 'heavy' | 'moderate' | 'volume'
 }
 
 export interface ProgressionResult {
@@ -78,7 +80,9 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // No suitable weight, increase reps
-  const maxReps = phase === 'strength' ? 8 : 15
+  // DUP: session intensity overrides the global phase for rep caps
+  const intensity = input.sessionIntensity
+  const maxReps = intensity === 'heavy' ? 8 : intensity === 'volume' ? 15 : (phase === 'strength' ? 8 : 15)
   if (prescribedReps < maxReps) {
     return {
       nextWeightKg: prescribedWeightKg,
