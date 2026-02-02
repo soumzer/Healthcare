@@ -122,7 +122,7 @@ function TrainingSettings({
             Programme : {splitLabels[programType] ?? programType} ({programSessionCount} seances)
           </p>
         )}
-        <p className="text-zinc-500">{sessionCount} seance{sessionCount > 1 ? 's' : ''} completee{sessionCount > 1 ? 's' : ''}</p>
+        <p className="text-zinc-400">{sessionCount} seance{sessionCount > 1 ? 's' : ''} completee{sessionCount > 1 ? 's' : ''}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {goals.map(g => (
@@ -154,7 +154,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-zinc-500">Chargement...</p>
+        <p className="text-zinc-400">Chargement...</p>
       </div>
     )
   }

@@ -36,7 +36,7 @@ export default function WarmupRehabView({
                 {ex.sets} x {ex.reps} &middot; {ex.intensity}
               </p>
               {ex.notes && (
-                <p className="text-zinc-500 text-sm">{ex.notes}</p>
+                <p className="text-zinc-400 text-sm">{ex.notes}</p>
               )}
             </div>
           ))}

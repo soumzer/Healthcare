@@ -39,7 +39,7 @@ const ZONE_COLORS = [
   '#ef4444', // red
   '#f97316', // orange
   '#eab308', // yellow
-  '#22c55e', // green
+  '#34d399', // emerald
   '#3b82f6', // blue
   '#8b5cf6', // violet
   '#ec4899', // pink
@@ -51,7 +51,7 @@ export default function PainChart({ data }: PainChartProps) {
     return (
       <div className="bg-zinc-900 rounded-xl p-4">
         <h2 className="text-lg font-semibold text-white mb-3">Évolution douleurs</h2>
-        <p className="text-zinc-500 text-sm">
+        <p className="text-zinc-400 text-sm">
           Aucune donnée de douleur enregistrée.
         </p>
       </div>

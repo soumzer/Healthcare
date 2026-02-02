@@ -267,10 +267,10 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
               <div>
                 <span className="text-sm text-white">{c.label}</span>
                 {c.diagnosis && (
-                  <span className="text-xs text-zinc-500 ml-2">{c.diagnosis}</span>
+                  <span className="text-xs text-zinc-400 ml-2">{c.diagnosis}</span>
                 )}
               </div>
-              <span className="text-xs text-zinc-500 shrink-0 ml-2">
+              <span className="text-xs text-zinc-400 shrink-0 ml-2">
                 douleur {c.painLevel}/10
               </span>
             </button>
@@ -279,7 +279,7 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
       )}
 
       {activeConditions.length === 0 && editingId === null && !addingNew && (
-        <p className="text-sm text-zinc-500">Aucune condition active.</p>
+        <p className="text-sm text-zinc-400">Aucune condition active.</p>
       )}
 
       {/* Edit existing condition */}
@@ -353,8 +353,8 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
 
       {/* Success feedback */}
       {regenerateResult?.success && (
-        <div className="bg-green-900 border border-green-700 rounded-xl p-4">
-          <p className="text-sm text-green-200">Programme regenere avec succes !</p>
+        <div className="bg-emerald-900 border border-emerald-700 rounded-xl p-4">
+          <p className="text-sm text-emerald-200">Programme regenere avec succes !</p>
         </div>
       )}
     </div>

@@ -75,7 +75,7 @@ export default function BackupSection({ userId }: { userId: number }) {
       />
 
       {status && (
-        <p className="text-sm text-green-400">{status}</p>
+        <p className="text-sm text-emerald-400">{status}</p>
       )}
       {error && (
         <p className="text-sm text-red-400">{error}</p>

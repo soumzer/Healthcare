@@ -64,7 +64,7 @@ export default function StepImportProgram({ state, updateProgramText, prevStep, 
         type="button"
         onClick={handleSkip}
         disabled={submitting}
-        className="w-full text-center text-sm text-zinc-500 py-2 disabled:opacity-40"
+        className="w-full text-center text-sm text-zinc-400 py-2 disabled:opacity-40"
       >
         Passer
       </button>

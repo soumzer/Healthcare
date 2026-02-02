@@ -48,7 +48,7 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
         <h2 className="text-xl font-bold">
           {VARIANT_LABELS[variant]} &middot; ~{routine.totalMinutes} min
         </h2>
-        <p className="text-zinc-500 text-sm mt-1">
+        <p className="text-zinc-400 text-sm mt-1">
           Appuie sur un exercice pour voir les details
         </p>
       </div>
@@ -74,7 +74,7 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
           disabled={!allDone}
           className={`w-full font-semibold rounded-xl py-4 text-lg transition-colors ${
             allDone
-              ? 'bg-green-600 text-white'
+              ? 'bg-emerald-600 text-white'
               : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
           }`}
         >
@@ -92,7 +92,7 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
 }
 
 const INTENSITY_LABELS: Record<string, { label: string; className: string }> = {
-  very_light: { label: 'Tres leger', className: 'text-green-400 bg-green-900/30' },
+  very_light: { label: 'Tres leger', className: 'text-emerald-400 bg-emerald-900/30' },
   light: { label: 'Leger', className: 'text-blue-400 bg-blue-900/30' },
   moderate: { label: 'Modere', className: 'text-amber-400 bg-amber-900/30' },
 }
@@ -124,7 +124,7 @@ function ExerciseRow({
           onClick={(e) => { e.stopPropagation(); onToggle() }}
           className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
             isDone
-              ? 'bg-green-600 border-green-600'
+              ? 'bg-emerald-600 border-emerald-600'
               : 'border-zinc-600 bg-transparent'
           }`}
         >
@@ -162,7 +162,7 @@ function ExerciseRow({
 
         {/* Expand chevron */}
         <svg
-          className={`w-5 h-5 text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-zinc-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

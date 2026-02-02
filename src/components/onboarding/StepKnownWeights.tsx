@@ -33,14 +33,14 @@ export default function StepKnownWeights({ state, updateKnownWeights, nextStep, 
                 placeholder="—"
                 className="w-20 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm text-right focus:outline-none focus:border-zinc-500"
               />
-              <span className="text-xs text-zinc-500">kg</span>
+              <span className="text-xs text-zinc-400">kg</span>
             </div>
           </div>
         ))}
       </div>
 
       {filledCount > 0 && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-400">
           {filledCount} exercice{filledCount > 1 ? 's' : ''} renseigne{filledCount > 1 ? 's' : ''}
         </p>
       )}
@@ -65,7 +65,7 @@ export default function StepKnownWeights({ state, updateKnownWeights, nextStep, 
       <button
         type="button"
         onClick={nextStep}
-        className="w-full text-center text-sm text-zinc-500 py-2"
+        className="w-full text-center text-sm text-zinc-400 py-2"
       >
         Passer
       </button>

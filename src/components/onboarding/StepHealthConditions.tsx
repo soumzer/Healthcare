@@ -183,7 +183,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
               className="w-full flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2"
             >
               <span className="text-sm text-left">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
-              <span className="text-xs text-zinc-500 shrink-0 ml-2">{c.painLevel}/10</span>
+              <span className="text-xs text-zinc-400 shrink-0 ml-2">{c.painLevel}/10</span>
             </button>
           ))}
         </div>
@@ -209,7 +209,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
       <button
         type="button"
         onClick={handleSkip}
-        className="w-full text-center text-sm text-zinc-500 py-2"
+        className="w-full text-center text-sm text-zinc-400 py-2"
       >
         Pas de probleme de sante
       </button>

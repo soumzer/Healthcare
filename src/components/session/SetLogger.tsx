@@ -74,7 +74,7 @@ export default function SetLogger({
             value={reps}
             onChange={(e) => setReps(e.target.value)}
             placeholder="0"
-            className="w-full bg-zinc-900 text-white text-4xl font-bold text-center rounded-xl py-4 border border-zinc-700 focus:border-white focus:outline-none placeholder:text-zinc-600"
+            className="w-full bg-zinc-900 text-white text-4xl font-bold text-center rounded-xl py-4 border border-zinc-700 focus:border-emerald-400 focus:outline-none placeholder:text-zinc-600"
           />
         </div>
 
@@ -90,7 +90,7 @@ export default function SetLogger({
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             placeholder="0"
-            className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700 focus:border-white focus:outline-none placeholder:text-zinc-600"
+            className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700 focus:border-emerald-400 focus:outline-none placeholder:text-zinc-600"
           />
         </div>
 

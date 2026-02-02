@@ -35,12 +35,12 @@ export default function ActiveWait({
                 )}
               </div>
               {fillerSuggestion.notes && (
-                <p className="text-zinc-500 text-sm">{fillerSuggestion.notes}</p>
+                <p className="text-zinc-400 text-sm">{fillerSuggestion.notes}</p>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-zinc-500 text-center">
+          <p className="text-zinc-400 text-center">
             Pas d&apos;exercice de remplissage disponible.
             <br />
             Profitez-en pour vous etirer !

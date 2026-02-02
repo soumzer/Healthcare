@@ -13,7 +13,7 @@ function EmptyDashboard() {
       <p className="text-zinc-400 text-base mb-2">
         Aucune donn{'\u00e9'}e pour l{"'"}instant.
       </p>
-      <p className="text-zinc-500 text-sm">
+      <p className="text-zinc-400 text-sm">
         Compl{'\u00e9'}tez votre premi{'\u00e8'}re s{'\u00e9'}ance pour voir vos statistiques.
       </p>
     </div>
@@ -30,7 +30,7 @@ export default function DashboardPage() {
       <h1 className="text-xl font-bold">Tableau de bord</h1>
 
       {data.isLoading ? (
-        <p className="text-zinc-500 text-sm">Chargement...</p>
+        <p className="text-zinc-400 text-sm">Chargement...</p>
       ) : !data.hasData ? (
         <EmptyDashboard />
       ) : (

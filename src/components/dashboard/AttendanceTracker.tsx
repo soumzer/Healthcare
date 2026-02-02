@@ -21,7 +21,7 @@ export default function AttendanceTracker({ attendance }: AttendanceTrackerProps
           <div
             key={i}
             className={`w-4 h-4 rounded-full ${
-              filled ? 'bg-green-500' : 'bg-zinc-700'
+              filled ? 'bg-emerald-500' : 'bg-zinc-700'
             }`}
           />
         ))}

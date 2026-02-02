@@ -103,7 +103,7 @@ export default function WeightPicker({
               placeholder="kg"
               value={customWeight}
               onChange={(e) => setCustomWeight(e.target.value)}
-              className="flex-1 bg-zinc-900 text-white text-xl text-center rounded-xl py-3 border border-zinc-700 focus:border-white focus:outline-none"
+              className="flex-1 bg-zinc-900 text-white text-xl text-center rounded-xl py-3 border border-zinc-700 focus:border-emerald-400 focus:outline-none"
             />
             <button
               onClick={handleCustom}

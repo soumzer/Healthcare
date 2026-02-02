@@ -114,7 +114,7 @@ export default function EndSessionPainCheck({
                     className={`flex-1 rounded-xl py-3 text-lg font-semibold ${
                       levels[zone] === level
                         ? level === 0
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-emerald-600 text-white'
                           : level <= 2
                             ? 'bg-yellow-600 text-white'
                             : 'bg-red-600 text-white'
@@ -148,7 +148,7 @@ export default function EndSessionPainCheck({
             <button
               type="button"
               onClick={() => setShowZonePicker(false)}
-              className="text-sm text-zinc-500"
+              className="text-sm text-zinc-400"
             >
               Annuler
             </button>

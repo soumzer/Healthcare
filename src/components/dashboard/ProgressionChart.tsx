@@ -81,11 +81,11 @@ export default function ProgressionChart({ data, exerciseNames }: ProgressionCha
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-zinc-500 text-sm">Aucune donnée pour cet exercice.</p>
+            <p className="text-zinc-400 text-sm">Aucune donnée pour cet exercice.</p>
           )}
         </>
       ) : (
-        <p className="text-zinc-500 text-sm">
+        <p className="text-zinc-400 text-sm">
           Aucune donnée de progression disponible. Complétez des séances pour voir votre progression.
         </p>
       )}

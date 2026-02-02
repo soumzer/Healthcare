@@ -162,7 +162,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
           <h3 className="text-sm font-semibold text-zinc-300">Halteres disponibles</h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">De (kg)</label>
+              <label className="text-xs text-zinc-400 block mb-1">De (kg)</label>
               <input
                 type="number"
                 min={1}
@@ -172,7 +172,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">A (kg)</label>
+              <label className="text-xs text-zinc-400 block mb-1">A (kg)</label>
               <input
                 type="number"
                 min={dbMin}
@@ -182,7 +182,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">Pas (kg)</label>
+              <label className="text-xs text-zinc-400 block mb-1">Pas (kg)</label>
               <input
                 type="number"
                 min={0.5}
@@ -193,7 +193,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
               />
             </div>
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-400">
             {Array.from({ length: Math.floor((dbMax - dbMin) / dbStep) + 1 }, (_, i) => dbMin + i * dbStep)
               .filter(w => w <= dbMax)
               .join(', ')} kg

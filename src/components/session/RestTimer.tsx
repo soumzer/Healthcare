@@ -37,10 +37,10 @@ export default function RestTimer({
         </p>
 
         {/* Timer display */}
-        <p className={`text-5xl font-bold mb-2 ${isDone ? 'text-green-400' : 'text-white'}`}>
+        <p className={`text-5xl font-bold mb-2 ${isDone ? 'text-emerald-400' : 'text-white'}`}>
           {formatTime(remaining)}
         </p>
-        <p className="text-zinc-500 text-sm mb-6">/ {formatTime(restSeconds)}</p>
+        <p className="text-zinc-400 text-sm mb-6">/ {formatTime(restSeconds)}</p>
 
         {/* Progress bar */}
         <div className="w-full max-w-xs h-2 bg-zinc-800 rounded-full overflow-hidden mb-8">

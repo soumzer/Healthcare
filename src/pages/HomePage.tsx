@@ -12,7 +12,7 @@ function ExercisePreviewRow({ exercise }: { exercise: NextSessionExercisePreview
   return (
     <div
       className={`flex items-baseline justify-between py-2 ${
-        exercise.isRehab ? 'text-sm text-zinc-500' : 'text-zinc-300'
+        exercise.isRehab ? 'text-sm text-zinc-400' : 'text-zinc-300'
       }`}
     >
       <div className="flex items-baseline gap-2 min-w-0">
@@ -24,7 +24,7 @@ function ExercisePreviewRow({ exercise }: { exercise: NextSessionExercisePreview
           )}
         </span>
       </div>
-      <span className="ml-3 shrink-0 tabular-nums text-zinc-500">
+      <span className="ml-3 shrink-0 tabular-nums text-zinc-400">
         {exercise.sets}{'\u00D7'}{exercise.targetReps}
         {' '}
         <span className={exercise.estimatedWeightKg > 0 ? 'text-zinc-300' : 'text-zinc-600'}>
@@ -44,7 +44,7 @@ export default function HomePage() {
   if (!user || info === undefined) {
     return (
       <div className="flex items-center justify-center h-[calc(100dvh-4rem)] overflow-hidden">
-        <p className="text-zinc-500">Chargement...</p>
+        <p className="text-zinc-400">Chargement...</p>
       </div>
     )
   }
@@ -79,12 +79,12 @@ export default function HomePage() {
         </p>
 
         {info.restRecommendation && (
-          <p className="text-zinc-500 text-sm mb-6">{info.restRecommendation}</p>
+          <p className="text-zinc-400 text-sm mb-6">{info.restRecommendation}</p>
         )}
 
         <div className="mb-6">
           <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
-          <div className="space-y-1 text-zinc-500 text-sm">
+          <div className="space-y-1 text-zinc-400 text-sm">
             <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function HomePage() {
         {/* Preview of the next session exercises if available */}
         {info.preview && info.preview.exercises.length > 0 && (
           <div className="mb-8">
-            <p className="text-zinc-500 text-xs uppercase tracking-wide mb-2">
+            <p className="text-zinc-400 text-xs uppercase tracking-wide mb-2">
               {"Prochaine s\u00E9ance : "}{info.preview.sessionName}
             </p>
             <div className="divide-y divide-zinc-800/50">

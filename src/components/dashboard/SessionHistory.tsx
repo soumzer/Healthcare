@@ -21,7 +21,7 @@ export default function SessionHistory({ sessions }: SessionHistoryProps) {
       <h2 className="text-lg font-semibold text-white mb-3">Historique</h2>
 
       {sessions.length === 0 ? (
-        <p className="text-zinc-500 text-sm">
+        <p className="text-zinc-400 text-sm">
           Aucune seance enregistree pour le moment.
         </p>
       ) : (
@@ -39,7 +39,7 @@ export default function SessionHistory({ sessions }: SessionHistoryProps) {
                   </p>
                 </div>
                 <svg
-                  className={`w-4 h-4 text-zinc-500 transition-transform ${expanded === session.id ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-zinc-400 transition-transform ${expanded === session.id ? 'rotate-180' : ''}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -56,7 +56,7 @@ export default function SessionHistory({ sessions }: SessionHistoryProps) {
                       <p className="text-zinc-300 text-xs font-medium">{ex.name}</p>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                         {ex.sets.map((set, j) => (
-                          <span key={j} className="text-zinc-500 text-xs tabular-nums">
+                          <span key={j} className="text-zinc-400 text-xs tabular-nums">
                             {set.weightKg > 0 ? `${set.weightKg}kg` : 'PDC'} &times; {set.reps}
                             {set.rir > 0 && <span className="text-zinc-600"> @{set.rir}RIR</span>}
                           </span>

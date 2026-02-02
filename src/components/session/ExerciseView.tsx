@@ -70,7 +70,7 @@ export default function ExerciseView({
           <div className="w-full max-w-md">
             <button
               onClick={() => setShowInstructions(!showInstructions)}
-              className="text-zinc-500 text-sm underline underline-offset-2"
+              className="text-zinc-400 text-sm underline underline-offset-2"
             >
               {showInstructions ? 'Masquer les consignes' : 'Voir les consignes'}
             </button>

@@ -60,7 +60,7 @@ export default function RestDayPage() {
   if (!user || conditions === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-zinc-500">Chargement...</p>
+        <p className="text-zinc-400">Chargement...</p>
       </div>
     )
   }
