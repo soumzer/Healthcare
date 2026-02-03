@@ -73,8 +73,8 @@ export function generateRestDayRoutine(
 
   const activeConditions = conditions.filter(c => c.isActive).filter(c => {
     if (routineVariant === 'all') return true
-    if (routineVariant === 'upper') return UPPER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
-    if (routineVariant === 'lower') return LOWER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
+    if (routineVariant === 'upper') return UPPER_ZONES.has(c.bodyZone)
+    if (routineVariant === 'lower') return LOWER_ZONES.has(c.bodyZone)
     return true
   })
 

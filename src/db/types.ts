@@ -38,7 +38,6 @@ export type BodyZone =
   | 'knee_left' | 'knee_right'
   | 'ankle_left' | 'ankle_right'
   | 'foot_left' | 'foot_right'
-  | 'other'
 
 // Gym equipment inventory
 export interface GymEquipment {

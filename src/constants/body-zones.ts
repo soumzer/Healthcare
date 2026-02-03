@@ -18,7 +18,6 @@ export const bodyZones: { zone: BodyZone; label: string }[] = [
   { zone: 'ankle_right', label: 'Cheville D' },
   { zone: 'foot_left', label: 'Pied G' },
   { zone: 'foot_right', label: 'Pied D' },
-  { zone: 'other', label: 'Autre' },
 ]
 
 export const painLabels: Record<number, string> = {
