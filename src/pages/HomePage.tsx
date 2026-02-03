@@ -4,9 +4,17 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import { useNextSession } from '../hooks/useNextSession'
 import { isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
+import type { Goal } from '../db/types'
+
+// Goals that benefit from rest day mobility/rehab routine
+const REST_DAY_ROUTINE_GOALS: Goal[] = ['mobility', 'posture', 'rehab']
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
+  const conditions = useLiveQuery(
+    () => user?.id ? db.healthConditions.where('userId').equals(user.id).and(c => c.isActive).toArray() : [],
+    [user?.id]
+  )
   const info = useNextSession(user?.id)
   const navigate = useNavigate()
 
@@ -57,9 +65,14 @@ export default function HomePage() {
   if (info.status === 'rest_recommended') {
     const hoursAgo = Math.round(info.hoursSinceLastSession ?? 0)
 
+    // Show rest day routine only if user has active conditions OR relevant goals
+    const hasActiveConditions = (conditions?.length ?? 0) > 0
+    const hasRelevantGoals = user?.goals?.some(g => REST_DAY_ROUTINE_GOALS.includes(g)) ?? false
+    const showRestDayRoutine = hasActiveConditions || hasRelevantGoals
+
     return (
       <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
-        <p className="text-2xl font-bold mb-2">{"Repos recommand\u00E9"}</p>
+        <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
         <p className="text-zinc-400 mb-6">
           {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
         </p>
@@ -68,25 +81,29 @@ export default function HomePage() {
           <p className="text-zinc-400 text-sm mb-6">{info.restRecommendation}</p>
         )}
 
-        <div className="mb-6">
-          <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
-          <div className="space-y-1 text-zinc-400 text-sm">
-            <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
+        {showRestDayRoutine && (
+          <div className="mb-6">
+            <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
+            <div className="space-y-1 text-zinc-400 text-sm">
+              <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-auto space-y-3 pb-8">
-          <button
-            onClick={() => rehabAvailable && navigate('/rest-day')}
-            disabled={!rehabAvailable}
-            className={`font-semibold rounded-xl py-4 w-full text-lg ${
-              rehabAvailable
-                ? 'bg-white text-black'
-                : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
-            }`}
-          >
-            {rehabAvailable ? 'Faire la routine' : rehabCooldownText ?? 'En cooldown'}
-          </button>
+          {showRestDayRoutine && (
+            <button
+              onClick={() => rehabAvailable && navigate('/rest-day')}
+              disabled={!rehabAvailable}
+              className={`font-semibold rounded-xl py-4 w-full text-lg ${
+                rehabAvailable
+                  ? 'bg-white text-black'
+                  : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              {rehabAvailable ? 'Faire la routine' : rehabCooldownText ?? 'En cooldown'}
+            </button>
+          )}
           <button
             onClick={() =>
               navigate(

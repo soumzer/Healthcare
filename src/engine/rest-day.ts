@@ -81,20 +81,9 @@ export function generateRestDayRoutine(
     })
   }
 
-  // Always add external stretching as last item
-  exercises.push({
-    name: 'Étirements (programme externe)',
-    sets: 1,
-    reps: '-',
-    duration: '10-15 min',
-    intensity: '',
-    notes: 'Tes vidéos d\'étirements habituelles',
-    isExternal: true,
-  })
-
   const totalMinutes = exercises.reduce((acc, ex) => {
     const mins = parseDuration(ex.duration)
-    return acc + mins * (ex.isExternal ? 1 : ex.sets)
+    return acc + mins * ex.sets
   }, 0)
 
   return { exercises, totalMinutes: Math.round(totalMinutes), variant }
