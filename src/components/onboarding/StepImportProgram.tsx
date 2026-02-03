@@ -5,23 +5,28 @@ type Props = ReturnType<typeof useOnboarding>
 
 export default function StepImportProgram({ state, updateProgramText, prevStep, submit }: Props) {
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    setError(null)
     try {
       await submit()
-    } catch {
+    } catch (e) {
       setSubmitting(false)
+      setError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
     }
   }
 
   const handleSkip = async () => {
     updateProgramText('')
     setSubmitting(true)
+    setError(null)
     try {
       await submit()
-    } catch {
+    } catch (e) {
       setSubmitting(false)
+      setError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
     }
   }
 
@@ -68,6 +73,10 @@ export default function StepImportProgram({ state, updateProgramText, prevStep, 
       >
         Passer
       </button>
+
+      {error && (
+        <p className="text-sm text-red-400 text-center">{error}</p>
+      )}
     </div>
   )
 }

@@ -101,7 +101,7 @@ export default function HomePage() {
                   : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
               }`}
             >
-              {rehabAvailable ? 'Faire la routine' : rehabCooldownText ?? 'En cooldown'}
+              {rehabAvailable ? 'Faire la routine' : (rehabCooldownText ?? 'Disponible bientot')}
             </button>
           )}
           <button

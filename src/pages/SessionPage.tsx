@@ -118,7 +118,13 @@ function SessionContent({
     [user?.id]
   )
 
+  // Validate sessionIndex is within bounds
   const programSession = program?.sessions?.[sessionIndex]
+  const isSessionIndexInvalid = program && (
+    sessionIndex < 0 ||
+    sessionIndex >= (program.sessions?.length ?? 0) ||
+    !programSession
+  )
 
   // useMemo MUST be called before any early return (Rules of Hooks)
   const referenceWeights = useMemo(() => {
@@ -139,6 +145,22 @@ function SessionContent({
     }
     return refMap
   }, [progressData])
+
+  // Handle invalid sessionIndex early with clear error
+  if (isSessionIndexInvalid) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
+        <p className="text-red-400 text-lg font-bold mb-2">Seance introuvable</p>
+        <p className="text-zinc-400 text-sm mb-4">
+          La seance {sessionIndex + 1} n'existe pas dans ce programme.
+          {program?.sessions?.length ? ` (${program.sessions.length} seance${program.sessions.length > 1 ? 's' : ''} disponible${program.sessions.length > 1 ? 's' : ''})` : ''}
+        </p>
+        <a href="/" className="bg-white text-black font-semibold rounded-xl py-3 px-6">
+          Retour a l'accueil
+        </a>
+      </div>
+    )
+  }
 
   if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined || recentPainLogs === undefined) {
     return (

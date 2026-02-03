@@ -4,6 +4,7 @@ import { exportData, importData } from '../../utils/backup'
 export default function BackupSection({ userId }: { userId: number }) {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function clearMessages() {
@@ -32,12 +33,15 @@ export default function BackupSection({ userId }: { userId: number }) {
 
   async function handleImport(file: File) {
     clearMessages()
+    setImporting(true)
     try {
       const json = await file.text()
       await importData(json)
-      setStatus('Données restaurées avec succès')
+      setStatus('Donnees restaurees avec succes')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur lors de l\'import')
+      setError(e instanceof Error ? e.message : "Erreur lors de l'import")
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -61,9 +65,17 @@ export default function BackupSection({ userId }: { userId: number }) {
 
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-lg transition-colors"
+        disabled={importing}
+        className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Importer un backup
+        {importing ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Import en cours...
+          </span>
+        ) : (
+          'Importer un backup'
+        )}
       </button>
 
       <input

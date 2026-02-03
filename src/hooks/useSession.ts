@@ -48,6 +48,7 @@ export interface SubstitutionSuggestion {
 }
 
 interface SavedSessionState {
+  version: number // Schema version for detecting incompatible states
   programId: number
   sessionIndex: number
   engineExerciseIndex: number
@@ -60,6 +61,8 @@ interface SavedSessionState {
   timestamp: number
   timerEndTime: number | null
 }
+
+const SESSION_STATE_VERSION = 1
 
 export interface UseSessionReturn {
   phase: SessionPhase
@@ -122,11 +125,26 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }
 
   // Restore session state from sessionStorage if available
+  // Uses atomic check: version mismatch or corruption triggers full clear
   let saved: SavedSessionState | null = null
   try {
     const savedRaw = sessionStorage.getItem('activeSession')
-    saved = savedRaw ? JSON.parse(savedRaw) as SavedSessionState : null
+    if (savedRaw) {
+      const parsed = JSON.parse(savedRaw) as SavedSessionState
+      // Validate version and required fields to detect corruption/stale state
+      if (
+        parsed.version === SESSION_STATE_VERSION &&
+        typeof parsed.programId === 'number' &&
+        typeof parsed.timestamp === 'number'
+      ) {
+        saved = parsed
+      } else {
+        // Version mismatch or corrupted state - clear atomically
+        sessionStorage.removeItem('activeSession')
+      }
+    }
   } catch {
+    // JSON parse error or other issue - clear atomically
     sessionStorage.removeItem('activeSession')
   }
   const isRestorable = saved
@@ -230,7 +248,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     : []
 
   // Get filler suggestion for occupied state (uses rehab active wait pool)
-  const [completedFillers, _setCompletedFillers] = useState<string[]>([])
+  const [completedFillers, setCompletedFillers] = useState<string[]>([])
   const fillerSuggestion = currentExercise
     ? suggestFiller({
         activeWaitPool: rehabIntegration.activeWaitPool,
@@ -287,6 +305,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       return
     }
     const state: SavedSessionState = {
+      version: SESSION_STATE_VERSION,
       programId,
       sessionIndex: programSession.order,
       engineExerciseIndex: engine.getCurrentExerciseIndex(),
@@ -610,10 +629,14 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }, [engine])
 
   const markMachineFree = useCallback(() => {
+    // Track completed filler so it cycles to next suggestion
+    if (fillerSuggestion?.name) {
+      setCompletedFillers(prev => [...prev, fillerSuggestion.name])
+    }
     engine.markMachineFree()
     setPhase('exercise')
     forceUpdate((n) => n + 1)
-  }, [engine])
+  }, [engine, fillerSuggestion])
 
   const openWeightPicker = useCallback(() => {
     setPhase('weight_picker')
@@ -643,17 +666,23 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         .filter(p => p.isActive)
         .first()
 
-      if (activeProgram?.id !== undefined) {
-        const updatedSessions = activeProgram.sessions.map(s => ({
-          ...s,
-          exercises: s.exercises.map(pe =>
-            pe.exerciseId === oldExerciseId
-              ? { ...pe, exerciseId: newExerciseId }
-              : pe
-          ),
-        }))
-        await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+      // Only proceed if DB update can be performed
+      if (activeProgram?.id === undefined) {
+        console.error('Cannot substitute exercise: no active program found')
+        return
       }
+
+      const updatedSessions = activeProgram.sessions.map(s => ({
+        ...s,
+        exercises: s.exercises.map(pe =>
+          pe.exerciseId === oldExerciseId
+            ? { ...pe, exerciseId: newExerciseId }
+            : pe
+        ),
+      }))
+
+      // DB update must succeed before modifying engine state
+      await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
 
       // 2. Only update engine state AFTER DB write succeeds
       const newExData = availableExercises.find(e => e.id === newExerciseId)

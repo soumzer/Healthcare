@@ -45,10 +45,15 @@ export default function WeightPicker({
     // Fallback: generate nearby weight options (2.5kg increments around current)
     options = []
     const step = 2.5
-    for (let i = -4; i <= 4; i++) {
-      if (i === 0) continue // skip current weight
-      const w = currentWeightKg + i * step
-      if (w > 0) options.push(w)
+    if (currentWeightKg === 0) {
+      // Bodyweight exercise: offer options starting from 0 (bodyweight), then weighted
+      options = [0, 2.5, 5, 7.5, 10, 12.5, 15, 20]
+    } else {
+      for (let i = -4; i <= 4; i++) {
+        if (i === 0) continue // skip current weight
+        const w = currentWeightKg + i * step
+        if (w >= 0) options.push(w) // Include 0 for bodyweight option
+      }
     }
   }
 
