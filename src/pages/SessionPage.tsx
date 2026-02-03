@@ -163,14 +163,14 @@ function SessionContent({
     }
   }
   for (const [exerciseId, p] of latestByExercise) {
+    // Only include actual performance data - NOT prescribedReps
+    // This prevents the "prescribedReps pollution" bug where deload reps
+    // would pollute future calculations
     history[exerciseId] = {
       lastWeightKg: p.weightKg,
       lastReps: p.repsPerSet ?? Array(p.sets).fill(p.reps),
       lastAvgRIR: p.avgRepsInReserve,
       lastAvgRestSeconds: p.avgRestSeconds,
-      prescribedSets: p.sets,
-      prescribedReps: p.prescribedReps,
-      prescribedRestSeconds: p.prescribedRestSeconds,
     }
   }
 

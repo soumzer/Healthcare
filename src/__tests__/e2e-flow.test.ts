@@ -525,14 +525,13 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   describe('5. Verification de la progression', () => {
     it('le moteur de progression recommande une augmentation avec RIR de 2', () => {
       // Simulate with a weight and RIR that should trigger progression
+      // Target reps is 8, performed 10 reps (top of 8-10 range)
       const result = calculateProgression({
-        prescribedWeightKg: 40,
-        prescribedReps: 11,
-        prescribedSets: 4,
-        actualReps: [11, 11, 11, 11], // All reps hit
-        avgRIR: 2,
-        avgRestSeconds: 95,
-        prescribedRestSeconds: 150,
+        programTargetReps: 8,
+        programTargetSets: 4,
+        lastWeightKg: 40,
+        lastRepsPerSet: [10, 10, 10, 10], // At top of range
+        lastAvgRIR: 2,
         availableWeights: [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5, 55, 57.5, 60],
         phase: 'hypertrophy',
       })
@@ -552,14 +551,13 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       for (const entry of progressEntries) {
         const progEx = lower1Session.exercises.find(pe => pe.exerciseId === entry.exerciseId)
         if (progEx) {
+          // Only include actual performance data - NOT prescribedReps
+          // This is the fix for the "prescribedReps pollution" bug
           history[entry.exerciseId] = {
             lastWeightKg: entry.weightKg,
             lastReps: Array(entry.sets).fill(entry.reps),
             lastAvgRIR: entry.avgRepsInReserve,
             lastAvgRestSeconds: entry.avgRestSeconds,
-            prescribedRestSeconds: entry.prescribedRestSeconds ?? progEx.restSeconds,
-            prescribedSets: progEx.sets,
-            prescribedReps: entry.prescribedReps ?? progEx.targetReps,
           }
         }
       }
@@ -591,14 +589,13 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
     })
 
     it('maintient si les series ne sont pas completees', () => {
+      // Target reps is 11, but some sets didn't hit target
       const result = calculateProgression({
-        prescribedWeightKg: 40,
-        prescribedReps: 11,
-        prescribedSets: 4,
-        actualReps: [11, 11, 9, 8], // Incomplete sets
-        avgRIR: 0,
-        avgRestSeconds: 150,
-        prescribedRestSeconds: 150,
+        programTargetReps: 11,
+        programTargetSets: 4,
+        lastWeightKg: 40,
+        lastRepsPerSet: [11, 11, 9, 8], // minReps is 8, below target of 11
+        lastAvgRIR: 0,
         availableWeights: [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45],
         phase: 'hypertrophy',
       })

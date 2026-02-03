@@ -2,14 +2,19 @@ import { calculateProgression, type ProgressionResult } from './progression'
 import type { PainAdjustment } from './pain-feedback'
 import type { ProgramSession, ProgramExercise, SessionExercise, SessionSet } from '../db/types'
 
+/**
+ * Exercise history entry - contains ONLY actual performance data.
+ * Does NOT include prescribedReps to avoid the "prescribedReps pollution" bug.
+ */
 export interface ExerciseHistoryEntry {
+  /** Weight used in the last session */
   lastWeightKg: number
+  /** Actual reps performed per set */
   lastReps: number[]
+  /** Average RIR (reps in reserve) */
   lastAvgRIR: number
+  /** Average rest time in seconds (optional) */
   lastAvgRestSeconds?: number
-  prescribedRestSeconds?: number
-  prescribedSets?: number
-  prescribedReps?: number
 }
 
 export interface ExerciseHistory {
@@ -70,6 +75,7 @@ export class SessionEngine {
 
   private calculatePrescribedReps(pe: ProgramExercise): number {
     const prev = this.history[pe.exerciseId]
+    // No history = use program's target reps
     if (!prev) return pe.targetReps
 
     // During deload, use moderate rep range (10) — 60% weight at original reps would be too easy
@@ -86,14 +92,14 @@ export class SessionEngine {
     const cached = this.progressionResults.get(pe.exerciseId)
     if (cached) return cached
 
+    // Use PROGRAM's target reps, NOT history's prescribed reps
+    // This is the key fix for the "prescribedReps pollution" bug
     const result = calculateProgression({
-      prescribedWeightKg: prev.lastWeightKg,
-      prescribedReps: prev.prescribedReps ?? pe.targetReps,
-      prescribedSets: prev.prescribedSets ?? pe.sets,
-      actualReps: prev.lastReps,
-      avgRIR: prev.lastAvgRIR,
-      avgRestSeconds: prev.lastAvgRestSeconds ?? pe.restSeconds,
-      prescribedRestSeconds: prev.prescribedRestSeconds ?? pe.restSeconds,
+      programTargetReps: pe.targetReps,
+      programTargetSets: pe.sets,
+      lastWeightKg: prev.lastWeightKg,
+      lastRepsPerSet: prev.lastReps,
+      lastAvgRIR: prev.lastAvgRIR,
       availableWeights: this.options.availableWeights?.length
         ? this.options.availableWeights
         : generateDefaultWeights(prev.lastWeightKg),
@@ -125,7 +131,8 @@ export class SessionEngine {
         const prev = this.history[exercise.exerciseId]
         if (prev) {
           exercise.prescribedWeightKg = prev.lastWeightKg
-          exercise.prescribedReps = prev.prescribedReps ?? exercise.prescribedReps
+          // Keep current prescribed reps (already calculated from program's targetReps)
+          // Do NOT reset to history's prescribedReps - that was the bug!
         }
       }
     }

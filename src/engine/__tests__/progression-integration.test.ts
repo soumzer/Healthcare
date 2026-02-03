@@ -26,16 +26,14 @@ const testSession: ProgramSession = {
 }
 
 describe('Progression integration: end-to-end weight increase after successful sessions', () => {
-  it('after 2 successful sessions with RIR >= 2, prescribed weight increases', () => {
-    // === Session 1: User performs well at 40kg ===
+  it('after reaching top of rep range with RIR >= 2, prescribed weight increases', () => {
+    // === Session 1: User performs at top of range (8+2=10 reps for target 8) ===
     const session1Input: ProgressionInput = {
-      prescribedWeightKg: 40,
-      prescribedReps: 8,
-      prescribedSets: 4,
-      actualReps: [8, 8, 8, 8], // All reps completed
-      avgRIR: 2.5,
-      avgRestSeconds: 120,
-      prescribedRestSeconds: 120,
+      programTargetReps: 8,
+      programTargetSets: 4,
+      lastWeightKg: 40,
+      lastRepsPerSet: [10, 10, 10, 10], // At top of 8-10 range
+      lastAvgRIR: 2.5,
       availableWeights,
       phase: 'hypertrophy',
     }
@@ -43,16 +41,15 @@ describe('Progression integration: end-to-end weight increase after successful s
     const result1 = calculateProgression(session1Input)
     expect(result1.action).toBe('increase_weight')
     expect(result1.nextWeightKg).toBe(42.5)
+    expect(result1.nextReps).toBe(8) // Reset to target reps
 
-    // === Session 2: User performs well at 42.5kg (the new weight) ===
+    // === Session 2: User performs at top of range at new weight ===
     const session2Input: ProgressionInput = {
-      prescribedWeightKg: 42.5,
-      prescribedReps: 8,
-      prescribedSets: 4,
-      actualReps: [8, 8, 8, 8], // All reps completed again
-      avgRIR: 2,
-      avgRestSeconds: 125,
-      prescribedRestSeconds: 120,
+      programTargetReps: 8,
+      programTargetSets: 4,
+      lastWeightKg: 42.5,
+      lastRepsPerSet: [10, 10, 10, 10], // At top of range again
+      lastAvgRIR: 2,
       availableWeights,
       phase: 'hypertrophy',
     }
@@ -62,20 +59,17 @@ describe('Progression integration: end-to-end weight increase after successful s
     expect(result2.nextWeightKg).toBe(45)
 
     // Verify: 40 -> 42.5 -> 45kg over 2 sessions
-    expect(result2.nextWeightKg).toBeGreaterThan(session1Input.prescribedWeightKg)
+    expect(result2.nextWeightKg).toBeGreaterThan(session1Input.lastWeightKg)
   })
 
   it('weight increases are applied correctly through SessionEngine with history', () => {
-    // Simulate: after session 1 at 60kg, all reps hit, RIR=2
+    // Simulate: after session 1 at 60kg, all reps hit at top of range, RIR=2
     const historyAfterSession1: ExerciseHistory = {
       1: {
         lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10], // At top of 8-10 range
         lastAvgRIR: 2,
         lastAvgRestSeconds: 120,
-        prescribedRestSeconds: 120,
-        prescribedSets: 4,
-        prescribedReps: 8,
       },
     }
 
@@ -83,16 +77,13 @@ describe('Progression integration: end-to-end weight increase after successful s
     const exercise1 = engine1.getCurrentExercise()
     expect(exercise1.prescribedWeightKg).toBe(62.5) // Increased from 60
 
-    // Now simulate: after session 2 at 62.5kg, all reps hit, RIR=2
+    // Now simulate: after session 2 at 62.5kg, all reps hit at top of range, RIR=2
     const historyAfterSession2: ExerciseHistory = {
       1: {
         lastWeightKg: 62.5,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10], // At top of range
         lastAvgRIR: 2,
         lastAvgRestSeconds: 118,
-        prescribedRestSeconds: 120,
-        prescribedSets: 4,
-        prescribedReps: 8,
       },
     }
 
@@ -111,12 +102,9 @@ describe('Progression integration: pain blocks progression', () => {
     const historyWithPain: ExerciseHistory = {
       1: {
         lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10], // Good reps but...
         lastAvgRIR: -1, // Pain marker: avgRIR set to -1 when pain reported
         lastAvgRestSeconds: 120,
-        prescribedRestSeconds: 120,
-        prescribedSets: 4,
-        prescribedReps: 8,
       },
     }
 
@@ -133,13 +121,11 @@ describe('Progression integration: pain blocks progression', () => {
 
   it('calculateProgression maintains when avgRIR is negative (pain marker)', () => {
     const input: ProgressionInput = {
-      prescribedWeightKg: 60,
-      prescribedReps: 8,
-      prescribedSets: 4,
-      actualReps: [8, 8, 8, 8],
-      avgRIR: -1, // Pain occurred
-      avgRestSeconds: 120,
-      prescribedRestSeconds: 120,
+      programTargetReps: 8,
+      programTargetSets: 4,
+      lastWeightKg: 60,
+      lastRepsPerSet: [10, 10, 10, 10],
+      lastAvgRIR: -1, // Pain occurred
       availableWeights,
       phase: 'hypertrophy',
     }
@@ -152,13 +138,11 @@ describe('Progression integration: pain blocks progression', () => {
   it('pain in some sets (avgRIR driven very low) also blocks progression', () => {
     // Even if not using the -1 marker, a very low RIR from pain-inhibited performance
     const input: ProgressionInput = {
-      prescribedWeightKg: 50,
-      prescribedReps: 10,
-      prescribedSets: 3,
-      actualReps: [10, 10, 10], // Reps completed but...
-      avgRIR: 0.3, // Very low RIR (< 1), indicating maximal/painful effort
-      avgRestSeconds: 90,
-      prescribedRestSeconds: 90,
+      programTargetReps: 10,
+      programTargetSets: 3,
+      lastWeightKg: 50,
+      lastRepsPerSet: [12, 12, 12], // Reps completed but...
+      lastAvgRIR: 0.3, // Very low RIR (< 1), indicating maximal/painful effort
       availableWeights,
       phase: 'hypertrophy',
     }
@@ -188,30 +172,21 @@ describe('Progression integration: deload after 5 weeks', () => {
     const history: ExerciseHistory = {
       1: {
         lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10],
         lastAvgRIR: 2,
         lastAvgRestSeconds: 120,
-        prescribedRestSeconds: 120,
-        prescribedSets: 4,
-        prescribedReps: 8,
       },
       2: {
         lastWeightKg: 40,
-        lastReps: [12, 12, 12],
+        lastReps: [14, 14, 14],
         lastAvgRIR: 2,
         lastAvgRestSeconds: 90,
-        prescribedRestSeconds: 90,
-        prescribedSets: 3,
-        prescribedReps: 12,
       },
       3: {
         lastWeightKg: 30,
-        lastReps: [10, 10, 10],
+        lastReps: [12, 12, 12],
         lastAvgRIR: 3,
         lastAvgRestSeconds: 85,
-        prescribedRestSeconds: 90,
-        prescribedSets: 3,
-        prescribedReps: 10,
       },
     }
 
@@ -254,7 +229,7 @@ describe('Progression integration: deload after 5 weeks', () => {
     const history: ExerciseHistory = {
       1: {
         lastWeightKg: 100,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10],
         lastAvgRIR: 2,
       },
     }
@@ -276,10 +251,9 @@ describe('Progression integration: deload after 5 weeks', () => {
     const history: ExerciseHistory = {
       1: {
         lastWeightKg: 70,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10],
         lastAvgRIR: 2,
         lastAvgRestSeconds: 120,
-        prescribedRestSeconds: 120,
       },
     }
 
@@ -296,96 +270,14 @@ describe('Progression integration: deload after 5 weeks', () => {
   })
 })
 
-describe('Progression integration: rest inflation blocks progression', () => {
-  it('rest inflated (>1.5x prescribed) means no weight increase', () => {
-    const input: ProgressionInput = {
-      prescribedWeightKg: 50,
-      prescribedReps: 10,
-      prescribedSets: 3,
-      actualReps: [10, 10, 10], // All reps completed
-      avgRIR: 2, // Good RIR
-      avgRestSeconds: 200, // Way more than prescribed (90 * 1.5 = 135)
-      prescribedRestSeconds: 90,
-      availableWeights,
-      phase: 'hypertrophy',
-    }
-
-    const result = calculateProgression(input)
-    expect(result.action).toBe('maintain')
-    expect(result.nextWeightKg).toBe(50) // No increase
-    expect(result.reason).toContain('Repos')
-  })
-
-  it('rest at exactly 1.5x is NOT inflated (threshold is strictly greater)', () => {
-    const input: ProgressionInput = {
-      prescribedWeightKg: 50,
-      prescribedReps: 10,
-      prescribedSets: 3,
-      actualReps: [10, 10, 10],
-      avgRIR: 2,
-      avgRestSeconds: 135, // Exactly 90 * 1.5 = 135 (not > 135)
-      prescribedRestSeconds: 90,
-      availableWeights,
-      phase: 'hypertrophy',
-    }
-
-    const result = calculateProgression(input)
-    // 135 > 90 * 1.5 is false (135 > 135 is false), so not inflated
-    expect(result.action).toBe('increase_weight')
-    expect(result.nextWeightKg).toBe(52.5)
-  })
-
-  it('rest slightly above 1.5x is inflated', () => {
-    const input: ProgressionInput = {
-      prescribedWeightKg: 50,
-      prescribedReps: 10,
-      prescribedSets: 3,
-      actualReps: [10, 10, 10],
-      avgRIR: 2,
-      avgRestSeconds: 136, // Just above 135 threshold
-      prescribedRestSeconds: 90,
-      availableWeights,
-      phase: 'hypertrophy',
-    }
-
-    const result = calculateProgression(input)
-    expect(result.action).toBe('maintain')
-    expect(result.nextWeightKg).toBe(50)
-  })
-
-  it('rest inflation detected through SessionEngine history', () => {
-    const history: ExerciseHistory = {
-      1: {
-        lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
-        lastAvgRIR: 2,
-        lastAvgRestSeconds: 250, // Way above prescribed
-        prescribedRestSeconds: 120, // 120 * 1.5 = 180, 250 > 180
-        prescribedSets: 4,
-        prescribedReps: 8,
-      },
-    }
-
-    const engine = new SessionEngine(testSession, history, { availableWeights })
-    const exercise = engine.getCurrentExercise()
-
-    // Despite perfect reps and good RIR, rest was inflated -> maintain
-    expect(exercise.prescribedWeightKg).toBe(60)
-    const result = engine.getProgressionResult(1)
-    expect(result!.action).toBe('maintain')
-  })
-})
-
 describe('Progression integration: regression handling', () => {
   it('significant rep deficit (>25%) triggers weight decrease', () => {
     const input: ProgressionInput = {
-      prescribedWeightKg: 60,
-      prescribedReps: 8,
-      prescribedSets: 4,
-      actualReps: [6, 5, 4, 3], // Total: 18, prescribed: 32, deficit: 43.75%
-      avgRIR: 0,
-      avgRestSeconds: 120,
-      prescribedRestSeconds: 120,
+      programTargetReps: 8,
+      programTargetSets: 4,
+      lastWeightKg: 60,
+      lastRepsPerSet: [6, 5, 4, 3], // Total: 18, expected: 32, deficit: 43.75%
+      lastAvgRIR: 0,
       availableWeights,
       phase: 'hypertrophy',
     }
@@ -398,19 +290,17 @@ describe('Progression integration: regression handling', () => {
 
   it('moderate rep deficit (<= 25%) does not trigger regression', () => {
     const input: ProgressionInput = {
-      prescribedWeightKg: 60,
-      prescribedReps: 8,
-      prescribedSets: 4,
-      actualReps: [8, 8, 7, 7], // Total: 30, prescribed: 32, deficit: 6.25%
-      avgRIR: 1,
-      avgRestSeconds: 120,
-      prescribedRestSeconds: 120,
+      programTargetReps: 8,
+      programTargetSets: 4,
+      lastWeightKg: 60,
+      lastRepsPerSet: [8, 8, 7, 7], // Total: 30, expected: 32, deficit: 6.25%
+      lastAvgRIR: 1,
       availableWeights,
       phase: 'hypertrophy',
     }
 
     const result = calculateProgression(input)
-    // Not all reps hit (7 < 8), avgRIR = 1 (< 1 is false, but allSetsCompleted is false)
+    // Not all reps hit (7 < 8), but deficit is small -> maintain
     expect(result.action).toBe('maintain')
     expect(result.nextWeightKg).toBe(60)
   })
@@ -481,15 +371,12 @@ describe('Phase transition logic', () => {
 describe('Progression integration: multi-exercise session flow', () => {
   it('each exercise gets independent progression based on its own history', () => {
     const history: ExerciseHistory = {
-      // Exercise 1: good performance -> should increase
+      // Exercise 1: at top of range, good performance -> should increase
       1: {
         lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
+        lastReps: [10, 10, 10, 10],
         lastAvgRIR: 2,
         lastAvgRestSeconds: 120,
-        prescribedRestSeconds: 120,
-        prescribedSets: 4,
-        prescribedReps: 8,
       },
       // Exercise 2: struggled -> should maintain
       2: {
@@ -497,9 +384,6 @@ describe('Progression integration: multi-exercise session flow', () => {
         lastReps: [12, 11, 10],
         lastAvgRIR: 0.5, // Very hard
         lastAvgRestSeconds: 90,
-        prescribedRestSeconds: 90,
-        prescribedSets: 3,
-        prescribedReps: 12,
       },
       // Exercise 3: regressed -> should decrease
       3: {
@@ -507,9 +391,6 @@ describe('Progression integration: multi-exercise session flow', () => {
         lastReps: [7, 5, 4], // Deficit: 1 - 16/30 = 0.467 > 0.25
         lastAvgRIR: 0,
         lastAvgRestSeconds: 90,
-        prescribedRestSeconds: 90,
-        prescribedSets: 3,
-        prescribedReps: 10,
       },
     }
 

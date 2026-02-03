@@ -70,11 +70,12 @@ describe('SessionEngine', () => {
 
   it('calculates prescribed weight from history using progression engine', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 40, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 }
+      // Performed 10 reps (top of 8-10 range for target of 8)
+      1: { lastWeightKg: 40, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 }
     }
     const engine = new SessionEngine(mockSession, history)
-    // Progression engine: all reps hit, avgRIR >= 1, no rest inflation -> increase_weight
-    // Default weights include 42.5 (generated from 40 in 2.5 increments)
+    // Program targetReps is 8, performed 10 reps (at top of range: target+2)
+    // With good RIR, should increase weight
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(42.5)
   })
 
@@ -83,7 +84,7 @@ describe('SessionEngine', () => {
       1: { lastWeightKg: 40, lastReps: [8, 8, 7, 6], lastAvgRIR: 1 }
     }
     const engine = new SessionEngine(mockSession, history)
-    // Not all sets completed (7 < 8, 6 < 8) -> maintain
+    // minReps is 6, below target of 8 -> maintain
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(40)
   })
 
@@ -114,13 +115,15 @@ describe('SessionEngine - progression engine integration', () => {
     ],
   }
 
-  it('increases weight after a successful session (all reps hit, good RIR)', () => {
+  it('increases weight after a successful session (all reps hit at top of range, good RIR)', () => {
     const history: ExerciseHistory = {
-      10: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      20: { lastWeightKg: 30, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      // Reached top of rep range (10 reps for target of 8)
+      10: { lastWeightKg: 60, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      // Reached top of rep range (14 reps for target of 12)
+      20: { lastWeightKg: 30, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
-    // Exercise 10: all reps hit, good RIR -> should increase
+    // Exercise 10: at top of range, good RIR -> should increase weight
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(62.5)
     // Check progression result is available
     const result = engine.getProgressionResult(10)
@@ -145,62 +148,41 @@ describe('SessionEngine - progression engine integration', () => {
     }
     const availableWeights = [20, 30, 40, 50, 55, 57.5, 60, 62.5, 65]
     const engine = new SessionEngine(mockSession, history, { availableWeights })
-    // Total prescribed: 4*8=32, total actual: 14, deficit: 1-14/32 = 0.5625 > 0.25
+    // Total expected: 4*8=32, total actual: 14, deficit: 1-14/32 = 0.5625 > 0.25
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(57.5)
     const result = engine.getProgressionResult(10)
     expect(result!.action).toBe('decrease')
   })
 
-  it('maintains weight when rest was inflated (>1.5x prescribed)', () => {
-    const history: ExerciseHistory = {
-      10: {
-        lastWeightKg: 60,
-        lastReps: [8, 8, 8, 8],
-        lastAvgRIR: 2,
-        lastAvgRestSeconds: 300, // 300s avg rest
-        prescribedRestSeconds: 120, // 120s prescribed -> 300 > 180 (1.5x)
-      },
-    }
-    const engine = new SessionEngine(mockSession, history)
-    // Rest inflated: 300 > 120 * 1.5 = 180 -> maintain despite good performance
-    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(60)
-    const result = engine.getProgressionResult(10)
-    expect(result!.action).toBe('maintain')
-  })
-
   it('uses available weights from options when provided', () => {
     const history: ExerciseHistory = {
-      10: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      // At top of 8-10 range
+      10: { lastWeightKg: 60, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
     }
     // Only 65 is the next weight above 60 (no 62.5)
     const availableWeights = [20, 40, 60, 65, 80]
     const engine = new SessionEngine(mockSession, history, { availableWeights })
-    // Next weight available above 60 is 65, and 65 <= 62.5 + 1 = 63.5? No: 65 > 63.5
-    // So it should increase reps instead
-    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(60)
+    // Should still increase weight to 65 (best available)
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(65)
     const result = engine.getProgressionResult(10)
-    expect(result!.action).toBe('increase_reps')
-    expect(result!.nextReps).toBe(9) // prescribedReps + 1
+    expect(result!.action).toBe('increase_weight')
   })
 
   it('uses the training phase from options', () => {
     const history: ExerciseHistory = {
-      10: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      // At top of 8-10 range (strength: 6-8 max)
+      10: { lastWeightKg: 60, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
     }
-    // In strength phase, max reps is 8 (not 15 for hypertrophy)
-    // Only large jump available -> should hit max reps cap in strength
+    // Only large jump available
     const availableWeights = [20, 40, 60, 80]
     const engine = new SessionEngine(mockSession, history, {
       availableWeights,
       phase: 'strength',
     })
-    // Next weight (80) is way above 62.5+1 = 63.5
-    // So increase reps, but max reps in strength = 8, prescribedReps is already 8
-    // -> maintain (at rep cap)
-    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(60)
+    // Strength phase: at top of range, should increase weight to 80
+    expect(engine.getCurrentExercise().prescribedWeightKg).toBe(80)
     const result = engine.getProgressionResult(10)
-    expect(result!.action).toBe('maintain')
-    expect(result!.reason).toContain('Plafond de reps')
+    expect(result!.action).toBe('increase_weight')
   })
 
   it('preserves prescribed reps from program for new exercises', () => {
@@ -213,9 +195,10 @@ describe('SessionEngine - progression engine integration', () => {
 
   it('may adjust prescribed reps when progression recommends it', () => {
     const history: ExerciseHistory = {
+      // Just hit target reps (not at top of range yet)
       10: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
     }
-    // No weight above 60 within range -> increase reps
+    // No suitable weight increase available
     const availableWeights = [20, 40, 60, 80]
     const engine = new SessionEngine(mockSession, history, { availableWeights })
     const result = engine.getProgressionResult(10)
@@ -236,8 +219,9 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('reduces prescribed weight when action is reduce_weight (no referenceWeightKg)', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      // At top of range -> would normally increase weight
+      1: { lastWeightKg: 100, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
 
@@ -263,8 +247,8 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('uses referenceWeightKg instead of prescribed weight when available', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      1: { lastWeightKg: 100, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
 
@@ -290,8 +274,8 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('no_progression resets weight to history lastWeightKg', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      1: { lastWeightKg: 100, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
     // Exercise 1 progressed to 102.5
@@ -312,9 +296,10 @@ describe('SessionEngine - applyPainAdjustments', () => {
     expect(engine.getCurrentExercise().prescribedWeightKg).toBe(100)
   })
 
-  it('no_progression resets reps to history prescribedReps', () => {
+  it('no_progression keeps reps based on program target (not history prescribedReps)', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2, prescribedReps: 8 },
+      // No prescribedReps in history anymore!
+      1: { lastWeightKg: 60, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
     }
     // No weight above 60 within range -> increase reps to 9
     const availableWeights = [20, 40, 60, 80]
@@ -332,8 +317,9 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
     engine.applyPainAdjustments(adjustments)
 
-    // Should reset reps to history's prescribedReps (8)
-    expect(engine.getCurrentExercise().prescribedReps).toBe(8)
+    // Reps should stay at 9 (calculated from program, not from history)
+    // The no_progression action now only resets weight, not reps
+    expect(engine.getCurrentExercise().prescribedReps).toBe(9)
   })
 
   it('no_progression with no history entry does nothing', () => {
@@ -360,8 +346,8 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('skip removes the exercise from the session', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      1: { lastWeightKg: 100, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
     expect(engine.getAllExercises().length).toBe(2)
@@ -384,8 +370,8 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('skip reduces total exercise count', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 100, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
-      2: { lastWeightKg: 40, lastReps: [12, 12, 12], lastAvgRIR: 3 },
+      1: { lastWeightKg: 100, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
+      2: { lastWeightKg: 40, lastReps: [14, 14, 14], lastAvgRIR: 3 },
     }
     const engine = new SessionEngine(mockSession, history)
     expect(engine.getAllExercises().length).toBe(2)
@@ -432,7 +418,7 @@ describe('SessionEngine - applyPainAdjustments', () => {
 
   it('rounds reduced weight to nearest 0.5kg', () => {
     const history: ExerciseHistory = {
-      1: { lastWeightKg: 47.5, lastReps: [8, 8, 8, 8], lastAvgRIR: 2 },
+      1: { lastWeightKg: 47.5, lastReps: [10, 10, 10, 10], lastAvgRIR: 2 },
     }
     const engine = new SessionEngine(mockSession, history)
 

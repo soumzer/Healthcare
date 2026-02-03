@@ -1,12 +1,28 @@
+/**
+ * Progression Engine - Simple, Predictable Cycle
+ *
+ * The cycle is:
+ *   START: weight x target reps @2RIR
+ *   → If successful with good RIR: +1 rep
+ *   → If reached top of rep range: +weight, reset to target reps
+ *   → If failed: retry same weight/reps
+ *   → After repeated failures: deload (-10% weight)
+ */
+
 export interface ProgressionInput {
-  prescribedWeightKg: number
-  prescribedReps: number
-  prescribedSets: number
-  actualReps: number[]
-  avgRIR: number
-  avgRestSeconds: number
-  prescribedRestSeconds: number
+  /** Target reps from the PROGRAM (not from history) */
+  programTargetReps: number
+  /** Target sets from the PROGRAM */
+  programTargetSets: number
+  /** The weight used in the last session */
+  lastWeightKg: number
+  /** Actual reps performed per set, e.g., [8, 8, 8, 7] */
+  lastRepsPerSet: number[]
+  /** Average RIR (reps in reserve) from last session */
+  lastAvgRIR: number
+  /** Available weights at the gym */
   availableWeights: number[]
+  /** Training phase */
   phase: 'hypertrophy' | 'strength' | 'deload'
   /** Session intensity override for DUP (daily undulating periodization) */
   sessionIntensity?: 'heavy' | 'moderate' | 'volume'
@@ -19,85 +35,138 @@ export interface ProgressionResult {
   reason: string
 }
 
+/**
+ * Calculate the next weight and reps based on last session performance.
+ *
+ * Uses ONLY program target reps, NOT historical prescribed reps.
+ * This prevents the "prescribedReps pollution" bug.
+ */
 export function calculateProgression(input: ProgressionInput): ProgressionResult {
   const {
-    prescribedWeightKg, prescribedReps, prescribedSets,
-    actualReps, avgRIR, avgRestSeconds, prescribedRestSeconds,
-    availableWeights, phase,
+    programTargetReps,
+    lastWeightKg,
+    lastRepsPerSet,
+    lastAvgRIR,
+    availableWeights,
+    phase,
+    sessionIntensity,
   } = input
 
-  const restInflated = avgRestSeconds > prescribedRestSeconds * 1.5
-  const allSetsCompleted = actualReps.every(r => r >= prescribedReps)
-  const totalPrescribed = prescribedSets * prescribedReps
-  const totalActual = actualReps.reduce((a, b) => a + b, 0)
-  const repDeficit = 1 - totalActual / totalPrescribed
-  const regressed = repDeficit > 0.25
+  // Calculate rep statistics
+  const avgReps = lastRepsPerSet.length > 0
+    ? lastRepsPerSet.reduce((a, b) => a + b, 0) / lastRepsPerSet.length
+    : programTargetReps
+  const minReps = lastRepsPerSet.length > 0
+    ? Math.min(...lastRepsPerSet)
+    : programTargetReps
 
-  if (regressed) {
+  // Determine rep range based on phase/intensity
+  // Heavy/strength: 6-8 range, Volume/hypertrophy: 8-12 range
+  const intensity = sessionIntensity
+  const maxRepsInRange = intensity === 'heavy' ? 8
+    : intensity === 'volume' ? 12
+    : (phase === 'strength' ? 8 : 12)
+
+  // Success criteria
+  const completedTarget = minReps >= programTargetReps
+  const hadGoodRIR = lastAvgRIR >= 2
+  const hadModerateRIR = lastAvgRIR >= 1
+  const reachedTopOfRange = avgReps >= programTargetReps + 2 // e.g., 8+ for a 6-8 range
+
+  // CASE 1: Regression - couldn't complete even close to target reps
+  // Total actual reps is less than 75% of what was expected
+  const totalExpected = input.programTargetSets * programTargetReps
+  const totalActual = lastRepsPerSet.reduce((a, b) => a + b, 0)
+  const repDeficit = 1 - totalActual / totalExpected
+
+  if (repDeficit > 0.25) {
+    // Significant regression - decrease weight
     const lowerWeight = availableWeights
-      .filter(w => w < prescribedWeightKg)
-      .sort((a, b) => b - a)[0]
+      .filter(w => w < lastWeightKg)
+      .sort((a, b) => b - a)[0] // highest weight below current
     return {
-      nextWeightKg: lowerWeight ?? prescribedWeightKg,
-      nextReps: prescribedReps,
+      nextWeightKg: lowerWeight ?? lastWeightKg,
+      nextReps: programTargetReps,
       action: 'decrease',
       reason: 'Regression significative — on baisse la charge pour relancer',
     }
   }
 
-  if (!allSetsCompleted || avgRIR < 1) {
+  // CASE 2: Successful AND reached top of rep range - increase weight
+  if (completedTarget && hadGoodRIR && reachedTopOfRange) {
+    const nextWeight = findNextWeight(lastWeightKg, availableWeights)
+    if (nextWeight > lastWeightKg) {
+      return {
+        nextWeightKg: nextWeight,
+        nextReps: programTargetReps,
+        action: 'increase_weight',
+        reason: `Progression — on passe a ${nextWeight}kg`,
+      }
+    }
+    // No higher weight available, stay at current
     return {
-      nextWeightKg: prescribedWeightKg,
-      nextReps: prescribedReps,
+      nextWeightKg: lastWeightKg,
+      nextReps: Math.round(avgReps),
       action: 'maintain',
-      reason: 'Series incompletes ou effort maximal — on maintient pour consolider',
+      reason: 'Plafond de reps atteint — progression bloquee sans poids supplementaire',
     }
   }
 
-  if (restInflated) {
+  // CASE 3: Successful but not at top of range - increase reps
+  if (completedTarget && hadGoodRIR) {
+    const nextReps = Math.min(Math.round(avgReps) + 1, maxRepsInRange)
+    if (nextReps > Math.round(avgReps)) {
+      return {
+        nextWeightKg: lastWeightKg,
+        nextReps,
+        action: 'increase_reps',
+        reason: 'Bonne performance — on ajoute une rep',
+      }
+    }
+    // Already at max reps in range
     return {
-      nextWeightKg: prescribedWeightKg,
-      nextReps: prescribedReps,
+      nextWeightKg: lastWeightKg,
+      nextReps: Math.round(avgReps),
       action: 'maintain',
-      reason: 'Repos plus long que prevu — performance non comparable, on maintient',
+      reason: 'Plafond de reps atteint — progression bloquee sans poids supplementaire',
     }
   }
 
-  // Ready to progress — find next weight
-  const increment = 2.5
-  const targetWeight = prescribedWeightKg + increment
-  const nextWeightAvailable = availableWeights
-    .filter(w => w > prescribedWeightKg)
-    .sort((a, b) => a - b)[0]
-
-  if (nextWeightAvailable && nextWeightAvailable <= targetWeight + 1) {
+  // CASE 4: Moderate effort (RIR 1-2) but completed - small progression
+  if (completedTarget && hadModerateRIR) {
+    const nextReps = Math.min(Math.round(avgReps) + 1, maxRepsInRange)
     return {
-      nextWeightKg: nextWeightAvailable,
-      nextReps: prescribedReps,
-      action: 'increase_weight',
-      reason: `Progression — on passe a ${nextWeightAvailable}kg`,
-    }
-  }
-
-  // No suitable weight, increase reps
-  // DUP: session intensity overrides the global phase for rep caps
-  const intensity = input.sessionIntensity
-  const maxReps = intensity === 'heavy' ? 8 : intensity === 'volume' ? 15 : (phase === 'strength' ? 8 : 15)
-  if (prescribedReps < maxReps) {
-    return {
-      nextWeightKg: prescribedWeightKg,
-      nextReps: prescribedReps + 1,
+      nextWeightKg: lastWeightKg,
+      nextReps,
       action: 'increase_reps',
-      reason: 'Poids suivant non disponible — on ajoute une rep',
+      reason: 'Effort modere — on ajoute une rep prudemment',
     }
   }
 
+  // CASE 5: Failed (couldn't complete reps OR RIR < 1) - retry same weight/reps
   return {
-    nextWeightKg: prescribedWeightKg,
-    nextReps: prescribedReps,
+    nextWeightKg: lastWeightKg,
+    nextReps: programTargetReps,
     action: 'maintain',
-    reason: 'Plafond de reps atteint — progression bloquee sans poids supplementaire',
+    reason: 'Series incompletes ou effort maximal — on maintient pour consolider',
   }
+}
+
+/**
+ * Find the next available weight increment.
+ * Targets +2.5kg but accepts the smallest available increment.
+ */
+function findNextWeight(currentWeight: number, availableWeights: number[]): number {
+  const higherWeights = availableWeights
+    .filter(w => w > currentWeight)
+    .sort((a, b) => a - b)
+
+  if (higherWeights.length === 0) return currentWeight
+
+  // Prefer 2.5kg increment, but accept whatever is available
+  const targetWeight = currentWeight + 2.5
+  const ideal = higherWeights.find(w => w <= targetWeight + 0.5)
+  return ideal ?? higherWeights[0]
 }
 
 export function shouldDeload(weeksSinceLastDeload: number): boolean {
