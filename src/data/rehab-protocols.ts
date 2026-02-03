@@ -53,15 +53,15 @@ export const rehabProtocols: RehabProtocol[] = [
     frequency: 'daily',
     priority: 1,
     progressionCriteria:
-      'Quand 3x15 répétitions sont indolores pendant 2 semaines consécutives, augmenter la résistance de la FlexBar (changer de couleur) ou ajouter 0.5-1 kg au curl excentrique. Objectif : 0 douleur sur les mouvements de poussée et de préhension.',
+      'Quand 3x15 répétitions de curl excentrique sont indolores pendant 2 semaines consécutives, augmenter la charge de 0.5-1 kg. Pour l\'extension doigts, progresser vers un élastique plus résistant. Objectif : 0 douleur sur les mouvements de poussée et de préhension.',
     exercises: [
       {
-        exerciseName: 'Tyler Twist inversé (golf elbow)',
-        sets: 3,
-        reps: 15,
-        intensity: 'light',
+        exerciseName: 'Massage avant-bras avec balle',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
         notes:
-          'Phase excentrique de 4-5 secondes. Utiliser la FlexBar. Protocole Tyler et al. (2014) : amélioration de 77% du score DASH en 6 semaines. Progression de résistance toutes les 3 semaines. Faire 2x/jour les jours sans entraînement.',
+          'Utiliser une balle de tennis ou de lacrosse. Rouler sur les fléchisseurs de l\'avant-bras (côté paume) en insistant sur les points sensibles. Prépare les tissus avant les exercices excentriques et améliore la circulation locale. Faire avant chaque séance.',
         placement: 'warmup',
       },
       {
@@ -70,7 +70,7 @@ export const rehabProtocols: RehabProtocol[] = [
         reps: 15,
         intensity: 'very_light',
         notes:
-          'Phase excentrique de 5 secondes, concentrique assistée par l\'autre main. Commencer avec 1-2 kg. Ne pas augmenter la charge tant que 3x15 n\'est pas indolore. Alternative si pas de FlexBar disponible.',
+          'Phase excentrique de 5 secondes, concentrique assistée par l\'autre main. Commencer avec 1-2 kg. Ne pas augmenter la charge tant que 3x15 n\'est pas indolore. Faire 2x/jour les jours sans entraînement.',
         placement: 'warmup',
       },
       {
@@ -81,6 +81,15 @@ export const rehabProtocols: RehabProtocol[] = [
         notes:
           'Étirement doux, ne jamais forcer en douleur. Faire avant et après les exercices excentriques et avant toute séance impliquant les bras. Peut être fait plusieurs fois par jour.',
         placement: 'warmup',
+      },
+      {
+        exerciseName: 'Extension doigts avec élastique',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'very_light',
+        notes:
+          'Placer un élastique autour des doigts et les écarter contre la résistance. Renforce les extenseurs des doigts et équilibre la force de préhension. Excellent exercice de récupération active entre les séries ou en fin de séance. Peut être fait plusieurs fois par jour.',
+        placement: 'cooldown',
       },
     ],
   },
