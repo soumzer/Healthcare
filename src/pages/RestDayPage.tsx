@@ -5,6 +5,7 @@ import { db } from '../db'
 import RestDayRoutine from '../components/session/RestDayRoutine'
 import type { RestDayVariant } from '../engine/rest-day'
 import type { BodyZone } from '../db/types'
+import { recordRehabCompletion } from '../utils/rehab-cooldown'
 
 const UPPER_ZONES: ReadonlySet<BodyZone> = new Set([
   'neck', 'shoulder_left', 'shoulder_right',
@@ -54,6 +55,8 @@ export default function RestDayPage() {
     if (variant !== 'all') {
       localStorage.setItem(STORAGE_KEY, variant)
     }
+    // Record completion time for 12h cooldown
+    recordRehabCompletion()
     navigate('/')
   }, [variant, navigate])
 
