@@ -6,18 +6,36 @@
 const STORAGE_KEY = 'last_rehab_completed_at'
 export const REHAB_COOLDOWN_HOURS = 12
 
+// Safe localStorage helpers (handle private browsing / storage full)
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Record that a rehab routine was just completed
  */
 export function recordRehabCompletion(): void {
-  localStorage.setItem(STORAGE_KEY, new Date().toISOString())
+  safeSetItem(STORAGE_KEY, new Date().toISOString())
 }
 
 /**
  * Get the timestamp of the last rehab completion
  */
 export function getLastRehabCompletedAt(): Date | null {
-  const stored = localStorage.getItem(STORAGE_KEY)
+  const stored = safeGetItem(STORAGE_KEY)
   if (!stored) return null
   const date = new Date(stored)
   return isNaN(date.getTime()) ? null : date

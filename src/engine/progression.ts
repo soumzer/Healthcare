@@ -52,6 +52,16 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     sessionIntensity,
   } = input
 
+  // Early return if no previous session data
+  if (!lastRepsPerSet || lastRepsPerSet.length === 0) {
+    return {
+      nextWeightKg: lastWeightKg,
+      nextReps: programTargetReps,
+      action: 'maintain',
+      reason: 'Pas de données de série précédente',
+    }
+  }
+
   // Calculate rep statistics
   const avgReps = lastRepsPerSet.length > 0
     ? lastRepsPerSet.reduce((a, b) => a + b, 0) / lastRepsPerSet.length

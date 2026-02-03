@@ -96,18 +96,29 @@ export function useOnboarding() {
     const dumbbellEquipment = state.equipment.find(e => e.name === 'dumbbell')
     if (dumbbellEquipment?.notes) {
       try {
-        const range = JSON.parse(dumbbellEquipment.notes) as { min: number; max: number; step: number }
-        const weights = []
-        for (let w = range.min; w <= range.max; w += range.step) {
-          weights.push({
-            userId,
-            equipmentType: 'dumbbell' as const,
-            weightKg: w,
-            isAvailable: true,
-          })
-        }
-        if (weights.length > 0) {
-          await db.availableWeights.bulkAdd(weights)
+        const parsed = JSON.parse(dumbbellEquipment.notes)
+        // Validate structure before using
+        if (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          typeof parsed.min === 'number' &&
+          typeof parsed.max === 'number' &&
+          typeof parsed.step === 'number' &&
+          parsed.step > 0 // Prevent infinite loop
+        ) {
+          const range = parsed as { min: number; max: number; step: number }
+          const weights = []
+          for (let w = range.min; w <= range.max; w += range.step) {
+            weights.push({
+              userId,
+              equipmentType: 'dumbbell' as const,
+              weightKg: w,
+              isAvailable: true,
+            })
+          }
+          if (weights.length > 0) {
+            await db.availableWeights.bulkAdd(weights)
+          }
         }
       } catch (error) {
         console.warn('Invalid dumbbell range format in notes, skipping weight generation:', error)
@@ -202,7 +213,7 @@ async function seedKnownWeights(
     const fragment = kw.matchFragment.toLowerCase()
     // Find the first matching exercise in the program
     const match = programExercises.find(e => e.name.toLowerCase().includes(fragment))
-    if (!match) continue
+    if (!match || match.id === undefined) continue
 
     // Find the ProgramExercise to get sets/reps info
     let sets = 3
@@ -218,7 +229,7 @@ async function seedKnownWeights(
 
     progressEntries.push({
       userId,
-      exerciseId: match.id!,
+      exerciseId: match.id,
       exerciseName: match.name,
       date: now,
       sessionId: 0, // No real session yet — seed entry

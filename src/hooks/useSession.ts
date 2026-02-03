@@ -63,6 +63,8 @@ interface SavedSessionState {
 }
 
 const SESSION_STATE_VERSION = 1
+const SESSION_EXPIRY_MS = 3 * 60 * 60 * 1000 // 3 hours
+const DEFAULT_REST_SECONDS = 120
 
 export interface UseSessionReturn {
   phase: SessionPhase
@@ -156,7 +158,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const isRestorable = saved
     && saved.programId === programId
     && saved.sessionIndex === programSession.order
-    && (Date.now() - saved.timestamp) < 3 * 60 * 60 * 1000 // expire after 3h
+    && saved.engineExerciseIndex < programSession.exercises.length // Validate exercise index is valid
+    && (Date.now() - saved.timestamp) < SESSION_EXPIRY_MS
 
   const engineRef = useRef<SessionEngine | null>(null)
   if (engineRef.current === null) {
@@ -187,6 +190,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       cooldownRehab: integrated.cooldownRehab,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally using conditionsKey string instead of healthConditions array reference
+    // to avoid recalculation when array reference changes but content is identical
   }, [programSession, conditionsKey])
 
   // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
@@ -210,10 +215,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       if (remainingMs > 0) {
         // Calculate how much time has elapsed since rest started
         // restSeconds is not available here, so we compute elapsed from endTime
-        // We need to derive restSeconds from the saved state context
-        const programExRestSeconds = programSession.exercises.find(
-          (_, idx) => idx === saved.engineExerciseIndex
-        )?.restSeconds ?? 120
+        const programExRestSeconds = programSession.exercises[saved.engineExerciseIndex]?.restSeconds ?? DEFAULT_REST_SECONDS
         const elapsedSeconds = programExRestSeconds - Math.ceil(remainingMs / 1000)
         return Math.max(0, elapsedSeconds)
       }
@@ -273,7 +275,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const restSeconds =
     programSession.exercises.find(
       (e) => e.exerciseId === currentExercise?.exerciseId
-    )?.restSeconds ?? 120
+    )?.restSeconds ?? DEFAULT_REST_SECONDS
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -292,27 +294,25 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     if (!isRestorable || saved?.phase !== 'rest_timer' || !saved.timerEndTime) return
     timerInitializedRef.current = true
 
-    let isMounted = true
     const remainingMs = saved.timerEndTime - Date.now()
-    if (remainingMs > 0) {
-      // Timer still running - start the interval
-      const endTime = saved.timerEndTime
-      // Get restSeconds for the current exercise from the saved state
-      const programExRestSeconds = programSession.exercises.find(
-        (_, idx) => idx === saved.engineExerciseIndex
-      )?.restSeconds ?? 120
-      restTimerRef.current = setInterval(() => {
-        if (!isMounted) return
-        // Recalculate from timerEndTime to handle browser tab suspension
-        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
-        const elapsed = programExRestSeconds - remaining
-        setRestElapsed(elapsed)
-      }, 1000)
-    }
-    // If remainingMs <= 0, restElapsed was already set to 9999 (expired)
+    if (remainingMs <= 0) return // Timer expired, restElapsed already set to 9999
 
+    // Pre-compute values outside interval to avoid stale closures
+    const endTime = saved.timerEndTime
+    const programExRestSeconds = programSession.exercises[saved.engineExerciseIndex]?.restSeconds ?? DEFAULT_REST_SECONDS
+
+    // Store interval ID locally for proper cleanup
+    const intervalId = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+      const elapsed = programExRestSeconds - remaining
+      setRestElapsed(elapsed)
+    }, 1000)
+
+    restTimerRef.current = intervalId
+
+    // Cleanup interval on unmount
     return () => {
-      isMounted = false
+      clearInterval(intervalId)
     }
   }, [isRestorable, saved, programSession.exercises])
 
@@ -785,7 +785,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         const alt = availableExercises.find(
           (e) => e.name === altName && !e.isRehab
         )
-        if (alt) return { name: altName, exerciseId: alt.id! }
+        if (alt?.id !== undefined) return { name: altName, exerciseId: alt.id }
       }
       return null
     })(),

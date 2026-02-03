@@ -32,7 +32,7 @@ export default function WeightPicker({
 
   // Use actual available weights if provided, otherwise generate nearby options
   let options: number[]
-  if (availableWeights && availableWeights.length > 0) {
+  if (availableWeights && Array.isArray(availableWeights) && availableWeights.length > 0) {
     // Show available weights that are different from the current prescribed weight
     options = availableWeights.filter((w) => Math.abs(w - currentWeightKg) > 0.1)
     // Sort by distance from current weight (closest first)
@@ -90,10 +90,11 @@ export default function WeightPicker({
             : 'Poids proches :'}
         </p>
         <div className="grid grid-cols-4 gap-2 mb-6">
-          {options.map((w) => (
+          {options.map((w, index) => (
             <button
-              key={w}
+              key={`${w}-${index}`}
               onClick={() => handleSelect(w)}
+              aria-label={`Sélectionner ${w} kilogrammes`}
               className="bg-zinc-800 text-white rounded-xl py-3 text-center font-semibold"
             >
               {w}
