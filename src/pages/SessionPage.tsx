@@ -23,43 +23,43 @@ function SessionContent({
   programId: number
   sessionIndex: number
 }) {
-  const program = useLiveQuery(() => db.workoutPrograms.get(programId))
-  const user = useLiveQuery(() => db.userProfiles.toCollection().first())
-  const conditions = useLiveQuery(
-    () =>
-      user?.id
-        ? db.healthConditions.where('userId').equals(user.id).and((c) => c.isActive).toArray()
-        : [],
-    [user?.id]
+  // Combine independent queries that don't depend on user
+  const baseData = useLiveQuery(
+    async () => {
+      const [program, user, allExercises] = await Promise.all([
+        db.workoutPrograms.get(programId),
+        db.userProfiles.toCollection().first(),
+        db.exercises.toArray(),
+      ])
+      return { program, user, allExercises }
+    },
+    [programId]
   )
-  const allExercises = useLiveQuery(() => db.exercises.toArray())
-  const progressData = useLiveQuery(
-    () =>
-      user?.id
-        ? db.exerciseProgress.where('userId').equals(user.id).toArray()
-        : [],
-    [user?.id]
-  )
-  const availableWeightsData = useLiveQuery(
-    () =>
-      user?.id
-        ? db.availableWeights.where('userId').equals(user.id).and((w) => w.isAvailable).toArray()
-        : [],
+
+  const program = baseData?.program
+  const user = baseData?.user
+  const allExercises = baseData?.allExercises
+
+  // Combine all user-dependent queries into a single hook to prevent cascading re-renders
+  const userData = useLiveQuery(
+    async () => {
+      if (!user?.id) return null
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      const [conditions, progressData, availableWeightsData, recentPainLogs] = await Promise.all([
+        db.healthConditions.where('userId').equals(user.id).and((c) => c.isActive).toArray(),
+        db.exerciseProgress.where('userId').equals(user.id).toArray(),
+        db.availableWeights.where('userId').equals(user.id).and((w) => w.isAvailable).toArray(),
+        db.painLogs.where('userId').equals(user.id).and((p) => p.date >= sevenDaysAgo).toArray(),
+      ])
+      return { conditions, progressData, availableWeightsData, recentPainLogs }
+    },
     [user?.id]
   )
 
-  // Load recent pain logs (last 7 days) for pain feedback loop
-  const recentPainLogs = useLiveQuery(
-    () =>
-      user?.id
-        ? db.painLogs
-            .where('userId')
-            .equals(user.id)
-            .and((p) => p.date >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
-            .toArray()
-        : [],
-    [user?.id]
-  )
+  const conditions = userData?.conditions
+  const progressData = userData?.progressData
+  const availableWeightsData = userData?.availableWeightsData
+  const recentPainLogs = userData?.recentPainLogs
 
   // Determine current training phase and deload status
   const phaseData = useLiveQuery(

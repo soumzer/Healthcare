@@ -308,7 +308,10 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
             ))}
           </div>
 
-          {expandedZone && form && renderForm(handleSaveNew, editingId ?? undefined)}
+          {expandedZone && form && renderForm(
+            editingId !== null ? handleSaveEdit : handleSaveNew,
+            editingId ?? undefined
+          )}
         </div>
       )}
 

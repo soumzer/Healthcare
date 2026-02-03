@@ -13,8 +13,9 @@ export default function StepImportProgram({ state, updateProgramText, prevStep, 
     try {
       await submit()
     } catch (e) {
-      setSubmitting(false)
       setError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -25,8 +26,9 @@ export default function StepImportProgram({ state, updateProgramText, prevStep, 
     try {
       await submit()
     } catch (e) {
-      setSubmitting(false)
       setError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement")
+    } finally {
+      setSubmitting(false)
     }
   }
 

@@ -346,163 +346,168 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   // Save session data to DB — extracted so it can be called from multiple paths
   const saveSessionToDb = useCallback(
     async (checks: PainCheck[]) => {
-      const now = new Date()
+      try {
+        const now = new Date()
 
-      // Save pain checks
-      for (const check of checks) {
-        if (check.level > 0) {
-          await db.painLogs.add({
-            userId,
-            zone: check.zone,
-            level: check.level,
-            context: 'end_session',
-            date: now,
-          })
-        }
-      }
-
-      // Build exercise names onto the engine exercises
-      const allExercises = engine.getAllExercises().map((ex) => ({
-        ...ex,
-        exerciseName: exerciseNames[ex.exerciseId] ?? '',
-      }))
-
-      // Save workout session
-      await db.workoutSessions.add({
-        userId,
-        programId,
-        sessionName: programSession.name,
-        startedAt: sessionStartRef.current,
-        completedAt: now,
-        exercises: allExercises,
-        endPainChecks: checks,
-        notes: '',
-      })
-
-      // Compute weekNumber from first session date
-      const firstSession = await db.workoutSessions
-        .where('userId')
-        .equals(userId)
-        .toArray()
-      const firstDate = firstSession
-        .filter((s) => s.completedAt)
-        .map((s) => s.completedAt!.getTime())
-        .sort((a, b) => a - b)[0]
-      const weekNumber = firstDate
-        ? Math.floor((now.getTime() - firstDate) / (7 * 24 * 60 * 60 * 1000)) + 1
-        : 1
-
-      // Determine current phase from TrainingPhase records
-      const currentPhaseRecord = await db.trainingPhases
-        .where('userId')
-        .equals(userId)
-        .and((p) => !p.endedAt)
-        .first()
-      const currentPhaseName = currentPhaseRecord?.phase ?? trainingPhase ?? 'hypertrophy'
-      const effectivePhase = currentPhaseName === 'transition' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'strength' | 'deload'
-
-      // Save exercise progress for each completed exercise
-      let progressionCount = 0
-      let totalExerciseCount = 0
-      for (const ex of allExercises) {
-        if (ex.status === 'completed' && ex.sets.length > 0) {
-          const avgRIR =
-            ex.sets.reduce((sum, s) => sum + (s.repsInReserve ?? 0), 0) /
-            ex.sets.length
-          // Only include sets with actual rest data (skip first set which has no rest before it)
-          const setsWithRest = ex.sets.filter((s) => s.restActualSeconds !== undefined)
-          const avgRest = setsWithRest.length > 0
-            ? setsWithRest.reduce((sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds), 0) / setsWithRest.length
-            : ex.sets[0]?.restPrescribedSeconds ?? 120
-
-          // Use last set's weight (most representative of current capacity)
-          const lastSet = ex.sets[ex.sets.length - 1]
-          const weightKg = lastSet?.actualWeightKg ?? 0
-
-          // Reps = average reps per set (not total)
-          const avgReps = Math.round(
-            ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0) / ex.sets.length
-          )
-
-          // Check if any pain was reported (used for progression decisions)
-          const hadPain = ex.sets.some((s) => s.painReported)
-
-          // Get prescribed values from the program exercise definition
-          const programExercise = programSession.exercises.find(
-            (pe) => pe.exerciseId === ex.exerciseId
-          )
-
-          await db.exerciseProgress.add({
-            userId,
-            exerciseId: ex.exerciseId,
-            exerciseName: exerciseNames[ex.exerciseId] ?? '',
-            date: now,
-            sessionId: 0,
-            weightKg,
-            reps: avgReps,
-            repsPerSet: ex.sets.map((s) => s.actualReps ?? 0),
-            sets: ex.sets.length,
-            avgRepsInReserve: hadPain ? -1 : avgRIR, // -1 signals pain occurred
-            avgRestSeconds: avgRest,
-            exerciseOrder: ex.order,
-            phase: effectivePhase,
-            weekNumber,
-            prescribedReps: ex.prescribedReps,
-            prescribedRestSeconds: programExercise?.restSeconds,
-          })
-
-          totalExerciseCount++
-          // Track whether this exercise progressed (for phase recommendation)
-          const prevProgress = engine.getProgressionResult(ex.exerciseId)
-          if (prevProgress && (prevProgress.action === 'increase_weight' || prevProgress.action === 'increase_reps')) {
-            progressionCount++
+        // Save pain checks
+        for (const check of checks) {
+          if (check.level > 0) {
+            await db.painLogs.add({
+              userId,
+              zone: check.zone,
+              level: check.level,
+              context: 'end_session',
+              date: now,
+            })
           }
         }
-      }
 
-      // Phase transition logic: check if phase should change
-      if (currentPhaseRecord && totalExerciseCount > 0) {
-        const progressionConsistency = progressionCount / totalExerciseCount
+        // Build exercise names onto the engine exercises
+        const allExercises = engine.getAllExercises().map((ex) => ({
+          ...ex,
+          exerciseName: exerciseNames[ex.exerciseId] ?? '',
+        }))
 
-        // Get average pain level from recent pain logs
-        const recentPainLogs = await db.painLogs
+        // Save workout session
+        await db.workoutSessions.add({
+          userId,
+          programId,
+          sessionName: programSession.name,
+          startedAt: sessionStartRef.current,
+          completedAt: now,
+          exercises: allExercises,
+          endPainChecks: checks,
+          notes: '',
+        })
+
+        // Compute weekNumber from first session date
+        const firstSession = await db.workoutSessions
           .where('userId')
           .equals(userId)
           .toArray()
-        const last2WeeksPain = recentPainLogs.filter(
-          (p) => now.getTime() - p.date.getTime() < 14 * 24 * 60 * 60 * 1000
-        )
-        const avgPainLevel = last2WeeksPain.length > 0
-          ? last2WeeksPain.reduce((sum, p) => sum + p.level, 0) / last2WeeksPain.length
-          : 0
+        const firstDate = firstSession
+          .filter((s) => s.completedAt)
+          .map((s) => s.completedAt!.getTime())
+          .sort((a, b) => a - b)[0]
+        const weekNumber = firstDate
+          ? Math.floor((now.getTime() - firstDate) / (7 * 24 * 60 * 60 * 1000)) + 1
+          : 1
 
-        const mappedPhase = currentPhaseName === 'deload' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'transition' | 'strength'
-        const recommendation = getPhaseRecommendation({
-          currentPhase: mappedPhase,
-          weeksInPhase: currentPhaseRecord.weekCount,
-          avgPainLevel,
-          progressionConsistency,
-        })
+        // Determine current phase from TrainingPhase records
+        const currentPhaseRecord = await db.trainingPhases
+          .where('userId')
+          .equals(userId)
+          .and((p) => !p.endedAt)
+          .first()
+        const currentPhaseName = currentPhaseRecord?.phase ?? trainingPhase ?? 'hypertrophy'
+        const effectivePhase = currentPhaseName === 'transition' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'strength' | 'deload'
 
-        if (recommendation !== mappedPhase) {
-          // Close current phase
-          await db.trainingPhases.update(currentPhaseRecord.id!, {
-            endedAt: now,
-          })
+        // Save exercise progress for each completed exercise
+        let progressionCount = 0
+        let totalExerciseCount = 0
+        for (const ex of allExercises) {
+          if (ex.status === 'completed' && ex.sets.length > 0) {
+            const avgRIR =
+              ex.sets.reduce((sum, s) => sum + (s.repsInReserve ?? 0), 0) /
+              ex.sets.length
+            // Only include sets with actual rest data (skip first set which has no rest before it)
+            const setsWithRest = ex.sets.filter((s) => s.restActualSeconds !== undefined)
+            const avgRest = setsWithRest.length > 0
+              ? setsWithRest.reduce((sum, s) => sum + (s.restActualSeconds ?? s.restPrescribedSeconds), 0) / setsWithRest.length
+              : ex.sets[0]?.restPrescribedSeconds ?? 120
 
-          // Create new phase
-          await db.trainingPhases.add({
-            userId,
-            phase: recommendation as TrainingPhase['phase'],
-            startedAt: now,
-            weekCount: 1,
-          })
-        } else {
-          // Update week count
-          await db.trainingPhases.update(currentPhaseRecord.id!, {
-            weekCount: weekNumber,
-          })
+            // Use last set's weight (most representative of current capacity)
+            const lastSet = ex.sets[ex.sets.length - 1]
+            const weightKg = lastSet?.actualWeightKg ?? 0
+
+            // Reps = average reps per set (not total)
+            const avgReps = Math.round(
+              ex.sets.reduce((sum, s) => sum + (s.actualReps ?? 0), 0) / ex.sets.length
+            )
+
+            // Check if any pain was reported (used for progression decisions)
+            const hadPain = ex.sets.some((s) => s.painReported)
+
+            // Get prescribed values from the program exercise definition
+            const programExercise = programSession.exercises.find(
+              (pe) => pe.exerciseId === ex.exerciseId
+            )
+
+            await db.exerciseProgress.add({
+              userId,
+              exerciseId: ex.exerciseId,
+              exerciseName: exerciseNames[ex.exerciseId] ?? '',
+              date: now,
+              sessionId: 0,
+              weightKg,
+              reps: avgReps,
+              repsPerSet: ex.sets.map((s) => s.actualReps ?? 0),
+              sets: ex.sets.length,
+              avgRepsInReserve: hadPain ? -1 : avgRIR, // -1 signals pain occurred
+              avgRestSeconds: avgRest,
+              exerciseOrder: ex.order,
+              phase: effectivePhase,
+              weekNumber,
+              prescribedReps: ex.prescribedReps,
+              prescribedRestSeconds: programExercise?.restSeconds,
+            })
+
+            totalExerciseCount++
+            // Track whether this exercise progressed (for phase recommendation)
+            const prevProgress = engine.getProgressionResult(ex.exerciseId)
+            if (prevProgress && (prevProgress.action === 'increase_weight' || prevProgress.action === 'increase_reps')) {
+              progressionCount++
+            }
+          }
         }
+
+        // Phase transition logic: check if phase should change
+        if (currentPhaseRecord && totalExerciseCount > 0) {
+          const progressionConsistency = progressionCount / totalExerciseCount
+
+          // Get average pain level from recent pain logs
+          const recentPainLogs = await db.painLogs
+            .where('userId')
+            .equals(userId)
+            .toArray()
+          const last2WeeksPain = recentPainLogs.filter(
+            (p) => now.getTime() - p.date.getTime() < 14 * 24 * 60 * 60 * 1000
+          )
+          const avgPainLevel = last2WeeksPain.length > 0
+            ? last2WeeksPain.reduce((sum, p) => sum + p.level, 0) / last2WeeksPain.length
+            : 0
+
+          const mappedPhase = currentPhaseName === 'deload' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'transition' | 'strength'
+          const recommendation = getPhaseRecommendation({
+            currentPhase: mappedPhase,
+            weeksInPhase: currentPhaseRecord.weekCount,
+            avgPainLevel,
+            progressionConsistency,
+          })
+
+          if (recommendation !== mappedPhase) {
+            // Close current phase
+            await db.trainingPhases.update(currentPhaseRecord.id!, {
+              endedAt: now,
+            })
+
+            // Create new phase
+            await db.trainingPhases.add({
+              userId,
+              phase: recommendation as TrainingPhase['phase'],
+              startedAt: now,
+              weekCount: 1,
+            })
+          } else {
+            // Update week count
+            await db.trainingPhases.update(currentPhaseRecord.id!, {
+              weekCount: weekNumber,
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to save session data:', error)
+        throw error // Re-throw so callers can handle if needed
       }
     },
     [engine, userId, programId, programSession, exerciseNames, trainingPhase]
@@ -588,7 +593,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       }
       engine.logSet(set)
 
-      // Save pain log to DB if pain reported
+      // Save pain log to DB if pain reported (non-critical, fire-and-forget with error logging)
       if (pain) {
         db.painLogs.add({
           userId,
@@ -598,6 +603,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
           exerciseName:
             exerciseNames[currentExercise?.exerciseId ?? 0] ?? '',
           date: now,
+        }).catch((error) => {
+          console.error('Failed to save pain log:', error)
         })
       }
 
@@ -660,44 +667,49 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       if (!currentExercise) return
       const oldExerciseId = currentExercise.exerciseId
 
-      // 1. Update the active program in DB FIRST — swap exerciseId in this slot
-      const activeProgram = await db.workoutPrograms
-        .where('userId').equals(userId)
-        .filter(p => p.isActive)
-        .first()
+      try {
+        // 1. Update the active program in DB FIRST — swap exerciseId in this slot
+        const activeProgram = await db.workoutPrograms
+          .where('userId').equals(userId)
+          .filter(p => p.isActive)
+          .first()
 
-      // Only proceed if DB update can be performed
-      if (activeProgram?.id === undefined) {
-        console.error('Cannot substitute exercise: no active program found')
-        return
+        // Only proceed if DB update can be performed
+        if (activeProgram?.id === undefined) {
+          console.error('Cannot substitute exercise: no active program found')
+          return
+        }
+
+        const updatedSessions = activeProgram.sessions.map(s => ({
+          ...s,
+          exercises: s.exercises.map(pe =>
+            pe.exerciseId === oldExerciseId
+              ? { ...pe, exerciseId: newExerciseId }
+              : pe
+          ),
+        }))
+
+        // DB update must succeed before modifying engine state
+        await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+
+        // 2. Only update engine state AFTER DB write succeeds
+        const newExData = availableExercises.find(e => e.id === newExerciseId)
+        const estimatedWeight = Math.round(currentExercise.prescribedWeightKg * 0.7 * 2) / 2
+        const ex = engine.getCurrentExercise()
+        if (ex) {
+          ex.exerciseId = newExerciseId
+          ex.exerciseName = newExData?.name ?? ''
+          ex.prescribedWeightKg = estimatedWeight
+          ex.prescribedReps = currentExercise.prescribedReps
+        }
+
+        setAlternativeWeight(null)
+        setAlternativeReps(null)
+        forceUpdate(n => n + 1)
+      } catch (error) {
+        console.error('Failed to substitute exercise:', error)
+        // Engine state remains unchanged on error
       }
-
-      const updatedSessions = activeProgram.sessions.map(s => ({
-        ...s,
-        exercises: s.exercises.map(pe =>
-          pe.exerciseId === oldExerciseId
-            ? { ...pe, exerciseId: newExerciseId }
-            : pe
-        ),
-      }))
-
-      // DB update must succeed before modifying engine state
-      await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
-
-      // 2. Only update engine state AFTER DB write succeeds
-      const newExData = availableExercises.find(e => e.id === newExerciseId)
-      const estimatedWeight = Math.round(currentExercise.prescribedWeightKg * 0.7 * 2) / 2
-      const ex = engine.getCurrentExercise()
-      if (ex) {
-        ex.exerciseId = newExerciseId
-        ex.exerciseName = newExData?.name ?? ''
-        ex.prescribedWeightKg = estimatedWeight
-        ex.prescribedReps = currentExercise.prescribedReps
-      }
-
-      setAlternativeWeight(null)
-      setAlternativeReps(null)
-      forceUpdate(n => n + 1)
     },
     [currentExercise, userId, engine, availableExercises]
   )
