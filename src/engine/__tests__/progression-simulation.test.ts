@@ -78,8 +78,7 @@ describe('Progression Simulation - 2 Months No Initial Data', () => {
 
   it('should progress correctly over 8 weeks (24 sessions) starting from a known weight', () => {
     const session = createMockSession()
-    const exerciseId = 1 // Bench Press
-    const programExercise = session.exercises[0]
+    const programExercise = session.exercises[0] // Bench Press
 
     // Start with a known weight (user entered 20kg in onboarding)
     let currentWeight = 20
