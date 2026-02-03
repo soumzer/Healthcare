@@ -734,4 +734,81 @@ export const rehabProtocols: RehabProtocol[] = [
       },
     ],
   },
+
+  // =========================================================================
+  // 15. COMPLEX FOOT PAIN (Douleur pied complexe)
+  // =========================================================================
+  {
+    targetZone: 'foot_right',
+    conditionName: 'Douleur pied complexe (nerf tibial, extenseurs, péronéaux)',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Nerve flossing : augmenter de 10 à 15 répétitions quand les sensations électriques diminuent. Étirements : augmenter la durée de 30 à 45 secondes quand bien toléré. Towel curl : ajouter un poids léger sur la serviette quand 3x15 est facile. Quand la raideur matinale disparaît et que la douleur est < 2/10 pendant la marche et la station debout prolongée, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 sensation de décharge électrique et disparition des douleurs sur le bord externe et le dessus du pied.',
+    exercises: [
+      {
+        exerciseName: 'Massage balle sous le pied',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Utiliser une balle à picots (spiky ball) ou balle de tennis. Rouler sous la voûte plantaire en insistant sur les points sensibles. Prépare les tissus et améliore la circulation locale. Faire debout ou assis selon la tolérance.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Auto-massage mollet',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Utiliser un foam roller ou pistolet de massage. Relâche les tensions du mollet qui affectent le pied via le nerf tibial et les tendons. Insister sur les points sensibles du gastrocnémien et du soléaire.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Nerve flossing pied (nerf tibial)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Aide à réduire les sensations de décharge électrique dans le talon. Assis, jambe tendue, pointer puis fléchir le pied tout en inclinant la tête. Mouvement DOUX et contrôlé — ne jamais forcer. Arrêter si aggravation des symptômes.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement extenseurs du pied',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Pour la douleur sur le dessus du pied. Assis, pointer le pied et appuyer doucement sur le dessus des orteils. Étire les tendons extenseurs. Ne pas forcer en cas de douleur aiguë.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement péronéaux',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Pour la douleur sur le bord externe du pied. Assis, tourner le pied en inversion (plante vers l\'intérieur) et maintenir. Étire les muscles péroniers sur le côté externe de la jambe.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Mobilité cheville',
+        sets: 2,
+        reps: '10 cercles/direction',
+        intensity: 'very_light',
+        notes:
+          'Cercles de cheville dans les deux sens. Améliore la fonction globale du pied et réduit la raideur matinale. Peut être fait assis ou debout. Excellent le matin au réveil.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Towel curl (renforcement orteils)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Serviette posée au sol, ramener vers soi en agrippant avec les orteils. Renforce les muscles intrinsèques du pied et améliore la stabilité de la voûte plantaire. Progression : ajouter un poids léger sur la serviette.',
+        placement: 'cooldown',
+      },
+    ],
+  },
 ]
