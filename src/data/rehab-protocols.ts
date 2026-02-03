@@ -811,4 +811,521 @@ export const rehabProtocols: RehabProtocol[] = [
       },
     ],
   },
+
+  // =========================================================================
+  // 16. ADHESIVE CAPSULITIS / FROZEN SHOULDER (Capsulite adhésive / épaule gelée)
+  // =========================================================================
+  {
+    targetZone: 'shoulder_right',
+    conditionName: 'Capsulite adhésive (épaule gelée)',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (inflammatoire) : exercices de pendule et étirements passifs doux uniquement. Phase 2 (gelée) : ajouter progressivement les wall walks et rotations externes passives. Phase 3 (dégel) : introduire les exercices actifs assistés puis actifs. Objectif : récupérer 80% de l\'amplitude de mouvement comparée au côté sain. Le processus complet peut prendre 12-24 mois — la patience est essentielle.',
+    exercises: [
+      {
+        exerciseName: 'Exercices de pendule (Codman)',
+        sets: 3,
+        reps: '30 sec/direction',
+        intensity: 'very_light',
+        notes:
+          'Penchez-vous en avant, bras pendant, laissez le bras faire des cercles par gravité. Cercles horaires, antihoraires, puis avant-arrière. NE PAS forcer activement — le mouvement vient du corps, pas de l\'épaule. Excellent pour maintenir la mobilité sans stress sur la capsule. Faire 3-4x par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement passif en élévation (table slide)',
+        sets: 3,
+        reps: '30-45 sec',
+        intensity: 'very_light',
+        notes:
+          'Assis devant une table, faites glisser la main vers l\'avant en laissant le bras monter passivement. Le bras sain peut aider à pousser. Aller jusqu\'à la sensation d\'étirement, pas de douleur. Progression : augmenter la distance parcourue.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Wall walk (marche au mur)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Face au mur, montez les doigts sur le mur en marchant vers le haut. Maintenez la position haute 5 secondes. Ne laissez pas l\'épaule se hausser vers l\'oreille. Marquez votre progression sur le mur pour suivre l\'amélioration de l\'amplitude.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement rotation externe passive',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Allongé sur le dos, coude à 90°, utilisez le bras sain ou un bâton pour pousser doucement l\'avant-bras vers l\'extérieur. TRÈS progressif — la capsule postérieure est souvent très raide. Ne jamais forcer contre la douleur.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Étirement rotation interne (towel stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Serviette dans le dos, main affectée en bas. Le bras sain tire doucement vers le haut pour augmenter la rotation interne. Étirement progressif, maintenir sans rebondir. Important pour les gestes du quotidien (attacher le soutien-gorge, se gratter le dos).',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 17. SUBACROMIAL BURSITIS (Bursite sous-acromiale)
+  // =========================================================================
+  {
+    targetZone: 'shoulder_right',
+    conditionName: 'Bursite sous-acromiale',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë, 1-2 semaines) : repos, glace, éviter les mouvements overhead. Phase 2 (subaiguë) : introduire la stabilisation scapulaire et les rotations externes légères. Phase 3 (chronique) : renforcement progressif de la coiffe avec charges légères. Quand la douleur est < 2/10 en élévation du bras, réintroduire progressivement les mouvements overhead. Objectif : élévation complète du bras sans douleur ni accrochage.',
+    exercises: [
+      {
+        exerciseName: 'Rétraction scapulaire (scapular squeeze)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Serrez les omoplates ensemble et vers le bas, maintenez 5 secondes. Améliore le positionnement scapulaire et ouvre l\'espace sous-acromial. Peut être fait assis, debout, ou allongé sur le ventre. Exercice fondamental — faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation externe isométrique mur',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Coude à 90°, dos de la main contre le mur, poussez comme pour tourner vers l\'extérieur. Renforce la coiffe sans mouvement, idéal en phase aiguë. Intensité légère (30-50% effort max). Pas de douleur pendant l\'exercice.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation externe câble/bande (coiffe)',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Coude collé au corps, rotation externe contrôlée contre la résistance de la bande. Serviette roulée entre le coude et le flanc. Tempo lent (3 sec excentrique). À introduire quand les isométriques sont indolores.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Stabilisation scapulaire Y-T-W',
+        sets: 2,
+        reps: '8-10/position',
+        intensity: 'light',
+        notes:
+          'Allongé sur le ventre ou penché en avant. Former les lettres Y, T, et W avec les bras en soulevant contre la gravité. Renforce les stabilisateurs scapulaires (trapèze moyen/inférieur, rhomboïdes). Poids très légers ou poids du corps uniquement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Élévation latérale scaption (30°)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Élévation dans le plan de la scapula (30° en avant), pouces vers le haut. Angle shoulder-safe qui minimise le risque de conflit. NE PAS dépasser la hauteur des épaules en phase de récupération. Poids très légers (1-2 kg max).',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 18. ANTERIOR SHOULDER INSTABILITY (Instabilité antérieure épaule)
+  // =========================================================================
+  {
+    targetZone: 'shoulder_right',
+    conditionName: 'Instabilité antérieure épaule',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (0-6 semaines) : renforcement isométrique et stabilisation scapulaire uniquement. Phase 2 (6-12 semaines) : exercices dynamiques en amplitude réduite. Phase 3 (12+ semaines) : exercices en amplitude complète et proprioception avancée. Quand le test d\'appréhension est négatif et la force symétrique, introduire progressivement les exercices de poussée. Objectif : stabilité dynamique permettant le retour au sport sans sensation d\'instabilité.',
+    exercises: [
+      {
+        exerciseName: 'Rotation externe couché (renforcement coiffe)',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Couché sur le côté sain, haltère léger. Rotation externe lente et contrôlée, coude collé au corps. Renforce l\'infraspinatus et le teres minor, stabilisateurs clés contre l\'instabilité antérieure. Ne JAMAIS utiliser de charges lourdes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Stabilisation scapulaire (serratus push-up)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Position de planche ou push-up, pousser les omoplates vers l\'extérieur en fin de mouvement (protraction). Renforce le serratus anterior, essentiel pour la stabilité scapulaire. Peut être fait sur les genoux si trop difficile.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Proprioception épaule (rhythmic stabilization)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'light',
+        notes:
+          'Bras tendu devant, partenaire ou bande applique des perturbations légères dans différentes directions. L\'épaule doit résister et maintenir la position. Entraîne les réflexes stabilisateurs. Progresser : yeux fermés, positions variées.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Face pull avec rotation externe',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Câble ou bande à hauteur du visage. Tirer vers le visage puis rotation externe en fin de mouvement. Renforce les rotateurs externes et les stabilisateurs scapulaires. Ratio recommandé : 2 séries de tirage pour 1 série de poussée.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Exercice de Blackburn (prone Y-T-W-L)',
+        sets: 2,
+        reps: '8/position',
+        intensity: 'light',
+        notes:
+          'Allongé sur le ventre, bras pendants. Former les lettres Y, T, W, L en soulevant les bras. Renforce l\'ensemble de la coiffe et les stabilisateurs scapulaires. Maintenir chaque position 3 secondes. Poids du corps uniquement au début.',
+        placement: 'warmup',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 19. TROCHANTERIC BURSITIS (Bursite trochantérienne)
+  // =========================================================================
+  {
+    targetZone: 'hip_right',
+    conditionName: 'Bursite trochantérienne',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos relatif, éviter de dormir sur le côté affecté, étirements IT band et fessiers. Phase 2 : introduire le renforcement du moyen fessier (clam shell, abduction). Phase 3 : renforcement fonctionnel (single-leg stance, step-ups latéraux). Quand la douleur nocturne disparaît et que la marche est indolore, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 douleur sur la face latérale de la hanche.',
+    exercises: [
+      {
+        exerciseName: 'Foam roll IT band',
+        sets: 2,
+        reps: '60-90 sec',
+        intensity: 'very_light',
+        notes:
+          'Rouler sur le côté externe de la cuisse du genou à la hanche. NE PAS rouler directement sur le grand trochanter (bosse osseuse). Pression modérée — l\'IT band est naturellement tendu. Aide à relâcher les tensions qui irritent la bourse.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement IT band debout',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Debout, jambe affectée croisée derrière, inclinez le bassin vers le côté sain. Vous devez sentir l\'étirement sur le côté externe de la hanche/cuisse. Maintenir sans rebondir. Faire plusieurs fois par jour.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Clam shell (renforcement moyen fessier)',
+        sets: 3,
+        reps: '15/côté',
+        intensity: 'light',
+        notes:
+          'Couché sur le côté, genoux fléchis, ouvrir le genou supérieur comme une coquille. Bande élastique autour des genoux pour plus de résistance. Le bassin ne doit PAS rouler vers l\'arrière. Renforce le moyen fessier faible, souvent la cause sous-jacente.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Abduction hanche couché (side-lying hip abduction)',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Couché sur le côté sain, lever la jambe affectée vers le plafond, pied en légère rotation interne (orteils vers le bas). Éviter de monter trop haut (30-45° suffisent). Renforce les abducteurs de hanche.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Pont fessier avec bande',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Bande autour des genoux, pont fessier classique en poussant légèrement contre la bande. Active le moyen fessier en plus du grand fessier. Serrer les fessiers 3 secondes en haut du mouvement.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement piriforme/fessier',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Position figure-4 allongé ou assis. Étire les rotateurs profonds de la hanche qui peuvent contribuer à l\'irritation de la bourse. Respirer profondément pendant l\'étirement.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 20. FEMOROACETABULAR IMPINGEMENT - FAI (Conflit fémoro-acétabulaire)
+  // =========================================================================
+  {
+    targetZone: 'hip_right',
+    conditionName: 'Conflit fémoro-acétabulaire (FAI)',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 : mobilité douce et étirements des fléchisseurs, éviter la flexion profonde (> 90°). Phase 2 : stabilisation du core et renforcement fessier en amplitude limitée. Phase 3 : augmentation progressive de l\'amplitude dans les limites de la douleur. Objectif : mouvements fonctionnels (marche, escaliers, vélo) sans douleur. ATTENTION : éviter les squats profonds, les fentes profondes, et les positions de flexion-adduction-rotation interne qui reproduisent le conflit.',
+    exercises: [
+      {
+        exerciseName: 'Étirement fléchisseurs hanche (half-kneeling)',
+        sets: 3,
+        reps: '30-45 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Position de fente au sol, genou arrière posé. Avancer les hanches sans cambrer le dos, contracter le fessier du côté étiré. Les fléchisseurs raides aggravent le FAI en tirant la tête fémorale vers l\'avant. Faire quotidiennement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Mobilité hanche (hip circles contrôlés)',
+        sets: 2,
+        reps: '10/direction',
+        intensity: 'very_light',
+        notes:
+          'À quatre pattes, faire des cercles avec le genou (comme un chien qui lève la patte). Mouvement LENT et contrôlé. Éviter les amplitudes qui reproduisent la douleur (généralement flexion + rotation interne). Maintient la mobilité articulaire.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Dead bug (stabilisation core)',
+        sets: 3,
+        reps: '8-10/côté',
+        intensity: 'light',
+        notes:
+          'Le bas du dos doit rester PLAQUÉ au sol. Excellent pour renforcer le core sans charger la hanche en flexion profonde. Si le dos se cambre, réduire l\'amplitude. Alternative au squat pour le travail du core.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Pont fessier',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Renforce les fessiers sans flexion de hanche. Serrer les fessiers 3 secondes en haut. Évite de compenser avec les lombaires. Progression : unipodal quand 3x15 est facile.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Clam shell',
+        sets: 3,
+        reps: '15/côté',
+        intensity: 'light',
+        notes:
+          'Renforce les rotateurs externes et abducteurs sans stress sur le labrum. Position de départ avec hanches à 45° (pas 90°). Bande élastique pour plus de résistance quand l\'exercice devient facile.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Squat limité (box squat haut)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Squat jusqu\'à un banc haut (flexion 60-70° max). Garder le torse droit, genoux tracking sur les orteils. Permet de travailler le pattern squat sans atteindre les amplitudes de conflit. NE PAS descendre plus bas tant que la douleur n\'est pas contrôlée.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 21. HIP FLEXOR STRAIN (Strain fléchisseurs hanche)
+  // =========================================================================
+  {
+    targetZone: 'hip_right',
+    conditionName: 'Strain fléchisseurs hanche',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë, 0-2 semaines) : repos, glace, étirements très doux uniquement. Phase 2 (subaiguë, 2-4 semaines) : isométriques doux et étirements progressifs. Phase 3 (remodelage, 4-8 semaines) : renforcement isotonique progressif. Quand la flexion de hanche contre résistance est indolore, réintroduire progressivement les exercices dynamiques (fentes, step-ups). Objectif : force symétrique et absence de douleur à l\'étirement et à la contraction.',
+    exercises: [
+      {
+        exerciseName: 'Étirement fléchisseurs doux (Thomas stretch modifié)',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Allongé au bord du lit, une jambe pendante, l\'autre genou contre la poitrine. Laisser la jambe descendre passivement. NE PAS forcer en phase aiguë. Progression : augmenter la durée puis l\'amplitude.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Isométrique flexion hanche',
+        sets: 3,
+        reps: '5 x 10 sec',
+        intensity: 'very_light',
+        notes:
+          'Assis, pousser doucement le genou vers le haut contre la résistance de la main (30-50% effort max). Renforce les fléchisseurs sans les raccourcir. Pas de douleur pendant l\'exercice. Introduire en phase 2 uniquement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Marche genoux hauts lente (slow high knees)',
+        sets: 2,
+        reps: '10/jambe',
+        intensity: 'light',
+        notes:
+          'Marche sur place en levant lentement les genoux à 90°. Contrôle le mouvement, pas de momentum. Renforce les fléchisseurs de manière fonctionnelle. Introduire en phase 3 quand les isométriques sont indolores.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Pont fessier',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Renforce les fessiers et étire passivement les fléchisseurs en fin de mouvement. Serrer les fessiers 3 secondes en haut. Peut être fait dès la phase 1 si indolore.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Dead bug simplifié',
+        sets: 3,
+        reps: '8-10/côté',
+        intensity: 'light',
+        notes:
+          'Version simplifiée : ne bouger que les bras au début, puis ajouter les jambes. Renforce le core et les fléchisseurs de manière contrôlée. Le bas du dos reste plaqué au sol.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Foam roll quadriceps/psoas',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Rouler sur le devant de la cuisse et la zone du pli de l\'aine (attention : pas directement sur l\'os). Aide à relâcher les tensions des fléchisseurs. Pression légère en phase aiguë.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 22. IT BAND SYNDROME (Syndrome bandelette ilio-tibiale)
+  // =========================================================================
+  {
+    targetZone: 'knee_right',
+    conditionName: 'Syndrome bandelette ilio-tibiale (ITB)',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos relatif de la course, foam rolling, étirements IT band. Phase 2 : renforcement des abducteurs et du moyen fessier. Phase 3 : retour progressif à la course avec focus sur la cadence et la technique. Quand 30 minutes de course sont indolores, augmenter progressivement la distance (règle des 10%). Objectif : 0 douleur sur la face externe du genou pendant et après la course.',
+    exercises: [
+      {
+        exerciseName: 'Foam roll IT band',
+        sets: 2,
+        reps: '90 sec/côté',
+        intensity: 'light',
+        notes:
+          'Rouler sur le côté externe de la cuisse du genou à la hanche. S\'arrêter sur les points sensibles 15-20 secondes. NE PAS rouler directement sur l\'os du genou. La bandelette elle-même ne s\'étire pas vraiment — on travaille les tissus environnants.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement IT band couché',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Couché sur le dos, croiser la jambe affectée par-dessus et laisser tomber vers le côté opposé. Garder les épaules au sol. L\'étirement se ressent sur le côté externe de la cuisse et de la hanche.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Clam shell avec bande',
+        sets: 3,
+        reps: '15/côté',
+        intensity: 'light',
+        notes:
+          'Exercice fondamental pour le syndrome ITB. Renforce le moyen fessier souvent faible chez les coureurs avec ITB. Le bassin ne doit pas rouler. Faire quotidiennement même les jours de course.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Side-lying hip abduction',
+        sets: 3,
+        reps: '15/côté',
+        intensity: 'light',
+        notes:
+          'Couché sur le côté, lever la jambe vers le plafond, pied en légère rotation interne. Renforce les abducteurs. Alternative au clam shell pour varier les exercices. Ne pas monter trop haut (45° max).',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Single-leg squat partiel (pistol regression)',
+        sets: 3,
+        reps: '8-10/jambe',
+        intensity: 'moderate',
+        notes:
+          'Squat sur une jambe, descente partielle (30-45°). Le genou ne doit PAS partir en valgus (vers l\'intérieur). Corrige le pattern de mouvement qui contribue au syndrome ITB. Utiliser un support si nécessaire.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Pont fessier unilatéral',
+        sets: 3,
+        reps: '10/jambe',
+        intensity: 'light',
+        notes:
+          'Renforce le grand fessier de chaque côté indépendamment. Corrige les déséquilibres bilatéraux fréquents chez les coureurs avec ITB. Serrer le fessier 3 secondes en haut.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 23. KNEE BURSITIS (Bursite genou)
+  // =========================================================================
+  {
+    targetZone: 'knee_right',
+    conditionName: 'Bursite genou',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos, glace, éviter l\'agenouillement. Phase 2 : renforcement doux du quadriceps et mobilité. Phase 3 : retour progressif aux activités normales. Quand la flexion complète du genou est indolore et l\'agenouillement toléré avec protection, réduire à un programme d\'entretien. Objectif : 0 douleur et gonflement au niveau de la rotule ou de la face interne du genou.',
+    exercises: [
+      {
+        exerciseName: 'Quad sets (contraction isométrique quadriceps)',
+        sets: 3,
+        reps: '10 x 10 sec',
+        intensity: 'very_light',
+        notes:
+          'Jambe tendue, contracter le quadriceps pour écraser l\'arrière du genou contre le sol. Maintenir 10 secondes. Exercice de base pour maintenir la force du quadriceps sans stress articulaire. Peut être fait plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Straight leg raise (élévation jambe tendue)',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Allongé sur le dos, contracter le quad, lever la jambe tendue à 30-45°. Renforce le quadriceps sans flexion du genou. Progression : ajouter une leste à la cheville.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Mobilité genou (heel slides)',
+        sets: 2,
+        reps: '15-20',
+        intensity: 'very_light',
+        notes:
+          'Allongé sur le dos, faire glisser le talon vers les fesses puis l\'éloigner. Maintient l\'amplitude de mouvement du genou. Mouvement doux et contrôlé, ne pas forcer si gonflement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Step-up bas (15 cm)',
+        sets: 3,
+        reps: '10-12/jambe',
+        intensity: 'light',
+        notes:
+          'Step bas (15-20 cm). Monter en poussant avec la jambe affectée, descendre contrôlé. Renforce le quadriceps de manière fonctionnelle. Augmenter la hauteur progressivement quand indolore.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Mini-squat (wall sit partiel)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Dos contre le mur, descendre en squat partiel (30-45° de flexion). Renforce les quadriceps dans une amplitude limitée. Maintenir 5 secondes en bas. Éviter la flexion profonde tant que la bursite n\'est pas résolue.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement quadriceps debout',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Debout, attraper la cheville et tirer le talon vers les fesses. Garder les genoux alignés, contracter légèrement les abdominaux. Maintient la souplesse du quadriceps. Ne pas forcer si gonflement important.',
+        placement: 'cooldown',
+      },
+    ],
+  },
 ]
