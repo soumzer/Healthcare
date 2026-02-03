@@ -90,9 +90,9 @@ export default function WeightPicker({
             : 'Poids proches :'}
         </p>
         <div className="grid grid-cols-4 gap-2 mb-6">
-          {options.map((w, index) => (
+          {options.map((w) => (
             <button
-              key={`${w}-${index}`}
+              key={w}
               onClick={() => handleSelect(w)}
               aria-label={`Sélectionner ${w} kilogrammes`}
               className="bg-zinc-800 text-white rounded-xl py-3 text-center font-semibold"

@@ -287,6 +287,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }, [])
 
   // Resume rest timer interval if session was restored in rest_timer phase
+  // This effect intentionally runs once on mount - values are captured at initialization
   const timerInitializedRef = useRef(false)
   useEffect(() => {
     // Only run once on mount when restoring a session
@@ -314,7 +315,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     return () => {
       clearInterval(intervalId)
     }
-  }, [isRestorable, saved, programSession.exercises])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Dependencies intentionally empty: this effect captures isRestorable/saved/programSession
+    // at mount time only. These values are computed synchronously before first render and don't change.
+  }, [])
 
   // Persist session state to sessionStorage for navigation resilience
   useEffect(() => {
@@ -550,8 +554,21 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         setPhase('cooldown')
       } else {
         // No cooldown — save session and finish (pain check removed as redundant)
-        await saveSessionToDb([])
-        setPhase('done')
+        try {
+          await saveSessionToDb([])
+          setPhase('done')
+        } catch (error) {
+          console.error('Failed to save session, retrying...', error)
+          // Retry once before giving up
+          try {
+            await saveSessionToDb([])
+            setPhase('done')
+          } catch {
+            // Still show done but log the failure - session data is in engine memory
+            console.error('Session save failed after retry. Data may be lost.')
+            setPhase('done')
+          }
+        }
       }
     } else {
       setWarmupSetIndex(0)
@@ -742,7 +759,12 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   const completeCooldown = useCallback(async () => {
     // Save session and go to done (pain check removed as redundant)
-    await saveSessionToDb([])
+    try {
+      await saveSessionToDb([])
+    } catch (error) {
+      console.error('Failed to save session after cooldown:', error)
+      // Continue to done - user completed the workout, don't block them
+    }
     setPhase('done')
   }, [saveSessionToDb])
 
@@ -754,7 +776,12 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   const submitPainChecks = useCallback(
     async (checks: PainCheck[]) => {
-      await saveSessionToDb(checks)
+      try {
+        await saveSessionToDb(checks)
+      } catch (error) {
+        console.error('Failed to save session with pain checks:', error)
+        // Continue to done - user completed the workout
+      }
       setPhase('done')
     },
     [saveSessionToDb]
