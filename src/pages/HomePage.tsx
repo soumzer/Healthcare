@@ -3,39 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import { useNextSession } from '../hooks/useNextSession'
-import type { NextSessionExercisePreview } from '../hooks/useNextSession'
 import { isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
-
-function ExercisePreviewRow({ exercise }: { exercise: NextSessionExercisePreview }) {
-  const weightDisplay = exercise.estimatedWeightKg > 0
-    ? `${exercise.estimatedWeightKg}kg`
-    : '-'
-
-  return (
-    <div
-      className={`flex items-baseline justify-between py-2 ${
-        exercise.isRehab ? 'text-sm text-zinc-400' : 'text-zinc-300'
-      }`}
-    >
-      <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-zinc-600 select-none">{'\u00B7'}</span>
-        <span className="truncate">
-          {exercise.name}
-          {exercise.isRehab && (
-            <span className="ml-1.5 text-xs text-amber-600/70">(rehab)</span>
-          )}
-        </span>
-      </div>
-      <span className="ml-3 shrink-0 tabular-nums text-zinc-400">
-        {exercise.sets}{'\u00D7'}{exercise.targetReps}
-        {' '}
-        <span className={exercise.estimatedWeightKg > 0 ? 'text-zinc-300' : 'text-zinc-600'}>
-          {weightDisplay}
-        </span>
-      </span>
-    </div>
-  )
-}
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
@@ -107,20 +75,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Preview of the next session exercises if available */}
-        {info.preview && info.preview.exercises.length > 0 && (
-          <div className="mb-8">
-            <p className="text-zinc-400 text-xs uppercase tracking-wide mb-2">
-              {"Prochaine s\u00E9ance : "}{info.preview.sessionName}
-            </p>
-            <div className="divide-y divide-zinc-800/50">
-              {info.preview.exercises.map((ex, i) => (
-                <ExercisePreviewRow key={i} exercise={ex} />
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="mt-auto space-y-3 pb-8">
           <button
             onClick={() => rehabAvailable && navigate('/rest-day')}
@@ -148,29 +102,15 @@ export default function HomePage() {
     )
   }
 
-  // Ready — show session preview
+  // Ready — start session
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
       <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
       <p className="text-3xl font-bold mb-6">{info.nextSessionName}</p>
 
-      {/* Exercise preview list */}
-      {info.preview && info.preview.exercises.length > 0 ? (
-        <div className="mb-8">
-          <div className="divide-y divide-zinc-800/50">
-            {info.preview.exercises.map((ex, i) => (
-              <ExercisePreviewRow key={i} exercise={ex} />
-            ))}
-          </div>
-          <p className="text-zinc-600 text-xs mt-3">
-            {info.exerciseCount}{" exercices \u00B7 ~"}{info.estimatedMinutes}{" min"}
-          </p>
-        </div>
-      ) : (
-        <p className="text-zinc-400 mb-8">
-          {info.exerciseCount}{" exercices \u00B7 ~"}{info.estimatedMinutes}{" min"}
-        </p>
-      )}
+      <p className="text-zinc-400 mb-8">
+        {info.exerciseCount}{" exercices \u00B7 ~"}{info.estimatedMinutes}{" min"}
+      </p>
 
       <div className="mt-auto pb-8">
         <button
