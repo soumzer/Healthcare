@@ -1,5 +1,6 @@
-import type { HealthCondition, BodyZone } from '../db/types'
+import type { HealthCondition, BodyZone, Goal } from '../db/types'
 import { rehabProtocols, type RehabExercise } from '../data/rehab-protocols'
+import { generalMobilityExercises, generalPostureExercises } from '../data/general-routines'
 import { selectRotatedExercises } from '../utils/rehab-rotation'
 
 export interface RestDayExercise {
@@ -37,48 +38,121 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
 
 // Maximum exercises per rest day routine (excluding external stretching)
 const MAX_REHAB_EXERCISES = 5
+// Maximum general exercises when combining with rehab
+const MAX_GENERAL_EXERCISES = 3
+// Maximum general exercises when no rehab (standalone mobility/posture)
+const MAX_GENERAL_EXERCISES_STANDALONE = 5
 
+export interface GenerateRestDayOptions {
+  conditions: HealthCondition[]
+  goals?: Goal[]
+  variant?: RestDayVariant
+}
+
+/**
+ * Generate a rest day routine based on conditions and goals.
+ *
+ * Logic:
+ * - If user has conditions → include rehab exercises (up to MAX_REHAB_EXERCISES)
+ * - If user has mobility goal (no conditions) → include general mobility exercises
+ * - If user has posture goal (no conditions) → include general posture exercises
+ * - If user has BOTH conditions AND mobility/posture goals → combine rehab + general (limited)
+ */
 export function generateRestDayRoutine(
-  conditions: HealthCondition[],
+  conditionsOrOptions: HealthCondition[] | GenerateRestDayOptions,
   variant: RestDayVariant = 'all',
 ): RestDayRoutine {
+  // Support both old signature (conditions, variant) and new signature (options)
+  const options: GenerateRestDayOptions = Array.isArray(conditionsOrOptions)
+    ? { conditions: conditionsOrOptions, variant }
+    : conditionsOrOptions
+
+  const conditions = options.conditions
+  const goals = options.goals ?? []
+  const routineVariant = options.variant ?? variant
+
   const activeConditions = conditions.filter(c => c.isActive).filter(c => {
-    if (variant === 'all') return true
-    if (variant === 'upper') return UPPER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
-    if (variant === 'lower') return LOWER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
+    if (routineVariant === 'all') return true
+    if (routineVariant === 'upper') return UPPER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
+    if (routineVariant === 'lower') return LOWER_ZONES.has(c.bodyZone) || c.bodyZone === 'other'
     return true
   })
-  const exercises: RestDayExercise[] = []
 
-  // Collect all exercises from matched protocols with their protocol names
-  const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string }> = []
+  const exercises: RestDayExercise[] = []
   const seenNames = new Set<string>()
 
-  for (const condition of activeConditions) {
-    const protocol = rehabProtocols.find(p => p.targetZone === condition.bodyZone)
-    if (!protocol) continue
+  const hasConditions = activeConditions.length > 0
+  const hasMobilityGoal = goals.includes('mobility')
+  const hasPostureGoal = goals.includes('posture')
 
-    for (const ex of protocol.exercises) {
-      // Avoid duplicates across protocols
-      if (seenNames.has(ex.exerciseName)) continue
-      seenNames.add(ex.exerciseName)
-      allExercisesWithProtocol.push({ exercise: ex, protocolName: protocol.conditionName })
+  // -------------------------------------------------------------------------
+  // 1. Add rehab exercises from conditions (if any)
+  // -------------------------------------------------------------------------
+  if (hasConditions) {
+    const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string }> = []
+
+    for (const condition of activeConditions) {
+      const protocol = rehabProtocols.find(p => p.targetZone === condition.bodyZone)
+      if (!protocol) continue
+
+      for (const ex of protocol.exercises) {
+        if (seenNames.has(ex.exerciseName)) continue
+        seenNames.add(ex.exerciseName)
+        allExercisesWithProtocol.push({ exercise: ex, protocolName: protocol.conditionName })
+      }
+    }
+
+    const selectedExercises = selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+
+    for (const ex of selectedExercises) {
+      exercises.push({
+        name: ex.exerciseName,
+        sets: ex.sets,
+        reps: String(ex.reps),
+        duration: estimateDuration(ex),
+        intensity: ex.intensity,
+        notes: ex.notes,
+        isExternal: false,
+      })
     }
   }
 
-  // Use rotation system to select max 5 exercises intelligently
-  const selectedExercises = selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+  // -------------------------------------------------------------------------
+  // 2. Add general mobility/posture exercises based on goals
+  // -------------------------------------------------------------------------
+  const generalExercises: RehabExercise[] = []
 
-  for (const ex of selectedExercises) {
-    exercises.push({
-      name: ex.exerciseName,
-      sets: ex.sets,
-      reps: String(ex.reps),
-      duration: estimateDuration(ex),
-      intensity: ex.intensity,
-      notes: ex.notes,
-      isExternal: false,
-    })
+  if (hasMobilityGoal) {
+    generalExercises.push(...generalMobilityExercises)
+  }
+
+  if (hasPostureGoal) {
+    generalExercises.push(...generalPostureExercises)
+  }
+
+  if (generalExercises.length > 0) {
+    // Determine max general exercises based on whether we have rehab
+    const maxGeneral = hasConditions ? MAX_GENERAL_EXERCISES : MAX_GENERAL_EXERCISES_STANDALONE
+
+    // Filter out duplicates (some exercises might overlap between mobility/posture or with rehab)
+    const uniqueGeneral = generalExercises.filter(ex => !seenNames.has(ex.exerciseName))
+
+    // Select exercises (could use rotation, but for simplicity take first N for now)
+    // In future, could implement rotation for general exercises too
+    const selectedGeneral = uniqueGeneral.slice(0, maxGeneral)
+
+    for (const ex of selectedGeneral) {
+      seenNames.add(ex.exerciseName)
+      exercises.push({
+        name: ex.exerciseName,
+        sets: ex.sets,
+        reps: String(ex.reps),
+        duration: estimateDuration(ex),
+        intensity: ex.intensity,
+        notes: ex.notes,
+        isExternal: false,
+      })
+    }
   }
 
   const totalMinutes = exercises.reduce((acc, ex) => {
@@ -86,7 +160,7 @@ export function generateRestDayRoutine(
     return acc + mins * ex.sets
   }, 0)
 
-  return { exercises, totalMinutes: Math.round(totalMinutes), variant }
+  return { exercises, totalMinutes: Math.round(totalMinutes), variant: routineVariant }
 }
 
 function estimateDuration(ex: RehabExercise): string {

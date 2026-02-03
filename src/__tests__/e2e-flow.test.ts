@@ -288,12 +288,13 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       )
     })
 
-    it('warmupRehab contient Tyler Twist pour le golf elbow', () => {
+    it('warmupRehab contient des exercices pour le golf elbow', () => {
       // Check across all integrated sessions
       const allWarmupNames = integratedSessions.flatMap(s =>
         s.warmupRehab.map(e => e.exerciseName)
       )
-      expect(allWarmupNames.some(n => n.toLowerCase().includes('tyler twist'))).toBe(true)
+      // elbow_right protocol has warmup exercises: Massage, Curl poignet excentrique, Etirement flechisseurs
+      expect(allWarmupNames.some(n => n.toLowerCase().includes('golf elbow') || n.toLowerCase().includes('curl poignet'))).toBe(true)
     })
 
     it('warmupRehab contient Dead bug et Bird dog pour le dos', () => {
@@ -663,14 +664,6 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       expect(routine.totalMinutes).toBeGreaterThan(0)
     })
 
-    it('inclut la reference aux etirements externes', () => {
-      const routine = generateRestDayRoutine(conditions)
-
-      const externalExercise = routine.exercises.find(e => e.isExternal)
-      expect(externalExercise).toBeDefined()
-      expect(externalExercise!.name).toContain('programme externe')
-    })
-
     it('inclut des exercices pour les conditions actives', () => {
       const routine = generateRestDayRoutine(conditions)
 
@@ -678,8 +671,9 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       // lower_back protocol has rest_day and cooldown exercises
       // hip_right (sciatica) protocol has cooldown exercises
       // upper_back protocol has cooldown exercises
-      // We should see some of these
-      expect(routine.exercises.filter(e => !e.isExternal).length).toBeGreaterThan(0)
+      // We should see some of these (limited to 5 by rotation)
+      expect(routine.exercises.length).toBeGreaterThan(0)
+      expect(routine.exercises.length).toBeLessThanOrEqual(5)
     })
   })
 

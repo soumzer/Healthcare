@@ -4,10 +4,9 @@ import type { HealthCondition } from '../db/types'
 
 describe('generateRestDayRoutine', () => {
   // Use conditions that have rest_day / cooldown exercises in the real rehab protocols:
-  // - upper_back has cooldown: "Étirement pectoral (doorway stretch)"
-  // - foot_left has rest_day: "Towel curl (curl serviette pied)"
-  // - hip_right has cooldown: "Étirement piriforme", "Child's pose (posture de l'enfant)",
-  //   "Étirement ischio-jambiers (hamstring stretch)", "Étirement fléchisseurs de hanche (hip flexor stretch)"
+  // - upper_back has exercises: "Chin tuck", "Face pull", "Band pull-apart", "Etirement pectoral"
+  // - foot_left has exercises: "Short foot", "Towel curl", "Heel raises"
+  // - hip_right has exercises: "Nerve flossing", "Etirement piriforme", etc.
   const mockConditions: HealthCondition[] = [
     {
       id: 1, userId: 1, bodyZone: 'upper_back', label: 'Posture',
@@ -33,34 +32,23 @@ describe('generateRestDayRoutine', () => {
 
   it('includes rehab exercises for active conditions', () => {
     const routine = generateRestDayRoutine(mockConditions)
-    // upper_back cooldown + foot_left rest_day + hip_right cooldowns + external
-    expect(routine.exercises.length).toBeGreaterThan(1)
+    // Should have exercises (max 5 due to rotation system)
+    expect(routine.exercises.length).toBeGreaterThan(0)
+    expect(routine.exercises.length).toBeLessThanOrEqual(5)
   })
 
-  it('picks warmup, cooldown, and rest_day exercises from protocols', () => {
+  it('picks exercises from rehab protocols for active conditions', () => {
     const routine = generateRestDayRoutine(mockConditions)
     const names = routine.exercises.map(e => e.name)
-    // From upper_back (warmup)
-    expect(names).toContain('Chin tuck (rétraction cervicale)')
-    // From upper_back (cooldown)
-    expect(names).toContain('Étirement pectoral (doorway stretch)')
-    // From foot_left (warmup)
-    expect(names).toContain('Short foot (exercice du pied court)')
-    // From foot_left (rest_day)
-    expect(names).toContain('Towel curl (curl serviette pied)')
-    // From hip_right (cooldown)
-    expect(names).toContain('Étirement piriforme')
-    expect(names).toContain('Child\'s pose (posture de l\'enfant)')
-    expect(names).toContain('Étirement ischio-jambiers (hamstring stretch)')
-    expect(names).toContain('Étirement fléchisseurs de hanche (hip flexor stretch)')
-    // From hip_right (warmup)
-    expect(names).toContain('Nerve flossing sciatique')
-    expect(names).toContain('Foam roll chaîne postérieure (ischios + mollets)')
+    // Should include at least some exercises (rotation picks 5)
+    expect(names.length).toBeGreaterThan(0)
+    // All exercises should be non-external
+    expect(routine.exercises.every(e => !e.isExternal)).toBe(true)
   })
 
   it('excludes inactive conditions', () => {
     const routine = generateRestDayRoutine(mockConditions)
-    // knee_left is inactive — knee_right protocol exercises should not appear
+    // knee_left is inactive — knee protocol exercises should not appear
     const names = routine.exercises.map(e => e.name)
     const kneeExercises = names.filter(n =>
       n.toLowerCase().includes('tendinite rotulienne') ||
@@ -69,17 +57,9 @@ describe('generateRestDayRoutine', () => {
     expect(kneeExercises).toHaveLength(0)
   })
 
-  it('always includes external stretching as last item', () => {
-    const routine = generateRestDayRoutine(mockConditions)
-    const last = routine.exercises[routine.exercises.length - 1]
-    expect(last.isExternal).toBe(true)
-    expect(last.name).toContain('programme externe')
-  })
-
-  it('includes external stretching even with no conditions', () => {
+  it('returns empty exercises with no conditions and no goals', () => {
     const routine = generateRestDayRoutine([])
-    expect(routine.exercises).toHaveLength(1)
-    expect(routine.exercises[0].isExternal).toBe(true)
+    expect(routine.exercises).toHaveLength(0)
   })
 
   it('computes total minutes from all exercises', () => {
@@ -93,7 +73,7 @@ describe('generateRestDayRoutine', () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
-  it('includes warmup rehab exercises for rest day routine', () => {
+  it('includes rehab exercises from condition protocols', () => {
     const elbowOnly: HealthCondition[] = [
       {
         id: 10, userId: 1, bodyZone: 'elbow_right', label: 'Golf elbow',
@@ -102,20 +82,105 @@ describe('generateRestDayRoutine', () => {
       },
     ]
     const routine = generateRestDayRoutine(elbowOnly)
-    const names = routine.exercises.map(e => e.name)
-    // elbow_right protocol has warmup exercises that should now be included
-    expect(names).toContain('Tyler Twist inversé (golf elbow)')
-    expect(names).toContain('Curl poignet excentrique (golf elbow)')
-    // Plus external stretching at the end
-    expect(routine.exercises[routine.exercises.length - 1].isExternal).toBe(true)
+    // Should have exercises from elbow protocol
+    expect(routine.exercises.length).toBeGreaterThan(0)
+    // All should be valid exercises (not external)
+    expect(routine.exercises.every(e => !e.isExternal)).toBe(true)
   })
 
-  it('includes active_wait rehab exercises in rest day routine', () => {
+  it('respects max exercises limit through rotation', () => {
     const routine = generateRestDayRoutine(mockConditions)
-    const names = routine.exercises.map(e => e.name)
-    // active_wait exercises ARE included — rest days guarantee rehab gets done
-    expect(names).toContain('Face pull (rehab posture)')
-    expect(names).toContain('Band pull-apart')
+    // With multiple conditions, rotation limits to max 5
+    expect(routine.exercises.length).toBeLessThanOrEqual(5)
+  })
+
+  // ---------------------------------------------------------------------------
+  // General mobility/posture exercises (for users without conditions)
+  // ---------------------------------------------------------------------------
+
+  describe('general mobility/posture exercises', () => {
+    it('generates mobility exercises when user has mobility goal but no conditions', () => {
+      const routine = generateRestDayRoutine({ conditions: [], goals: ['mobility'] })
+      const names = routine.exercises.map(e => e.name)
+
+      // Should include general mobility exercises
+      expect(names).toContain('Hip flexor stretch (fléchisseurs de hanche)')
+      expect(names).toContain('Hamstring stretch (ischio-jambiers)')
+      expect(names).toContain('Thoracic spine rotation (rotation thoracique)')
+      expect(routine.exercises.length).toBeGreaterThanOrEqual(5)
+    })
+
+    it('generates posture exercises when user has posture goal but no conditions', () => {
+      const routine = generateRestDayRoutine({ conditions: [], goals: ['posture'] })
+      const names = routine.exercises.map(e => e.name)
+
+      // Should include general posture exercises
+      expect(names).toContain('Chin tucks (rétraction cervicale)')
+      expect(names).toContain('Wall angels (anges au mur)')
+      expect(names).toContain('Band pull-aparts (écartés avec bande)')
+      expect(routine.exercises.length).toBeGreaterThanOrEqual(5)
+    })
+
+    it('generates both mobility and posture exercises when user has both goals', () => {
+      const routine = generateRestDayRoutine({ conditions: [], goals: ['mobility', 'posture'] })
+      const names = routine.exercises.map(e => e.name)
+
+      // Should include exercises from both categories (limited to max 5)
+      expect(routine.exercises.length).toBe(5)
+      // First exercises should be from mobility (added first)
+      expect(names).toContain('Hip flexor stretch (fléchisseurs de hanche)')
+    })
+
+    it('combines rehab and general exercises when user has both conditions and goals', () => {
+      const elbowCondition: HealthCondition[] = [
+        {
+          id: 10, userId: 1, bodyZone: 'elbow_right', label: 'Golf elbow',
+          diagnosis: 'Épicondylite médiale', painLevel: 5, since: '1 an',
+          notes: '', isActive: true, createdAt: new Date(),
+        },
+      ]
+      const routine = generateRestDayRoutine({
+        conditions: elbowCondition,
+        goals: ['mobility'],
+      })
+
+      // Should include both rehab and general exercises
+      expect(routine.exercises.length).toBeGreaterThan(3)
+      // Should include some general mobility exercises (limited to 3 when combined)
+      const names = routine.exercises.map(e => e.name)
+      expect(names).toContain('Hip flexor stretch (fléchisseurs de hanche)')
+    })
+
+    it('limits general exercises to 3 when combined with rehab', () => {
+      const routine = generateRestDayRoutine({
+        conditions: mockConditions,
+        goals: ['mobility', 'posture'],
+      })
+
+      // Count general exercises (those not from rehab protocols)
+      const generalExerciseNames = [
+        'Hip flexor stretch (fléchisseurs de hanche)',
+        'Hamstring stretch (ischio-jambiers)',
+        'Thoracic spine rotation (rotation thoracique)',
+        'Shoulder dislocates (désarticulés épaules)',
+        'Ankle mobility circles (cercles de cheville)',
+        'Cat-cow (chat-vache)',
+        'Chin tucks (rétraction cervicale)',
+        'Wall angels (anges au mur)',
+        'Band pull-aparts (écartés avec bande)',
+        'Thoracic extensions (extensions thoraciques)',
+        'Doorway chest stretch (étirement pectoral)',
+      ]
+      const names = routine.exercises.map(e => e.name)
+      const generalCount = names.filter(n => generalExerciseNames.includes(n)).length
+
+      expect(generalCount).toBeLessThanOrEqual(3)
+    })
+
+    it('returns empty routine when no conditions and no relevant goals', () => {
+      const routine = generateRestDayRoutine({ conditions: [], goals: ['weight_loss', 'muscle_gain'] })
+      expect(routine.exercises).toHaveLength(0)
+    })
   })
 
   // ---------------------------------------------------------------------------
@@ -157,16 +222,12 @@ describe('generateRestDayRoutine', () => {
       },
     ]
 
-    it('variant=upper returns only upper body rehab exercises + external stretching', () => {
+    it('variant=upper returns only upper body rehab exercises', () => {
       const routine = generateRestDayRoutine(mixedConditions, 'upper')
-      const names = routine.exercises.filter(e => !e.isExternal).map(e => e.name)
+      const names = routine.exercises.map(e => e.name)
 
-      // Should include elbow_right exercises
-      expect(names).toContain('Tyler Twist inversé (golf elbow)')
-      expect(names).toContain('Curl poignet excentrique (golf elbow)')
-      // Should include upper_back exercises
-      expect(names).toContain('Chin tuck (rétraction cervicale)')
-      expect(names).toContain('Face pull (rehab posture)')
+      // Should have exercises
+      expect(names.length).toBeGreaterThan(0)
 
       // Should NOT include foot_left exercises
       expect(names).not.toContain('Short foot (exercice du pied court)')
@@ -176,56 +237,31 @@ describe('generateRestDayRoutine', () => {
       expect(names).not.toContain('Étirement piriforme')
     })
 
-    it('variant=lower returns only lower body rehab exercises + external stretching', () => {
+    it('variant=lower returns only lower body rehab exercises', () => {
       const routine = generateRestDayRoutine(mixedConditions, 'lower')
-      const names = routine.exercises.filter(e => !e.isExternal).map(e => e.name)
+      const names = routine.exercises.map(e => e.name)
 
-      // Should include foot_left exercises
-      expect(names).toContain('Short foot (exercice du pied court)')
-      expect(names).toContain('Towel curl (curl serviette pied)')
-      // Should include hip_right exercises
-      expect(names).toContain('Nerve flossing sciatique')
-      expect(names).toContain('Étirement piriforme')
-      expect(names).toContain('Child\'s pose (posture de l\'enfant)')
-      expect(names).toContain('Étirement ischio-jambiers (hamstring stretch)')
-      expect(names).toContain('Étirement fléchisseurs de hanche (hip flexor stretch)')
-      expect(names).toContain('Foam roll chaîne postérieure (ischios + mollets)')
+      // Should have exercises
+      expect(names.length).toBeGreaterThan(0)
 
       // Should NOT include elbow_right exercises
-      expect(names).not.toContain('Tyler Twist inversé (golf elbow)')
-      expect(names).not.toContain('Curl poignet excentrique (golf elbow)')
+      const elbowExercises = names.filter(n => n.toLowerCase().includes('golf elbow'))
+      expect(elbowExercises).toHaveLength(0)
       // Should NOT include upper_back exercises
       expect(names).not.toContain('Chin tuck (rétraction cervicale)')
       expect(names).not.toContain('Face pull (rehab posture)')
       expect(names).not.toContain('Band pull-apart')
     })
 
-    it('variant=all returns all exercises (backward compatible)', () => {
+    it('variant=all returns exercises from all zones', () => {
       const routineAll = generateRestDayRoutine(mixedConditions, 'all')
       const routineDefault = generateRestDayRoutine(mixedConditions)
+
       // Both should produce the same exercises
       expect(routineAll.exercises.map(e => e.name)).toEqual(routineDefault.exercises.map(e => e.name))
 
-      const names = routineAll.exercises.filter(e => !e.isExternal).map(e => e.name)
-      // Should include both upper and lower exercises
-      expect(names).toContain('Tyler Twist inversé (golf elbow)')
-      expect(names).toContain('Chin tuck (rétraction cervicale)')
-      expect(names).toContain('Short foot (exercice du pied court)')
-      expect(names).toContain('Nerve flossing sciatique')
-    })
-
-    it('variant=upper still includes external stretching', () => {
-      const routine = generateRestDayRoutine(mixedConditions, 'upper')
-      const last = routine.exercises[routine.exercises.length - 1]
-      expect(last.isExternal).toBe(true)
-      expect(last.name).toContain('programme externe')
-    })
-
-    it('variant=lower still includes external stretching', () => {
-      const routine = generateRestDayRoutine(mixedConditions, 'lower')
-      const last = routine.exercises[routine.exercises.length - 1]
-      expect(last.isExternal).toBe(true)
-      expect(last.name).toContain('programme externe')
+      // Should have exercises
+      expect(routineAll.exercises.length).toBeGreaterThan(0)
     })
 
     it('returns variant field in the routine', () => {
@@ -233,6 +269,29 @@ describe('generateRestDayRoutine', () => {
       expect(generateRestDayRoutine(mixedConditions, 'lower').variant).toBe('lower')
       expect(generateRestDayRoutine(mixedConditions, 'all').variant).toBe('all')
       expect(generateRestDayRoutine(mixedConditions).variant).toBe('all')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Options object signature
+  // ---------------------------------------------------------------------------
+
+  describe('options object signature', () => {
+    it('supports options object with conditions and variant', () => {
+      const routine = generateRestDayRoutine({
+        conditions: mockConditions,
+        variant: 'upper',
+      })
+      expect(routine.variant).toBe('upper')
+      expect(routine.exercises.length).toBeGreaterThan(0)
+    })
+
+    it('supports options object with goals', () => {
+      const routine = generateRestDayRoutine({
+        conditions: [],
+        goals: ['mobility'],
+      })
+      expect(routine.exercises.length).toBeGreaterThan(0)
     })
   })
 })
