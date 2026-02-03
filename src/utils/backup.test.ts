@@ -155,7 +155,7 @@ describe('backup', () => {
   })
 
   it('rejects invalid version', async () => {
-    const json = JSON.stringify({ version: 99 })
+    const json = JSON.stringify({ version: 99, profile: { name: 'Test' } })
     await expect(importData(json)).rejects.toThrow('Version de backup non supportée')
   })
 

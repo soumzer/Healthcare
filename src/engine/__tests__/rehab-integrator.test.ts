@@ -58,10 +58,10 @@ describe('integrateRehab', () => {
     const conditions = [makeCondition('elbow_right', 'Golf elbow')]
     const session = makeSession('Upper 1 — Push')
 
-    it('warmup contains Tyler Twist and Curl poignet excentrique', () => {
+    it('warmup contains Massage avant-bras and Curl poignet excentrique', () => {
       const result = integrateRehab(session, conditions)
       const names = exerciseNames(result.warmupRehab)
-      expect(names).toContain('Tyler Twist inversé (golf elbow)')
+      expect(names).toContain('Massage avant-bras avec balle')
       expect(names).toContain('Curl poignet excentrique (golf elbow)')
     })
 
@@ -76,10 +76,11 @@ describe('integrateRehab', () => {
       expect(result.warmupRehab).toHaveLength(3)
     })
 
-    it('active wait and cooldown are empty for golf elbow alone', () => {
+    it('active wait is empty and cooldown has 1 exercise for golf elbow alone', () => {
       const result = integrateRehab(session, conditions)
       expect(result.activeWaitPool).toHaveLength(0)
-      expect(result.cooldownRehab).toHaveLength(0)
+      expect(result.cooldownRehab).toHaveLength(1)
+      expect(exerciseNames(result.cooldownRehab)).toContain('Extension doigts avec élastique')
     })
 
     it('protocol name is correct', () => {
@@ -329,7 +330,7 @@ describe('integrateRehab', () => {
       // Only golf elbow exercises
       expect(result.warmupRehab).toHaveLength(3)
       const names = exerciseNames(result.warmupRehab)
-      expect(names).toContain('Tyler Twist inversé (golf elbow)')
+      expect(names).toContain('Massage avant-bras avec balle')
       // No knee exercises
       expect(names).not.toContain('Spanish squat isométrique (tendinite rotulienne)')
     })
@@ -514,16 +515,16 @@ describe('integrateRehab', () => {
       const session = makeSession('Upper 1')
       const result = integrateRehab(session, conditions)
 
-      const tyler = result.warmupRehab.find(
-        (e) => e.exerciseName === 'Tyler Twist inversé (golf elbow)',
+      const massage = result.warmupRehab.find(
+        (e) => e.exerciseName === 'Massage avant-bras avec balle',
       )!
-      expect(tyler).toBeDefined()
-      expect(tyler.sets).toBe(3)
-      expect(tyler.reps).toBe('15')
-      expect(tyler.intensity).toBe('light')
-      expect(tyler.notes).toContain('FlexBar')
-      expect(tyler.protocolName).toBe('Épicondylite médiale (golf elbow)')
-      expect(tyler.priority).toBe(1)
+      expect(massage).toBeDefined()
+      expect(massage.sets).toBe(2)
+      expect(massage.reps).toBe('60 sec')
+      expect(massage.intensity).toBe('very_light')
+      expect(massage.notes).toContain('balle de tennis')
+      expect(massage.protocolName).toBe('Épicondylite médiale (golf elbow)')
+      expect(massage.priority).toBe(1)
     })
 
     it('reps as string works for time-based exercises', () => {
@@ -578,18 +579,17 @@ describe('integrateRehab', () => {
       const result = integrateRehab(session, conditions)
 
       const names = exerciseNames(result.warmupRehab)
-      expect(names).toContain('Tyler Twist inversé (golf elbow)')
+      expect(names).toContain('Massage avant-bras avec balle')
     })
 
-    it('zones without a mirror (e.g. neck) produce no rehab when no exact match', () => {
-      // neck has no mirror and no default protocol in rehabProtocols
+    it('neck zone now has protocols and produces rehab exercises', () => {
+      // neck now has protocols (Cervicalgie, Radiculopathie, Céphalée de tension)
       const conditions = [makeCondition('neck', 'Cervicalgie')]
       const session = makeSession('Upper 1')
       const result = integrateRehab(session, conditions)
 
-      expect(result.warmupRehab).toHaveLength(0)
-      expect(result.activeWaitPool).toHaveLength(0)
-      expect(result.cooldownRehab).toHaveLength(0)
+      // Neck protocols exist, so we expect exercises
+      expect(result.warmupRehab.length).toBeGreaterThan(0)
     })
   })
 
