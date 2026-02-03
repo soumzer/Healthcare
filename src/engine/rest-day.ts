@@ -1,5 +1,6 @@
 import type { HealthCondition, BodyZone } from '../db/types'
 import { rehabProtocols, type RehabExercise } from '../data/rehab-protocols'
+import { selectRotatedExercises } from '../utils/rehab-rotation'
 
 export interface RestDayExercise {
   name: string
@@ -34,6 +35,9 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
   'foot_left', 'foot_right',
 ])
 
+// Maximum exercises per rest day routine (excluding external stretching)
+const MAX_REHAB_EXERCISES = 5
+
 export function generateRestDayRoutine(
   conditions: HealthCondition[],
   variant: RestDayVariant = 'all',
@@ -46,27 +50,35 @@ export function generateRestDayRoutine(
   })
   const exercises: RestDayExercise[] = []
 
-  // For each active condition, find matching rehab protocol
-  // Pick exercises with placement 'rest_day' or 'cooldown'
+  // Collect all exercises from matched protocols with their protocol names
+  const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string }> = []
+  const seenNames = new Set<string>()
+
   for (const condition of activeConditions) {
     const protocol = rehabProtocols.find(p => p.targetZone === condition.bodyZone)
     if (!protocol) continue
 
     for (const ex of protocol.exercises) {
-      // Include ALL rehab exercises — rest days are the guarantee that rehab gets done
-      // even if the user never waits for machines during sessions
-      // Avoid duplicates
-      if (exercises.find(e => e.name === ex.exerciseName)) continue
-      exercises.push({
-        name: ex.exerciseName,
-        sets: ex.sets,
-        reps: String(ex.reps),
-        duration: estimateDuration(ex),
-        intensity: ex.intensity,
-        notes: ex.notes,
-        isExternal: false,
-      })
+      // Avoid duplicates across protocols
+      if (seenNames.has(ex.exerciseName)) continue
+      seenNames.add(ex.exerciseName)
+      allExercisesWithProtocol.push({ exercise: ex, protocolName: protocol.conditionName })
     }
+  }
+
+  // Use rotation system to select max 5 exercises intelligently
+  const selectedExercises = selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+
+  for (const ex of selectedExercises) {
+    exercises.push({
+      name: ex.exerciseName,
+      sets: ex.sets,
+      reps: String(ex.reps),
+      duration: estimateDuration(ex),
+      intensity: ex.intensity,
+      notes: ex.notes,
+      isExternal: false,
+    })
   }
 
   // Always add external stretching as last item

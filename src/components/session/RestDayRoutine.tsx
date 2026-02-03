@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import type { HealthCondition } from '../../db/types'
 import { generateRestDayRoutine, type RestDayExercise, type RestDayVariant } from '../../engine/rest-day'
+import { recordRehabExercisesDone } from '../../utils/rehab-rotation'
 
 const VARIANT_LABELS: Record<RestDayVariant, string> = {
   upper: 'Haut du corps',
@@ -36,6 +37,20 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
     setExpanded(prev => prev === index ? null : index)
   }
 
+  // Record completed exercises for rotation tracking
+  const handleComplete = useCallback(() => {
+    // Get names of completed exercises (exclude external stretching)
+    const completedNames = routine.exercises
+      .filter((ex, idx) => checked.has(idx) && !ex.isExternal)
+      .map(ex => ex.name)
+
+    if (completedNames.length > 0) {
+      recordRehabExercisesDone(completedNames)
+    }
+
+    onComplete()
+  }, [routine.exercises, checked, onComplete])
+
   const allDone = checked.size === routine.exercises.length
 
   return (
@@ -70,7 +85,7 @@ export default function RestDayRoutine({ conditions, variant = 'all', onComplete
       {/* Actions */}
       <div className="space-y-3 pt-6 pb-4">
         <button
-          onClick={onComplete}
+          onClick={handleComplete}
           disabled={!allDone}
           className={`w-full font-semibold rounded-xl py-4 text-lg transition-colors ${
             allDone
