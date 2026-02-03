@@ -264,8 +264,16 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       const remainingMs = saved.timerEndTime - Date.now()
       if (remainingMs > 0) {
         // Timer still running - start the interval
+        const endTime = saved.timerEndTime
+        // Get restSeconds for the current exercise from the saved state
+        const programExRestSeconds = programSession.exercises.find(
+          (_, idx) => idx === saved.engineExerciseIndex
+        )?.restSeconds ?? 120
         restTimerRef.current = setInterval(() => {
-          setRestElapsed((prev) => prev + 1)
+          // Recalculate from timerEndTime to handle browser tab suspension
+          const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+          const elapsed = programExRestSeconds - remaining
+          setRestElapsed(elapsed)
         }, 1000)
       }
       // If remainingMs <= 0, restElapsed was already set to 9999 (expired)
@@ -297,11 +305,15 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
   const startRestTimer = useCallback(() => {
     setRestElapsed(0)
-    timerEndTimeRef.current = Date.now() + restSeconds * 1000
+    const endTime = Date.now() + restSeconds * 1000
+    timerEndTimeRef.current = endTime
     setPhase('rest_timer')
     if (restTimerRef.current) clearInterval(restTimerRef.current)
     restTimerRef.current = setInterval(() => {
-      setRestElapsed((prev) => prev + 1)
+      // Recalculate from timerEndTime to handle browser tab suspension
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+      const elapsed = restSeconds - remaining
+      setRestElapsed(elapsed)
     }, 1000)
   }, [restSeconds])
 
