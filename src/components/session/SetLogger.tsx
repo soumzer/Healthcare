@@ -49,7 +49,6 @@ export default function SetLogger({
   onSubmit,
 }: SetLoggerProps) {
   const [reps, setReps] = useState(prescribedReps > 0 ? String(prescribedReps) : '')
-  const [weight, setWeight] = useState(prescribedWeightKg > 0 ? String(prescribedWeightKg) : '')
   const [rir, setRir] = useState(2)
   const [hasPain, setHasPain] = useState(false)
   const [showRirHelp, setShowRirHelp] = useState(false)
@@ -59,14 +58,13 @@ export default function SetLogger({
   const [painLevel, setPainLevel] = useState(1)
 
   const parsedReps = parseInt(reps) || 0
-  const parsedWeight = parseFloat(weight) || 0
 
   const handleSubmit = () => {
     const pain =
       hasPain && painZone
         ? { zone: painZone, level: painLevel }
         : undefined
-    onSubmit(parsedReps, parsedWeight, rir, pain)
+    onSubmit(parsedReps, prescribedWeightKg, rir, pain)
   }
 
   return (
@@ -87,20 +85,14 @@ export default function SetLogger({
           />
         </div>
 
-        {/* Weight */}
+        {/* Weight (read-only) */}
         <div>
           <label className="block text-zinc-400 text-sm mb-2">
             Poids (kg)
           </label>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.5"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="0"
-            className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700 focus:border-emerald-400 focus:outline-none placeholder:text-zinc-600"
-          />
+          <div className="w-full bg-zinc-900 text-white text-2xl font-bold text-center rounded-xl py-3 border border-zinc-700">
+            {prescribedWeightKg > 0 ? `${prescribedWeightKg} kg` : 'Poids du corps'}
+          </div>
         </div>
 
         {/* RIR */}
