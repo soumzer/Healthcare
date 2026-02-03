@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { BodyZone } from '../../db/types'
 import { bodyZones, painLabels } from '../../constants/body-zones'
+import SymptomQuestionnaire, { type QuestionnaireResult } from './SymptomQuestionnaire'
 
 type Props = ReturnType<typeof useOnboarding>
 
@@ -26,6 +27,7 @@ const emptyForm = (zone: BodyZone): ConditionForm => ({
 export default function StepHealthConditions({ state, updateConditions, nextStep, prevStep }: Props) {
   const [expandedZone, setExpandedZone] = useState<BodyZone | null>(null)
   const [form, setForm] = useState<ConditionForm | null>(null)
+  const [showQuestionnaire, setShowQuestionnaire] = useState<BodyZone | null>(null)
 
   const existingZones = new Set(state.conditions.map(c => c.bodyZone))
 
@@ -34,12 +36,38 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
       setExpandedZone(null)
       setForm(null)
     } else {
-      setExpandedZone(zone)
       const existing = state.conditions.find(c => c.bodyZone === zone)
-      setForm(existing
-        ? { bodyZone: existing.bodyZone, label: existing.label, diagnosis: existing.diagnosis, painLevel: existing.painLevel, since: existing.since, notes: existing.notes }
-        : emptyForm(zone))
+      if (existing) {
+        // Editing existing condition - go directly to form
+        setExpandedZone(zone)
+        setForm({
+          bodyZone: existing.bodyZone,
+          label: existing.label,
+          diagnosis: existing.diagnosis,
+          painLevel: existing.painLevel,
+          since: existing.since,
+          notes: existing.notes,
+        })
+      } else {
+        // New condition - launch questionnaire first
+        setShowQuestionnaire(zone)
+      }
     }
+  }
+
+  const handleQuestionnaireComplete = (result: QuestionnaireResult) => {
+    // Pre-fill form with questionnaire result
+    setExpandedZone(result.zone)
+    setForm({
+      ...emptyForm(result.zone),
+      label: result.conditionName,
+      diagnosis: result.protocolConditionName,
+    })
+    setShowQuestionnaire(null)
+  }
+
+  const handleQuestionnaireCancel = () => {
+    setShowQuestionnaire(null)
   }
 
   const handleSaveCondition = () => {
@@ -61,6 +89,17 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
   const handleSkip = () => {
     updateConditions([])
     nextStep()
+  }
+
+  // Show questionnaire if active
+  if (showQuestionnaire) {
+    return (
+      <SymptomQuestionnaire
+        zone={showQuestionnaire}
+        onComplete={handleQuestionnaireComplete}
+        onCancel={handleQuestionnaireCancel}
+      />
+    )
   }
 
   return (
