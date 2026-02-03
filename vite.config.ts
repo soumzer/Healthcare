@@ -26,6 +26,36 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Skip waiting to activate new service worker immediately
+        skipWaiting: true,
+        clientsClaim: true,
+        // Cache strategies for different asset types
+        runtimeCaching: [
+          {
+            // HTML files: network-first to always get latest version
+            urlPattern: /\.html$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+            },
+          },
+          {
+            // Static assets: cache-first for performance
+            urlPattern: /\.(js|css|woff2)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+        ],
       },
     }),
   ],

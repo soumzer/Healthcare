@@ -57,7 +57,9 @@ export default function SetLogger({
   )
   const [painLevel, setPainLevel] = useState(1)
 
-  const parsedReps = parseInt(reps) || 0
+  // Validate reps: min 0, max 999 (reasonable bounds)
+  const rawParsed = parseInt(reps) || 0
+  const parsedReps = Math.max(0, Math.min(999, rawParsed))
 
   const handleSubmit = () => {
     const pain =
@@ -72,17 +74,20 @@ export default function SetLogger({
       <div className="flex-1 space-y-6">
         {/* Reps */}
         <div>
-          <label className="block text-zinc-400 text-sm mb-2">
+          <label htmlFor="reps-input" className="block text-zinc-400 text-sm mb-2">
             Reps réussies
           </label>
           <input
+            id="reps-input"
             type="number"
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
             placeholder="0"
+            aria-describedby="reps-desc"
             className="w-full bg-zinc-900 text-white text-4xl font-bold text-center rounded-xl py-4 border border-zinc-700 focus:border-emerald-400 focus:outline-none placeholder:text-zinc-600"
           />
+          <span id="reps-desc" className="sr-only">Nombre de répétitions réussies</span>
         </div>
 
         {/* Weight (read-only) */}

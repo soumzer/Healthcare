@@ -25,6 +25,10 @@ export interface SessionEngineOptions {
   availableWeights?: number[]
   phase?: 'hypertrophy' | 'strength' | 'deload'
   sessionIntensity?: import('../db/types').SessionIntensity
+  /** User's body weight in kg - used to estimate starting weights for new exercises */
+  userBodyweightKg?: number
+  /** Exercise catalog for looking up exercise category */
+  exerciseCatalog?: Array<{ id?: number; category: string }>
 }
 
 export class SessionEngine {
@@ -56,7 +60,23 @@ export class SessionEngine {
 
   private calculatePrescribedWeight(pe: ProgramExercise): number {
     const prev = this.history[pe.exerciseId]
-    if (!prev) return 0
+    if (!prev) {
+      // No history: estimate starting weight based on rep range
+      // Low reps (<=6) suggests compound lift -> use ~20-30% bodyweight
+      // Higher reps (8+) suggests isolation -> use ~10-15% bodyweight
+      // If no bodyweight, return 0 (bodyweight exercise)
+      if (!this.options.userBodyweightKg) return 0
+      const bw = this.options.userBodyweightKg
+      // Heuristic: lower target reps = heavier compound movement
+      const multiplier = pe.targetReps <= 6 ? 0.25 : 0.15
+      const estimated = Math.round(bw * multiplier * 2) / 2 // round to 0.5kg
+      // Find closest available weight
+      const availableWeights = this.options.availableWeights ?? generateDefaultWeights(estimated)
+      const closest = availableWeights
+        .filter(w => w <= estimated + 2.5)
+        .sort((a, b) => Math.abs(a - estimated) - Math.abs(b - estimated))[0]
+      return closest ?? estimated
+    }
 
     // During deload, reduce weight to 60% of last weight used
     if (this.options.phase === 'deload') {
@@ -92,6 +112,10 @@ export class SessionEngine {
     const cached = this.progressionResults.get(pe.exerciseId)
     if (cached) return cached
 
+    // Look up exercise category from catalog
+    const exerciseData = this.options.exerciseCatalog?.find(e => e.id === pe.exerciseId)
+    const exerciseCategory = exerciseData?.category as 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core' | undefined
+
     // Use PROGRAM's target reps, NOT history's prescribed reps
     // This is the key fix for the "prescribedReps pollution" bug
     const result = calculateProgression({
@@ -105,6 +129,7 @@ export class SessionEngine {
         : generateDefaultWeights(prev.lastWeightKg),
       phase: this.options.phase ?? 'hypertrophy',
       sessionIntensity: this.options.sessionIntensity,
+      exerciseCategory,
     })
 
     this.progressionResults.set(pe.exerciseId, result)

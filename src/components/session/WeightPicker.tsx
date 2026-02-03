@@ -68,8 +68,9 @@ export default function WeightPicker({
 
   const handleCustom = () => {
     const weight = parseFloat(customWeight)
-    // Allow 0 for bodyweight exercises (consistent with button options)
-    if (!isNaN(weight) && weight >= 0) {
+    // Validate: min 0, max 500kg (reasonable bounds)
+    const MAX_WEIGHT_KG = 500
+    if (!isNaN(weight) && weight >= 0 && weight <= MAX_WEIGHT_KG && isFinite(weight)) {
       handleSelect(weight)
     }
   }

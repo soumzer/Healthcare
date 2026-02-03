@@ -282,6 +282,7 @@ function SessionContent({
       availableWeights={availableWeights}
       phase={phaseData.phase}
       painAdjustments={painAdjustments}
+      userBodyweightKg={user.weight}
     />
   )
 }
@@ -298,6 +299,7 @@ function SessionRunner({
   availableWeights,
   phase: phaseFromData,
   painAdjustments,
+  userBodyweightKg,
 }: {
   programSession: import('../db/types').ProgramSession
   history: ExerciseHistory
@@ -309,6 +311,7 @@ function SessionRunner({
   availableWeights: number[] | undefined
   phase: 'hypertrophy' | 'strength' | 'deload'
   painAdjustments?: import('../engine/pain-feedback').PainAdjustment[]
+  userBodyweightKg?: number
 }) {
   const navigate = useNavigate()
 
@@ -324,6 +327,7 @@ function SessionRunner({
     availableWeights,
     phase: phaseFromData,
     painAdjustments,
+    userBodyweightKg,
   })
 
   if (session.phase === 'done') {
@@ -346,6 +350,7 @@ function SessionRunner({
       <WarmupRehabView
         rehabExercises={session.warmupRehab}
         onComplete={session.completeWarmupRehab}
+        onSubstitute={session.substituteWarmupRehab}
       />
     )
   }
@@ -390,6 +395,7 @@ function SessionRunner({
         exerciseIndex={session.exerciseIndex}
         totalExercises={session.totalExercises}
         substitutionSuggestion={session.substitutionSuggestion}
+        userId={userId}
         onDone={session.startSet}
         onOccupied={session.markOccupied}
         onNoWeight={session.openWeightPicker}
@@ -450,6 +456,7 @@ function SessionRunner({
       <CooldownView
         cooldownExercises={session.cooldownRehab}
         onComplete={session.completeCooldown}
+        onSubstitute={session.substituteCooldownRehab}
       />
     )
   }
@@ -484,10 +491,20 @@ class SessionErrorBoundary extends Component<
   }
 }
 
+// Safe integer parsing with bounds validation
+function parseIntSafe(val: string | null, defaultVal: number, min = 0, max = Number.MAX_SAFE_INTEGER): number {
+  if (val === null) return defaultVal
+  const num = parseInt(val, 10)
+  if (!Number.isInteger(num) || num < min || num > max) {
+    return defaultVal
+  }
+  return num
+}
+
 export default function SessionPage() {
   const [searchParams] = useSearchParams()
-  const programId = parseInt(searchParams.get('programId') ?? '1')
-  const sessionIndex = parseInt(searchParams.get('sessionIndex') ?? '0')
+  const programId = parseIntSafe(searchParams.get('programId'), 1, 0, 10000)
+  const sessionIndex = parseIntSafe(searchParams.get('sessionIndex'), 0, 0, 100)
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">

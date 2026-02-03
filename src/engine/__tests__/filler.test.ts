@@ -19,6 +19,7 @@ function makeRehabExercise(
     notes: `Notes for ${name}`,
     protocolName: 'Test Protocol',
     priority: 1,
+    alternatives: [],
     ...overrides,
   }
 }

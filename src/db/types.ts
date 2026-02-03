@@ -164,7 +164,7 @@ export interface ExerciseProgress {
   avgRepsInReserve: number // -1 if pain was reported
   avgRestSeconds: number
   exerciseOrder: number
-  phase: 'hypertrophy' | 'strength' | 'deload'
+  phase: 'hypertrophy' | 'transition' | 'strength' | 'deload'
   weekNumber: number
   prescribedReps?: number
   prescribedRestSeconds?: number
@@ -189,4 +189,14 @@ export interface TrainingPhase {
   startedAt: Date
   endedAt?: Date
   weekCount: number
+}
+
+// Persistent notes per exercise (sticky reminders)
+export interface ExerciseNote {
+  id?: number
+  userId: number
+  exerciseId: number
+  note: string
+  createdAt: Date
+  updatedAt: Date
 }

@@ -1,6 +1,8 @@
-import type { HealthCondition, ProgramSession, BodyZone } from '../db/types'
+import type { HealthCondition, ProgramSession, BodyZone, Exercise } from '../db/types'
 import { rehabProtocols } from '../data/rehab-protocols'
 import type { RehabProtocol, RehabExercise } from '../data/rehab-protocols'
+import { exerciseCatalog as defaultExerciseCatalog } from '../data/exercises'
+import { REHAB_CONFIG } from '../constants/config'
 
 // ---------------------------------------------------------------------------
 // Output interfaces
@@ -21,14 +23,15 @@ export interface RehabExerciseInfo {
   notes: string
   protocolName: string  // Which condition this is for
   priority: number      // Lower = higher priority
+  alternatives: string[] // Alternative exercise names (for equipment unavailability)
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_WARMUP = 8
-const MAX_COOLDOWN = 5
+const MAX_WARMUP = REHAB_CONFIG.MAX_WARMUP
+const MAX_COOLDOWN = REHAB_CONFIG.MAX_COOLDOWN
 const MAX_ACTIVE_WAIT = 8
 
 // ---------------------------------------------------------------------------
@@ -80,8 +83,10 @@ export function integrateRehab(
   session: ProgramSession,
   conditions: HealthCondition[],
   protocols?: RehabProtocol[],
+  exerciseCatalog?: Exercise[],
 ): IntegratedSession {
   const allProtocols = protocols ?? rehabProtocols
+  const allExercises = exerciseCatalog ?? defaultExerciseCatalog
 
   // 1. Filter to active conditions only
   const activeConditions = conditions.filter((c) => c.isActive)
@@ -131,7 +136,7 @@ export function integrateRehab(
       // Deduplication: skip if this exercise name was already added
       if (addedNames.has(exercise.exerciseName)) continue
 
-      const info = toRehabExerciseInfo(exercise, protocol)
+      const info = toRehabExerciseInfo(exercise, protocol, allExercises)
 
       addedNames.add(exercise.exerciseName)
 
@@ -181,7 +186,13 @@ export function integrateRehab(
 function toRehabExerciseInfo(
   exercise: RehabExercise,
   protocol: RehabProtocol,
+  exerciseCatalog?: Exercise[],
 ): RehabExerciseInfo {
+  // Look up exercise in catalog to get alternatives
+  const catalogExercise = exerciseCatalog?.find(
+    (e) => e.name === exercise.exerciseName
+  )
+
   return {
     exerciseName: exercise.exerciseName,
     sets: exercise.sets,
@@ -190,5 +201,6 @@ function toRehabExerciseInfo(
     notes: exercise.notes,
     protocolName: protocol.conditionName,
     priority: protocol.priority,
+    alternatives: catalogExercise?.alternatives ?? [],
   }
 }

@@ -1,4 +1,5 @@
 import { db } from '../db'
+import { BACKUP_CONFIG } from '../constants/config'
 import type { UserProfile, HealthCondition, GymEquipment, AvailableWeight, WorkoutProgram, WorkoutSession, ExerciseProgress, PainLog, TrainingPhase } from '../db/types'
 
 // Validation helpers
@@ -151,6 +152,11 @@ export async function exportData(userId: number): Promise<string> {
 }
 
 export async function importData(json: string): Promise<number> {
+  // Validate size before parsing to prevent DoS
+  if (json.length > BACKUP_CONFIG.MAX_SIZE_BYTES) {
+    throw new Error('Fichier de backup trop volumineux (max 10MB)')
+  }
+
   // Parse and validate structure BEFORE any database operations
   let data: unknown
   try {

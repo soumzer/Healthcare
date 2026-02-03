@@ -34,10 +34,15 @@ export default function ProgressionChart({ data, exerciseNames }: ProgressionCha
 
       {exerciseNames.length > 0 ? (
         <>
+          <label htmlFor="exercise-select" className="sr-only">
+            Choisir un exercice
+          </label>
           <select
+            id="exercise-select"
             value={effectiveExercise}
             onChange={(e) => setSelectedExercise(e.target.value)}
             className="w-full mb-3 p-2 bg-zinc-800 text-white rounded-lg border border-zinc-700 text-sm"
+            aria-label="Choisir un exercice pour voir la progression"
           >
             {exerciseNames.map((name) => (
               <option key={name} value={name}>

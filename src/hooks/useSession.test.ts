@@ -70,7 +70,7 @@ const defaultParams: UseSessionParams = {
 }
 
 /** Helper: completes all exercises (2 exercises x 3 sets each) */
-function completeAllExercises(result: { current: ReturnType<typeof useSession> }) {
+async function completeAllExercises(result: { current: ReturnType<typeof useSession> }, useFakeTimers = true) {
   // Exercise 1: 3 sets
   act(() => result.current.completeWarmup())
   for (let i = 0; i < 2; i++) {
@@ -88,8 +88,19 @@ function completeAllExercises(result: { current: ReturnType<typeof useSession> }
     act(() => result.current.logSet(12, 12.5, 3))
     act(() => result.current.completeRestTimer())
   }
+  // Last set triggers async advanceExerciseOrEnd which awaits DB save
   act(() => result.current.startSet())
   act(() => result.current.logSet(12, 12.5, 3))
+  // Flush pending promises (DB operations)
+  if (useFakeTimers) {
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+  } else {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+  }
 }
 
 describe('useSession', () => {
@@ -145,8 +156,10 @@ describe('useSession', () => {
     act(() => result.current.completeWarmup())
     expect(result.current.currentExercise).not.toBeNull()
     expect(result.current.currentExercise!.exerciseName).toBe('Developpe couche barre')
-    // With history: 40kg all reps hit, avgRIR >= 2 -> should progress to 42.5
-    expect(result.current.currentExercise!.prescribedWeightKg).toBe(42.5)
+    // With history: 40kg, all reps hit at target (8), avgRIR=2
+    // Progression requires avgReps >= targetReps + 2 to increase weight
+    // Since 8 < 10, weight stays at 40kg (reps increase instead)
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(40)
   })
 
   it('transitions to set_logger when startSet is called', () => {
@@ -237,10 +250,11 @@ describe('useSession', () => {
     expect(result.current.currentExercise!.prescribedReps).toBe(9)
   })
 
-  it('after all exercises, enters end_pain_check', () => {
+  it('after all exercises, enters done (no cooldown exercises)', async () => {
     const { result } = renderHook(() => useSession(defaultParams))
-    completeAllExercises(result)
-    expect(result.current.phase).toBe('end_pain_check')
+    await completeAllExercises(result)
+    // end_pain_check was removed as redundant - goes directly to done
+    expect(result.current.phase).toBe('done')
   })
 
   it('logs pain during a set', () => {
@@ -268,17 +282,12 @@ describe('useSession - DB persistence', () => {
     await db.open()
   })
 
-  it('submitting pain checks saves session and transitions to done', async () => {
+  it('completing all exercises saves session and transitions to done', async () => {
     const { result } = renderHook(() => useSession(defaultParams))
 
-    // Complete all exercises
-    completeAllExercises(result)
-    expect(result.current.phase).toBe('end_pain_check')
-
-    await act(async () => {
-      await result.current.submitPainChecks([{ zone: 'elbow_right', level: 2 }])
-    })
-
+    // Complete all exercises (no fake timers in this describe block)
+    await completeAllExercises(result, false)
+    // end_pain_check was removed - goes directly to done
     expect(result.current.phase).toBe('done')
 
     // Verify session was saved to DB
@@ -286,13 +295,6 @@ describe('useSession - DB persistence', () => {
     expect(sessions).toHaveLength(1)
     expect(sessions[0].sessionName).toBe('Push A')
     expect(sessions[0].exercises).toHaveLength(2)
-
-    // Verify pain logs were saved
-    const painLogs = await db.painLogs.toArray()
-    expect(painLogs.length).toBeGreaterThanOrEqual(1)
-    const endSessionPain = painLogs.find((p) => p.context === 'end_session')
-    expect(endSessionPain).toBeDefined()
-    expect(endSessionPain!.zone).toBe('elbow_right')
 
     // Verify exercise progress was saved
     const progress = await db.exerciseProgress.toArray()
@@ -388,17 +390,19 @@ describe('useSession - progression engine integration', () => {
     vi.useRealTimers()
   })
 
-  it('uses progression engine to increase weight after successful session', () => {
+  it('uses progression engine to increase weight after reaching top of rep range', () => {
     const params: UseSessionParams = {
       ...defaultParams,
       history: {
-        1: { lastWeightKg: 40, lastReps: [8, 8, 8], lastAvgRIR: 2 },
+        // avgReps (10) >= targetReps + 2 (8+2=10) triggers weight increase
+        1: { lastWeightKg: 40, lastReps: [10, 10, 10], lastAvgRIR: 2 },
         2: { lastWeightKg: 10, lastReps: [12, 12, 12], lastAvgRIR: 3 },
       },
+      availableWeights: [37.5, 40, 42.5, 45, 47.5, 50],
     }
     const { result } = renderHook(() => useSession(params))
     act(() => result.current.completeWarmup())
-    // Exercise 1: 40kg, all reps hit, RIR >= 2 -> 42.5kg
+    // Exercise 1: reached top of range (10 reps) with good RIR -> 42.5kg
     expect(result.current.currentExercise!.prescribedWeightKg).toBe(42.5)
   })
 
@@ -513,7 +517,7 @@ describe('useSession - cooldown phase', () => {
     expect(result.current.phase).toBe('cooldown')
   })
 
-  it('transitions from cooldown to end_pain_check when user has conditions', () => {
+  it('transitions from cooldown to done when user has conditions', async () => {
     const params: UseSessionParams = {
       ...defaultParams,
       userConditions: ['upper_back'],
@@ -525,7 +529,12 @@ describe('useSession - cooldown phase', () => {
 
     expect(result.current.phase).toBe('cooldown')
     act(() => { result.current.completeCooldown() })
-    expect(result.current.phase).toBe('end_pain_check')
+    // Flush async DB operations
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+    // end_pain_check was removed - goes directly to done
+    expect(result.current.phase).toBe('done')
   })
 
   it('exposes completeWarmupRehab to transition from warmup_rehab to warmup', () => {
@@ -534,7 +543,7 @@ describe('useSession - cooldown phase', () => {
     expect(typeof result.current.completeWarmupRehab).toBe('function')
   })
 
-  it('cooldown is reachable after the last exercise when healthConditions have cooldown exercises', () => {
+  it('cooldown is reachable after the last exercise when healthConditions have cooldown exercises', async () => {
     const params: UseSessionParams = {
       ...defaultParams,
       userConditions: ['upper_back'],
@@ -548,12 +557,17 @@ describe('useSession - cooldown phase', () => {
     // Complete all exercises
     completeAll(result)
 
-    // After the last exercise, session must enter 'cooldown' — not skip to end_pain_check or done
+    // After the last exercise, session must enter 'cooldown' — not skip to done
     expect(result.current.phase).toBe('cooldown')
 
     // Complete cooldown to verify the full flow continues
     act(() => { result.current.completeCooldown() })
-    expect(result.current.phase).toBe('end_pain_check')
+    // Flush async DB operations
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+    // end_pain_check was removed - goes directly to done
+    expect(result.current.phase).toBe('done')
   })
 })
 

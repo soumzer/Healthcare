@@ -5,6 +5,7 @@ import { suggestFiller, type FillerSuggestion } from '../engine/filler'
 import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
 import { getPhaseRecommendation } from '../engine/progression'
 import { db } from '../db'
+import { SESSION_CONFIG } from '../constants/config'
 import type { PainAdjustment } from '../engine/pain-feedback'
 import type {
   ProgramSession,
@@ -40,6 +41,8 @@ export interface UseSessionParams {
   availableWeights?: number[]
   phase?: 'hypertrophy' | 'strength' | 'deload'
   painAdjustments?: PainAdjustment[]
+  /** User's body weight for estimating starting weights on new exercises */
+  userBodyweightKg?: number
 }
 
 export interface SubstitutionSuggestion {
@@ -62,9 +65,9 @@ interface SavedSessionState {
   timerEndTime: number | null
 }
 
-const SESSION_STATE_VERSION = 1
-const SESSION_EXPIRY_MS = 3 * 60 * 60 * 1000 // 3 hours
-const DEFAULT_REST_SECONDS = 120
+const SESSION_STATE_VERSION = SESSION_CONFIG.STATE_VERSION
+const SESSION_EXPIRY_MS = SESSION_CONFIG.EXPIRY_MS
+const DEFAULT_REST_SECONDS = SESSION_CONFIG.DEFAULT_REST_SECONDS
 
 export interface UseSessionReturn {
   phase: SessionPhase
@@ -86,8 +89,13 @@ export interface UseSessionReturn {
   activeWaitPool: RehabExerciseInfo[]
   cooldownRehab: RehabExerciseInfo[]
 
+  // Rehab substitution
+  substituteWarmupRehab: (index: number, newExerciseName: string) => void
+  substituteCooldownRehab: (index: number, newExerciseName: string) => void
+
   // Actions
   completeWarmupRehab: () => void
+  skipWarmupRehab: () => void
   completeWarmup: () => void
   skipWarmup: () => void
   completeWarmupSet: () => void
@@ -117,6 +125,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     availableWeights,
     phase: trainingPhase,
     painAdjustments,
+    userBodyweightKg,
   } = params
 
   // Build engine options from params
@@ -124,6 +133,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     availableWeights,
     phase: trainingPhase,
     sessionIntensity: programSession.intensity,
+    userBodyweightKg,
+    exerciseCatalog: availableExercises,
   }
 
   // Restore session state from sessionStorage if available
@@ -179,11 +190,11 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   // Integrate rehab exercises into session (computed early for initial phase)
   // Use stable key to avoid recalculation when array reference changes but content is same
   const conditionsKey = healthConditions?.map(c => c.id).join(',') ?? ''
-  const rehabIntegration = useMemo(() => {
+  const baseRehabIntegration = useMemo(() => {
     if (!healthConditions || healthConditions.length === 0) {
       return { warmupRehab: [], activeWaitPool: [], cooldownRehab: [] }
     }
-    const integrated = integrateRehab(programSession, healthConditions)
+    const integrated = integrateRehab(programSession, healthConditions, undefined, availableExercises)
     return {
       warmupRehab: integrated.warmupRehab,
       activeWaitPool: integrated.activeWaitPool,
@@ -192,7 +203,37 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // Intentionally using conditionsKey string instead of healthConditions array reference
     // to avoid recalculation when array reference changes but content is identical
-  }, [programSession, conditionsKey])
+  }, [programSession, conditionsKey, availableExercises])
+
+  // Track rehab exercise substitutions (index -> new exercise name)
+  const [warmupRehabSubs, setWarmupRehabSubs] = useState<Map<number, string>>(new Map())
+  const [cooldownRehabSubs, setCooldownRehabSubs] = useState<Map<number, string>>(new Map())
+
+  // Apply substitutions to rehab lists
+  const rehabIntegration = useMemo(() => {
+    const applySubstitutions = (
+      exercises: RehabExerciseInfo[],
+      subs: Map<number, string>
+    ): RehabExerciseInfo[] => {
+      return exercises.map((ex, index) => {
+        const newName = subs.get(index)
+        if (!newName) return ex
+        // Find the new exercise in the catalog to get its alternatives
+        const newExercise = availableExercises.find(e => e.name === newName)
+        return {
+          ...ex,
+          exerciseName: newName,
+          alternatives: newExercise?.alternatives ?? [],
+        }
+      })
+    }
+
+    return {
+      warmupRehab: applySubstitutions(baseRehabIntegration.warmupRehab, warmupRehabSubs),
+      activeWaitPool: baseRehabIntegration.activeWaitPool,
+      cooldownRehab: applySubstitutions(baseRehabIntegration.cooldownRehab, cooldownRehabSubs),
+    }
+  }, [baseRehabIntegration, warmupRehabSubs, cooldownRehabSubs, availableExercises])
 
   // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
   const [phase, setPhase] = useState<SessionPhase>(() => {
@@ -323,7 +364,11 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   // Persist session state to sessionStorage for navigation resilience
   useEffect(() => {
     if (phase === 'done' || engine.isSessionComplete()) {
-      sessionStorage.removeItem('activeSession')
+      try {
+        sessionStorage.removeItem('activeSession')
+      } catch {
+        // Ignore - private browsing or quota issues
+      }
       return
     }
     const state: SavedSessionState = {
@@ -340,7 +385,14 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       timestamp: Date.now(),
       timerEndTime: timerEndTimeRef.current,
     }
-    sessionStorage.setItem('activeSession', JSON.stringify(state))
+    try {
+      sessionStorage.setItem('activeSession', JSON.stringify(state))
+    } catch (e) {
+      // QuotaExceededError or private browsing - session won't persist but continues
+      if (e instanceof DOMException && e.code === 22) {
+        console.warn('sessionStorage quota exceeded, session state will not persist')
+      }
+    }
   }, [phase, alternativeWeight, alternativeReps, warmupSetIndex, programId, programSession.order, engine])
 
   // Track if component is mounted for safe setState in intervals
@@ -410,15 +462,13 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
           notes: '',
         })
 
-        // Compute weekNumber from first session date
-        const firstSession = await db.workoutSessions
+        // Compute weekNumber from first session date (optimized: only fetch completed sessions, limit query)
+        const completedSessions = await db.workoutSessions
           .where('userId')
           .equals(userId)
-          .toArray()
-        const firstDate = firstSession
-          .filter((s) => s.completedAt)
-          .map((s) => s.completedAt!.getTime())
-          .sort((a, b) => a - b)[0]
+          .and((s) => s.completedAt !== undefined)
+          .sortBy('completedAt')
+        const firstDate = completedSessions[0]?.completedAt?.getTime()
         const weekNumber = firstDate
           ? Math.floor((now.getTime() - firstDate) / (7 * 24 * 60 * 60 * 1000)) + 1
           : 1
@@ -551,22 +601,22 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     if (engine.isSessionComplete()) {
       // If there are cooldown rehab exercises, show cooldown first
       if (rehabIntegration.cooldownRehab.length > 0) {
-        setPhase('cooldown')
+        if (isMountedRef.current) setPhase('cooldown')
       } else {
         // No cooldown — save session and finish (pain check removed as redundant)
         try {
           await saveSessionToDb([])
-          setPhase('done')
+          if (isMountedRef.current) setPhase('done')
         } catch (error) {
           console.error('Failed to save session, retrying...', error)
           // Retry once before giving up
           try {
             await saveSessionToDb([])
-            setPhase('done')
+            if (isMountedRef.current) setPhase('done')
           } catch {
             // Still show done but log the failure - session data is in engine memory
             console.error('Session save failed after retry. Data may be lost.')
-            setPhase('done')
+            if (isMountedRef.current) setPhase('done')
           }
         }
       }
@@ -575,14 +625,23 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       const nextEx = engine.getCurrentExercise()
       const nextWarmup = generateWarmupSets(nextEx.prescribedWeightKg, availableWeights)
       if (nextWarmup.length > 0) {
-        setPhase('warmup')
+        if (isMountedRef.current) setPhase('warmup')
       } else {
-        setPhase('exercise')
+        if (isMountedRef.current) setPhase('exercise')
       }
     }
   }, [engine, rehabIntegration.cooldownRehab.length, saveSessionToDb, availableWeights])
 
   const completeWarmupRehab = useCallback(() => {
+    if (warmupSets.length > 0) {
+      setPhase('warmup')
+    } else {
+      setPhase('exercise')
+    }
+  }, [warmupSets.length])
+
+  const skipWarmupRehab = useCallback(() => {
+    // Skip rehab exercises entirely and go straight to warmup or exercise
     if (warmupSets.length > 0) {
       setPhase('warmup')
     } else {
@@ -653,6 +712,18 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
 
       forceUpdate((n) => n + 1)
 
+      // If significant pain reported (level >= 4), skip remaining sets and advance
+      // This prevents injury aggravation and ensures safety takes priority
+      if (pain && pain.level >= 4) {
+        const ex = engine.getCurrentExercise()
+        if (ex) {
+          ex.status = 'skipped'
+          ex.skippedReason = 'pain'
+        }
+        advanceExerciseOrEnd()
+        return
+      }
+
       // Check if exercise is complete
       if (engine.isCurrentExerciseComplete()) {
         advanceExerciseOrEnd()
@@ -711,31 +782,30 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       const oldExerciseId = currentExercise.exerciseId
 
       try {
-        // 1. Update the active program in DB FIRST — swap exerciseId in this slot
-        const activeProgram = await db.workoutPrograms
-          .where('userId').equals(userId)
-          .filter(p => p.isActive)
-          .first()
+        // Use transaction to ensure atomic update
+        await db.transaction('rw', db.workoutPrograms, async () => {
+          const activeProgram = await db.workoutPrograms
+            .where('userId').equals(userId)
+            .filter(p => p.isActive)
+            .first()
 
-        // Only proceed if DB update can be performed
-        if (activeProgram?.id === undefined) {
-          console.error('Cannot substitute exercise: no active program found')
-          return
-        }
+          if (activeProgram?.id === undefined) {
+            throw new Error('No active program found')
+          }
 
-        const updatedSessions = activeProgram.sessions.map(s => ({
-          ...s,
-          exercises: s.exercises.map(pe =>
-            pe.exerciseId === oldExerciseId
-              ? { ...pe, exerciseId: newExerciseId }
-              : pe
-          ),
-        }))
+          const updatedSessions = activeProgram.sessions.map(s => ({
+            ...s,
+            exercises: s.exercises.map(pe =>
+              pe.exerciseId === oldExerciseId
+                ? { ...pe, exerciseId: newExerciseId }
+                : pe
+            ),
+          }))
 
-        // DB update must succeed before modifying engine state
-        await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+          await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+        })
 
-        // 2. Only update engine state AFTER DB write succeeds
+        // Only update engine state AFTER transaction succeeds
         const newExData = availableExercises.find(e => e.id === newExerciseId)
         const estimatedWeight = Math.round(currentExercise.prescribedWeightKg * 0.7 * 2) / 2
         const ex = engine.getCurrentExercise()
@@ -751,7 +821,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         forceUpdate(n => n + 1)
       } catch (error) {
         console.error('Failed to substitute exercise:', error)
-        // Engine state remains unchanged on error
+        // Engine state remains unchanged on error - transaction rolled back
       }
     },
     [currentExercise, userId, engine, availableExercises]
@@ -765,7 +835,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       console.error('Failed to save session after cooldown:', error)
       // Continue to done - user completed the workout, don't block them
     }
-    setPhase('done')
+    if (isMountedRef.current) setPhase('done')
   }, [saveSessionToDb])
 
   const completeRestTimer = useCallback(() => {
@@ -786,6 +856,24 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     },
     [saveSessionToDb]
   )
+
+  // Substitute a warmup rehab exercise
+  const substituteWarmupRehab = useCallback((index: number, newExerciseName: string) => {
+    setWarmupRehabSubs(prev => {
+      const next = new Map(prev)
+      next.set(index, newExerciseName)
+      return next
+    })
+  }, [])
+
+  // Substitute a cooldown rehab exercise
+  const substituteCooldownRehab = useCallback((index: number, newExerciseName: string) => {
+    setCooldownRehabSubs(prev => {
+      const next = new Map(prev)
+      next.set(index, newExerciseName)
+      return next
+    })
+  }, [])
 
   return {
     phase,
@@ -832,7 +920,12 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     activeWaitPool: rehabIntegration.activeWaitPool,
     cooldownRehab: rehabIntegration.cooldownRehab,
 
+    // Rehab substitution
+    substituteWarmupRehab,
+    substituteCooldownRehab,
+
     completeWarmupRehab,
+    skipWarmupRehab,
     completeWarmup,
     skipWarmup,
     completeWarmupSet,

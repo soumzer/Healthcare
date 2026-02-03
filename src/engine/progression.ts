@@ -26,6 +26,8 @@ export interface ProgressionInput {
   phase: 'hypertrophy' | 'strength' | 'deload'
   /** Session intensity override for DUP (daily undulating periodization) */
   sessionIntensity?: 'heavy' | 'moderate' | 'volume'
+  /** Exercise category for determining weight increment */
+  exerciseCategory?: 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core'
 }
 
 export interface ProgressionResult {
@@ -50,6 +52,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     availableWeights,
     phase,
     sessionIntensity,
+    exerciseCategory,
   } = input
 
   // Early return if no previous session data
@@ -105,7 +108,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // CASE 2: Successful AND reached top of rep range - increase weight
   if (completedTarget && hadGoodRIR && reachedTopOfRange) {
-    const nextWeight = findNextWeight(lastWeightKg, availableWeights)
+    const nextWeight = findNextWeight(lastWeightKg, availableWeights, exerciseCategory)
     if (nextWeight > lastWeightKg) {
       return {
         nextWeightKg: nextWeight,
@@ -165,17 +168,28 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
 /**
  * Find the next available weight increment.
- * Targets +2.5kg but accepts the smallest available increment.
+ * Uses different increments based on exercise type:
+ * - Compound (squat, bench, row): +2.5kg
+ * - Isolation (curl, extension, raise): +1.25kg
+ * - Others: +2.5kg default
  */
-function findNextWeight(currentWeight: number, availableWeights: number[]): number {
+function findNextWeight(
+  currentWeight: number,
+  availableWeights: number[],
+  exerciseCategory?: 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core'
+): number {
   const higherWeights = availableWeights
     .filter(w => w > currentWeight)
     .sort((a, b) => a - b)
 
   if (higherWeights.length === 0) return currentWeight
 
-  // Prefer 2.5kg increment, but accept whatever is available
-  const targetWeight = currentWeight + 2.5
+  // Determine increment based on exercise type
+  // Isolation exercises progress slower (smaller muscle groups)
+  const increment = exerciseCategory === 'isolation' ? 1.25 : 2.5
+  const targetWeight = currentWeight + increment
+
+  // Find the closest weight at or below target + small tolerance
   const ideal = higherWeights.find(w => w <= targetWeight + 0.5)
   return ideal ?? higherWeights[0]
 }

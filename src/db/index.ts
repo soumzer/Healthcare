@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type {
   UserProfile, HealthCondition, GymEquipment, AvailableWeight,
   Exercise, WorkoutProgram, WorkoutSession, ExerciseProgress,
-  PainLog, TrainingPhase,
+  PainLog, TrainingPhase, ExerciseNote,
 } from './types'
 
 class HealthCoachDB extends Dexie {
@@ -16,6 +16,7 @@ class HealthCoachDB extends Dexie {
   exerciseProgress!: EntityTable<ExerciseProgress, 'id'>
   painLogs!: EntityTable<PainLog, 'id'>
   trainingPhases!: EntityTable<TrainingPhase, 'id'>
+  exerciseNotes!: EntityTable<ExerciseNote, 'id'>
 
   constructor() {
     super('HealthCoachDB')
@@ -26,10 +27,15 @@ class HealthCoachDB extends Dexie {
       availableWeights: '++id, userId, equipmentType, weightKg',
       exercises: '++id, name, category, isRehab, *primaryMuscles, *tags',
       workoutPrograms: '++id, userId, isActive',
-      workoutSessions: '++id, userId, programId, startedAt',
-      exerciseProgress: '++id, userId, exerciseId, date',
-      painLogs: '++id, userId, zone, date',
+      workoutSessions: '++id, userId, programId, startedAt, completedAt',
+      exerciseProgress: '++id, userId, exerciseId, date, [userId+exerciseId]',
+      painLogs: '++id, userId, zone, date, [userId+date]',
       trainingPhases: '++id, userId, phase',
+    })
+
+    // Version 2: Add exercise notes for persistent reminders
+    this.version(2).stores({
+      exerciseNotes: '++id, userId, exerciseId, [userId+exerciseId]',
     })
   }
 }
