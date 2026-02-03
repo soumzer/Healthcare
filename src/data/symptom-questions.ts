@@ -305,6 +305,243 @@ export const symptomQuestions: SymptomQuestion[] = [
     multiSelect: true,
     order: 4,
   },
+
+  // =========================================================================
+  // HAUT DU DOS (upper_back)
+  // =========================================================================
+  {
+    id: 'upper_back_location',
+    bodyZones: ['upper_back'],
+    question: 'Ou avez-vous mal exactement ?',
+    options: [
+      { id: 'between_blades', label: 'Entre les omoplates', indicators: ['location_interscapular', 'postural', 'thoracic'] },
+      { id: 'spine', label: 'Le long de la colonne', indicators: ['location_spine', 'thoracic', 'vertebral'] },
+      { id: 'sides', label: 'Sur les cotes (musculature laterale)', indicators: ['location_sides', 'rib', 'muscular'] },
+    ],
+    multiSelect: true,
+    order: 1,
+  },
+  {
+    id: 'upper_back_trigger',
+    bodyZones: ['upper_back'],
+    question: 'Qu\'est-ce qui declenche ou aggrave la douleur ?',
+    options: [
+      { id: 'sitting', label: 'Position assise prolongee', indicators: ['trigger_sitting', 'postural', 'thoracic_stiffness'] },
+      { id: 'posture', label: 'Mauvaise posture (epaules en avant)', indicators: ['trigger_posture', 'postural', 'thoracic_stiffness'] },
+      { id: 'breathing', label: 'Respiration profonde', indicators: ['trigger_breathing', 'rib', 'rib_dysfunction'] },
+      { id: 'rotation', label: 'Rotation du tronc', indicators: ['trigger_rotation', 'thoracic', 'rib'] },
+      { id: 'reaching', label: 'Lever les bras', indicators: ['trigger_reaching', 'thoracic_stiffness'] },
+    ],
+    multiSelect: true,
+    order: 2,
+  },
+  {
+    id: 'upper_back_pain_type',
+    bodyZones: ['upper_back'],
+    question: 'Quel type de douleur ressentez-vous ?',
+    options: [
+      { id: 'stiffness', label: 'Raideur / tension', indicators: ['pain_stiffness', 'thoracic_stiffness', 'postural'] },
+      { id: 'dull', label: 'Douleur sourde / diffuse', indicators: ['pain_dull', 'postural', 'chronic'] },
+      { id: 'sharp', label: 'Douleur vive / ponctuelle', indicators: ['pain_sharp', 'rib_dysfunction', 'acute'] },
+      { id: 'burning', label: 'Sensation de brulure', indicators: ['pain_burning', 'postural', 'nerve'] },
+    ],
+    multiSelect: true,
+    order: 3,
+  },
+
+  // =========================================================================
+  // HANCHE (hip_left, hip_right)
+  // =========================================================================
+  {
+    id: 'hip_location',
+    bodyZones: ['hip_left', 'hip_right'],
+    question: 'Ou avez-vous mal exactement ?',
+    options: [
+      { id: 'front', label: 'Devant la hanche / aine', indicators: ['location_front', 'hip_flexor', 'labral'] },
+      { id: 'side', label: 'Sur le cote (trochanter)', indicators: ['location_side', 'bursitis', 'gluteal'] },
+      { id: 'back', label: 'Arriere / fesse', indicators: ['location_back', 'piriformis', 'sciatica'] },
+      { id: 'deep', label: 'En profondeur dans l\'articulation', indicators: ['location_deep', 'labral', 'articular'] },
+    ],
+    multiSelect: true,
+    order: 1,
+  },
+  {
+    id: 'hip_trigger',
+    bodyZones: ['hip_left', 'hip_right'],
+    question: 'Qu\'est-ce qui declenche ou aggrave la douleur ?',
+    options: [
+      { id: 'walking', label: 'Marche prolongee', indicators: ['trigger_walking', 'bursitis', 'hip_flexor'] },
+      { id: 'stairs', label: 'Monter les escaliers', indicators: ['trigger_stairs', 'hip_flexor', 'labral'] },
+      { id: 'sitting', label: 'Position assise prolongee', indicators: ['trigger_sitting', 'piriformis', 'hip_flexor'] },
+      { id: 'rotation', label: 'Rotation de la hanche', indicators: ['trigger_rotation', 'labral', 'piriformis'] },
+      { id: 'lying_side', label: 'Couche sur le cote', indicators: ['trigger_lying_side', 'bursitis'] },
+      { id: 'squat', label: 'Squat profond', indicators: ['trigger_squat', 'labral', 'hip_flexor'] },
+    ],
+    multiSelect: true,
+    order: 2,
+  },
+  {
+    id: 'hip_symptoms',
+    bodyZones: ['hip_left', 'hip_right'],
+    question: 'Autres symptomes ?',
+    options: [
+      { id: 'clicking', label: 'Claquement / cliquetis', indicators: ['symptom_clicking', 'labral', 'snapping_hip'] },
+      { id: 'stiffness', label: 'Raideur (surtout le matin)', indicators: ['symptom_stiffness', 'hip_flexor', 'articular'] },
+      { id: 'weakness', label: 'Faiblesse / instabilite', indicators: ['symptom_weakness', 'gluteal', 'hip_flexor'] },
+      { id: 'radiating', label: 'Douleur qui descend dans la jambe', indicators: ['symptom_radiating', 'sciatica', 'piriformis'] },
+      { id: 'none', label: 'Aucun', indicators: [] },
+    ],
+    multiSelect: true,
+    order: 3,
+  },
+
+  // =========================================================================
+  // CHEVILLE (ankle_left, ankle_right)
+  // =========================================================================
+  {
+    id: 'ankle_location',
+    bodyZones: ['ankle_left', 'ankle_right'],
+    question: 'Ou avez-vous mal exactement ?',
+    options: [
+      { id: 'front', label: 'Devant la cheville', indicators: ['location_front', 'anterior_impingement', 'tibialis_anterior'] },
+      { id: 'back', label: 'Arriere (tendon d\'Achille)', indicators: ['location_back', 'achilles', 'achilles_tendinitis'] },
+      { id: 'inner', label: 'Cote interne', indicators: ['location_inner', 'medial', 'tibialis_posterior'] },
+      { id: 'outer', label: 'Cote externe', indicators: ['location_outer', 'lateral', 'ankle_instability', 'peroneal'] },
+    ],
+    multiSelect: true,
+    order: 1,
+  },
+  {
+    id: 'ankle_trigger',
+    bodyZones: ['ankle_left', 'ankle_right'],
+    question: 'Qu\'est-ce qui declenche ou aggrave la douleur ?',
+    options: [
+      { id: 'walking', label: 'Marche prolongee', indicators: ['trigger_walking', 'achilles', 'tibialis_posterior'] },
+      { id: 'running', label: 'Course a pied', indicators: ['trigger_running', 'achilles_tendinitis', 'ankle_instability'] },
+      { id: 'stairs', label: 'Monter/descendre les escaliers', indicators: ['trigger_stairs', 'achilles', 'anterior_impingement'] },
+      { id: 'dorsiflexion', label: 'Plier la cheville (pied vers le haut)', indicators: ['trigger_dorsiflexion', 'anterior_impingement', 'achilles'] },
+      { id: 'plantarflexion', label: 'Pointer le pied', indicators: ['trigger_plantarflexion', 'achilles_tendinitis'] },
+      { id: 'uneven_ground', label: 'Terrain irregulier', indicators: ['trigger_uneven', 'ankle_instability'] },
+    ],
+    multiSelect: true,
+    order: 2,
+  },
+  {
+    id: 'ankle_history',
+    bodyZones: ['ankle_left', 'ankle_right'],
+    question: 'Avez-vous des antecedents ?',
+    options: [
+      { id: 'sprain', label: 'Entorse(s) precedente(s)', indicators: ['history_sprain', 'ankle_instability', 'chronic'] },
+      { id: 'multiple_sprains', label: 'Entorses a repetition', indicators: ['history_multiple_sprains', 'ankle_instability', 'chronic'] },
+      { id: 'fracture', label: 'Fracture ancienne', indicators: ['history_fracture'] },
+      { id: 'none', label: 'Aucun', indicators: [] },
+    ],
+    multiSelect: true,
+    order: 3,
+  },
+
+  // =========================================================================
+  // POIGNET (wrist_left, wrist_right)
+  // =========================================================================
+  {
+    id: 'wrist_location',
+    bodyZones: ['wrist_left', 'wrist_right'],
+    question: 'Ou avez-vous mal exactement ?',
+    options: [
+      { id: 'palm_side', label: 'Cote paume (interieur)', indicators: ['location_palm', 'carpal_tunnel', 'flexor_tendinitis'] },
+      { id: 'back_side', label: 'Dos du poignet (exterieur)', indicators: ['location_dorsal', 'wrist_tendinitis', 'extensor'] },
+      { id: 'thumb_side', label: 'Cote du pouce (radial)', indicators: ['location_radial', 'de_quervain', 'radial'] },
+      { id: 'pinky_side', label: 'Cote auriculaire (ulnaire)', indicators: ['location_ulnar', 'tfcc', 'ulnar'] },
+    ],
+    multiSelect: true,
+    order: 1,
+  },
+  {
+    id: 'wrist_trigger',
+    bodyZones: ['wrist_left', 'wrist_right'],
+    question: 'Qu\'est-ce qui declenche ou aggrave la douleur ?',
+    options: [
+      { id: 'typing', label: 'Frappe au clavier / souris', indicators: ['trigger_typing', 'carpal_tunnel', 'wrist_tendinitis'] },
+      { id: 'gripping', label: 'Serrer / tenir des objets', indicators: ['trigger_gripping', 'de_quervain', 'flexor_tendinitis'] },
+      { id: 'rotation', label: 'Tourner le poignet', indicators: ['trigger_rotation', 'tfcc', 'de_quervain'] },
+      { id: 'weight_bearing', label: 'Appui sur le poignet (pompes, planche)', indicators: ['trigger_weight_bearing', 'wrist_tendinitis', 'tfcc'] },
+      { id: 'thumb_movement', label: 'Mouvements du pouce', indicators: ['trigger_thumb', 'de_quervain'] },
+    ],
+    multiSelect: true,
+    order: 2,
+  },
+  {
+    id: 'wrist_symptoms',
+    bodyZones: ['wrist_left', 'wrist_right'],
+    question: 'Autres symptomes ?',
+    options: [
+      { id: 'numbness', label: 'Engourdissement / picotements (doigts)', indicators: ['symptom_numbness', 'carpal_tunnel', 'nerve'] },
+      { id: 'weakness', label: 'Faiblesse de prise', indicators: ['symptom_weakness', 'carpal_tunnel', 'chronic'] },
+      { id: 'clicking', label: 'Cliquetis / craquements', indicators: ['symptom_clicking', 'tfcc', 'wrist_tendinitis'] },
+      { id: 'swelling', label: 'Gonflement', indicators: ['symptom_swelling', 'inflammation'] },
+      { id: 'night_symptoms', label: 'Symptomes nocturnes (reveils)', indicators: ['symptom_night', 'carpal_tunnel'] },
+      { id: 'none', label: 'Aucun', indicators: [] },
+    ],
+    multiSelect: true,
+    order: 3,
+  },
+
+  // =========================================================================
+  // COU (neck)
+  // =========================================================================
+  {
+    id: 'neck_location',
+    bodyZones: ['neck'],
+    question: 'Ou avez-vous mal exactement ?',
+    options: [
+      { id: 'back', label: 'Arriere du cou', indicators: ['location_back', 'cervicalgia', 'postural'] },
+      { id: 'sides', label: 'Sur les cotes', indicators: ['location_sides', 'muscular', 'tension'] },
+      { id: 'base_skull', label: 'Base du crane', indicators: ['location_base_skull', 'tension_headache', 'suboccipital'] },
+    ],
+    multiSelect: true,
+    order: 1,
+  },
+  {
+    id: 'neck_trigger',
+    bodyZones: ['neck'],
+    question: 'Qu\'est-ce qui declenche ou aggrave la douleur ?',
+    options: [
+      { id: 'looking_up', label: 'Regarder vers le haut', indicators: ['trigger_looking_up', 'cervicalgia', 'facet'] },
+      { id: 'looking_down', label: 'Regarder vers le bas (telephone, livre)', indicators: ['trigger_looking_down', 'postural_strain', 'cervicalgia'] },
+      { id: 'turning', label: 'Tourner la tete', indicators: ['trigger_turning', 'cervicalgia', 'muscular'] },
+      { id: 'sleeping', label: 'Position de sommeil', indicators: ['trigger_sleeping', 'postural', 'muscular'] },
+      { id: 'computer', label: 'Travail sur ordinateur', indicators: ['trigger_computer', 'postural_strain', 'tension'] },
+    ],
+    multiSelect: true,
+    order: 2,
+  },
+  {
+    id: 'neck_radiation',
+    bodyZones: ['neck'],
+    question: 'La douleur irradie-t-elle ?',
+    options: [
+      { id: 'arm', label: 'Dans le bras', indicators: ['radiation_arm', 'cervical_radiculopathy', 'radicular'] },
+      { id: 'shoulder', label: 'Vers l\'epaule', indicators: ['radiation_shoulder', 'cervicalgia', 'muscular'] },
+      { id: 'headache', label: 'Maux de tete', indicators: ['radiation_headache', 'tension_headache', 'suboccipital'] },
+      { id: 'none', label: 'Pas d\'irradiation', indicators: [] },
+    ],
+    multiSelect: true,
+    order: 3,
+  },
+  {
+    id: 'neck_symptoms',
+    bodyZones: ['neck'],
+    question: 'Autres symptomes ?',
+    options: [
+      { id: 'stiffness', label: 'Raideur', indicators: ['symptom_stiffness', 'cervicalgia', 'postural'] },
+      { id: 'dizziness', label: 'Vertiges / etourdissements', indicators: ['symptom_dizziness', 'cervicogenic'] },
+      { id: 'numbness', label: 'Engourdissement / picotements (bras/main)', indicators: ['symptom_numbness', 'cervical_radiculopathy', 'nerve'] },
+      { id: 'weakness', label: 'Faiblesse dans le bras', indicators: ['symptom_weakness', 'cervical_radiculopathy', 'nerve'] },
+      { id: 'none', label: 'Aucun', indicators: [] },
+    ],
+    multiSelect: true,
+    order: 4,
+  },
 ]
 
 // =============================================================================
@@ -482,6 +719,218 @@ export const conditionMappings: ConditionMapping[] = [
     suggestedIndicators: ['relief_flexion', 'location_side'],
     protocolConditionName: 'Core faible et douleurs lombaires',
     priority: 7,
+  },
+
+  // =========================================================================
+  // HAUT DU DOS
+  // =========================================================================
+  {
+    conditionName: 'Raideur thoracique',
+    targetZone: 'upper_back',
+    requiredIndicators: ['thoracic_stiffness'],
+    suggestedIndicators: ['pain_stiffness', 'trigger_sitting', 'trigger_posture', 'location_interscapular'],
+    protocolConditionName: 'Posture anterieure tete et epaules',
+    priority: 10,
+  },
+  {
+    conditionName: 'Douleur posturale',
+    targetZone: 'upper_back',
+    requiredIndicators: ['postural'],
+    suggestedIndicators: ['trigger_sitting', 'trigger_posture', 'pain_dull', 'location_interscapular'],
+    protocolConditionName: 'Posture anterieure tete et epaules',
+    priority: 9,
+  },
+  {
+    conditionName: 'Dysfonction costale',
+    targetZone: 'upper_back',
+    requiredIndicators: ['rib_dysfunction'],
+    suggestedIndicators: ['trigger_breathing', 'pain_sharp', 'location_sides', 'rib'],
+    protocolConditionName: 'Dysfonction costale', // Protocol to be added later
+    priority: 8,
+  },
+
+  // =========================================================================
+  // HANCHE
+  // =========================================================================
+  {
+    conditionName: 'Tendinite du flechisseur de hanche',
+    targetZone: 'hip_left',
+    requiredIndicators: ['hip_flexor'],
+    suggestedIndicators: ['location_front', 'trigger_stairs', 'trigger_sitting', 'symptom_stiffness'],
+    protocolConditionName: 'Tendinite flechisseur hanche', // Protocol to be added later
+    priority: 10,
+  },
+  {
+    conditionName: 'Syndrome du piriforme',
+    targetZone: 'hip_left',
+    requiredIndicators: ['piriformis'],
+    suggestedIndicators: ['location_back', 'trigger_sitting', 'symptom_radiating', 'trigger_rotation'],
+    protocolConditionName: 'Syndrome du piriforme',
+    priority: 9,
+  },
+  {
+    conditionName: 'Bursite trochantérienne',
+    targetZone: 'hip_left',
+    requiredIndicators: ['bursitis'],
+    suggestedIndicators: ['location_side', 'trigger_lying_side', 'trigger_walking'],
+    protocolConditionName: 'Bursite trochantérienne', // Protocol to be added later
+    priority: 8,
+  },
+  {
+    conditionName: 'Lesion labrale',
+    targetZone: 'hip_left',
+    requiredIndicators: ['labral'],
+    suggestedIndicators: ['location_deep', 'symptom_clicking', 'trigger_rotation', 'trigger_squat'],
+    protocolConditionName: 'Lesion labrale hanche', // Protocol to be added later
+    priority: 9,
+  },
+  {
+    conditionName: 'Sciatique',
+    targetZone: 'hip_left',
+    requiredIndicators: ['sciatica'],
+    suggestedIndicators: ['location_back', 'symptom_radiating', 'piriformis'],
+    protocolConditionName: 'Sciatique (compression nerf sciatique)',
+    priority: 10,
+  },
+
+  // =========================================================================
+  // CHEVILLE
+  // =========================================================================
+  {
+    conditionName: 'Tendinite d\'Achille',
+    targetZone: 'ankle_left',
+    requiredIndicators: ['achilles_tendinitis'],
+    suggestedIndicators: ['location_back', 'trigger_running', 'trigger_stairs', 'achilles'],
+    protocolConditionName: 'Tendinite d\'Achille',
+    priority: 10,
+  },
+  {
+    conditionName: 'Tendinite d\'Achille',
+    targetZone: 'ankle_left',
+    requiredIndicators: ['achilles', 'trigger_running'],
+    suggestedIndicators: ['location_back', 'trigger_stairs', 'trigger_plantarflexion'],
+    protocolConditionName: 'Tendinite d\'Achille',
+    priority: 9,
+  },
+  {
+    conditionName: 'Instabilite chronique de cheville',
+    targetZone: 'ankle_left',
+    requiredIndicators: ['ankle_instability'],
+    suggestedIndicators: ['location_outer', 'history_sprain', 'history_multiple_sprains', 'trigger_uneven'],
+    protocolConditionName: 'Entorse cheville chronique / instabilite',
+    priority: 10,
+  },
+  {
+    conditionName: 'Instabilite chronique de cheville',
+    targetZone: 'ankle_left',
+    requiredIndicators: ['history_multiple_sprains', 'lateral'],
+    suggestedIndicators: ['location_outer', 'trigger_uneven', 'ankle_instability'],
+    protocolConditionName: 'Entorse cheville chronique / instabilite',
+    priority: 9,
+  },
+  {
+    conditionName: 'Conflit anterieur de cheville',
+    targetZone: 'ankle_left',
+    requiredIndicators: ['anterior_impingement'],
+    suggestedIndicators: ['location_front', 'trigger_dorsiflexion', 'trigger_stairs'],
+    protocolConditionName: 'Conflit anterieur cheville', // Protocol to be added later
+    priority: 8,
+  },
+
+  // =========================================================================
+  // POIGNET
+  // =========================================================================
+  {
+    conditionName: 'Syndrome du canal carpien',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['carpal_tunnel'],
+    suggestedIndicators: ['location_palm', 'symptom_numbness', 'symptom_night', 'trigger_typing'],
+    protocolConditionName: 'Syndrome canal carpien / douleur poignet',
+    priority: 10,
+  },
+  {
+    conditionName: 'Syndrome du canal carpien',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['symptom_numbness', 'symptom_night'],
+    suggestedIndicators: ['location_palm', 'trigger_typing', 'carpal_tunnel'],
+    protocolConditionName: 'Syndrome canal carpien / douleur poignet',
+    priority: 9,
+  },
+  {
+    conditionName: 'Tenosynovite de De Quervain',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['de_quervain'],
+    suggestedIndicators: ['location_radial', 'trigger_thumb', 'trigger_gripping'],
+    protocolConditionName: 'Tenosynovite de De Quervain', // Protocol to be added later
+    priority: 10,
+  },
+  {
+    conditionName: 'Tenosynovite de De Quervain',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['location_radial', 'trigger_thumb'],
+    suggestedIndicators: ['trigger_gripping', 'de_quervain'],
+    protocolConditionName: 'Tenosynovite de De Quervain', // Protocol to be added later
+    priority: 9,
+  },
+  {
+    conditionName: 'Tendinite du poignet',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['wrist_tendinitis'],
+    suggestedIndicators: ['location_dorsal', 'trigger_typing', 'trigger_weight_bearing', 'extensor'],
+    protocolConditionName: 'Syndrome canal carpien / douleur poignet',
+    priority: 8,
+  },
+  {
+    conditionName: 'Lesion du TFCC',
+    targetZone: 'wrist_left',
+    requiredIndicators: ['tfcc'],
+    suggestedIndicators: ['location_ulnar', 'trigger_rotation', 'symptom_clicking', 'trigger_weight_bearing'],
+    protocolConditionName: 'Lesion TFCC poignet', // Protocol to be added later
+    priority: 9,
+  },
+
+  // =========================================================================
+  // COU
+  // =========================================================================
+  {
+    conditionName: 'Cervicalgie',
+    targetZone: 'neck',
+    requiredIndicators: ['cervicalgia'],
+    suggestedIndicators: ['location_back', 'symptom_stiffness', 'trigger_turning', 'trigger_looking_down'],
+    protocolConditionName: 'Cervicalgie', // Protocol to be added later
+    priority: 10,
+  },
+  {
+    conditionName: 'Radiculopathie cervicale',
+    targetZone: 'neck',
+    requiredIndicators: ['cervical_radiculopathy'],
+    suggestedIndicators: ['radiation_arm', 'symptom_numbness', 'symptom_weakness', 'radicular'],
+    protocolConditionName: 'Radiculopathie cervicale', // Protocol to be added later
+    priority: 10,
+  },
+  {
+    conditionName: 'Radiculopathie cervicale',
+    targetZone: 'neck',
+    requiredIndicators: ['radiation_arm', 'symptom_numbness'],
+    suggestedIndicators: ['cervical_radiculopathy', 'symptom_weakness', 'nerve'],
+    protocolConditionName: 'Radiculopathie cervicale', // Protocol to be added later
+    priority: 9,
+  },
+  {
+    conditionName: 'Cephalee de tension',
+    targetZone: 'neck',
+    requiredIndicators: ['tension_headache'],
+    suggestedIndicators: ['location_base_skull', 'radiation_headache', 'suboccipital', 'trigger_computer'],
+    protocolConditionName: 'Posture anterieure tete et epaules',
+    priority: 9,
+  },
+  {
+    conditionName: 'Tension posturale cervicale',
+    targetZone: 'neck',
+    requiredIndicators: ['postural_strain'],
+    suggestedIndicators: ['trigger_looking_down', 'trigger_computer', 'tension', 'symptom_stiffness'],
+    protocolConditionName: 'Posture anterieure tete et epaules',
+    priority: 8,
   },
 ]
 
