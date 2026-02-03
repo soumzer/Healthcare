@@ -59,6 +59,7 @@ interface SavedSessionState {
   warmupSetIndex: number
   sessionStartTime: string
   timestamp: number
+  timerEndTime: number | null
 }
 
 export interface UseSessionReturn {
@@ -176,7 +177,25 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const [warmupSetIndex, setWarmupSetIndex] = useState(
     isRestorable && saved ? saved.warmupSetIndex : 0
   )
-  const [restElapsed, setRestElapsed] = useState(0)
+  // Restore restElapsed from timerEndTime if session was in rest_timer phase
+  const [restElapsed, setRestElapsed] = useState(() => {
+    if (isRestorable && saved && saved.phase === 'rest_timer' && saved.timerEndTime) {
+      const remainingMs = saved.timerEndTime - Date.now()
+      if (remainingMs > 0) {
+        // Calculate how much time has elapsed since rest started
+        // restSeconds is not available here, so we compute elapsed from endTime
+        // We need to derive restSeconds from the saved state context
+        const programExRestSeconds = programSession.exercises.find(
+          (_, idx) => idx === saved.engineExerciseIndex
+        )?.restSeconds ?? 120
+        const elapsedSeconds = programExRestSeconds - Math.ceil(remainingMs / 1000)
+        return Math.max(0, elapsedSeconds)
+      }
+      // Timer expired while away - show as complete (restElapsed >= restSeconds)
+      return 9999
+    }
+    return 0
+  })
   const [alternativeWeight, setAlternativeWeight] = useState<number | null>(
     isRestorable && saved ? saved.alternativeWeight : null
   )
@@ -191,6 +210,9 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   )
   const setStartRef = useRef<Date | null>(null)
   const lastRestElapsedRef = useRef<number>(0)
+  const timerEndTimeRef = useRef<number | null>(
+    isRestorable && saved ? saved.timerEndTime : null
+  )
 
   // Derive current state from engine
   const currentExercise = engine.isSessionComplete() ? null : engine.getCurrentExercise()
@@ -236,6 +258,21 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     }
   }, [])
 
+  // Resume rest timer interval if session was restored in rest_timer phase
+  useEffect(() => {
+    if (isRestorable && saved?.phase === 'rest_timer' && saved.timerEndTime) {
+      const remainingMs = saved.timerEndTime - Date.now()
+      if (remainingMs > 0) {
+        // Timer still running - start the interval
+        restTimerRef.current = setInterval(() => {
+          setRestElapsed((prev) => prev + 1)
+        }, 1000)
+      }
+      // If remainingMs <= 0, restElapsed was already set to 9999 (expired)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run only on mount
+
   // Persist session state to sessionStorage for navigation resilience
   useEffect(() => {
     if (phase === 'done' || engine.isSessionComplete()) {
@@ -253,24 +290,27 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       warmupSetIndex,
       sessionStartTime: sessionStartRef.current.toISOString(),
       timestamp: Date.now(),
+      timerEndTime: timerEndTimeRef.current,
     }
     sessionStorage.setItem('activeSession', JSON.stringify(state))
   }, [phase, alternativeWeight, alternativeReps, warmupSetIndex, programId, programSession.order, engine])
 
   const startRestTimer = useCallback(() => {
     setRestElapsed(0)
+    timerEndTimeRef.current = Date.now() + restSeconds * 1000
     setPhase('rest_timer')
     if (restTimerRef.current) clearInterval(restTimerRef.current)
     restTimerRef.current = setInterval(() => {
       setRestElapsed((prev) => prev + 1)
     }, 1000)
-  }, [])
+  }, [restSeconds])
 
   const stopRestTimer = useCallback(() => {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current)
       restTimerRef.current = null
     }
+    timerEndTimeRef.current = null
   }, [])
 
   // Save session data to DB — extracted so it can be called from multiple paths
