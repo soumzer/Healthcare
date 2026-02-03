@@ -68,7 +68,8 @@ export default function WeightPicker({
 
   const handleCustom = () => {
     const weight = parseFloat(customWeight)
-    if (weight > 0) {
+    // Allow 0 for bodyweight exercises (consistent with button options)
+    if (!isNaN(weight) && weight >= 0) {
       handleSelect(weight)
     }
   }

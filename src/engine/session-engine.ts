@@ -168,6 +168,10 @@ export class SessionEngine {
 
   getCurrentSetNumber(): number {
     const ex = this.exercises[this.currentIndex]
+    // If exercise is complete, return the completed count (not +1)
+    if (ex.sets.length >= ex.prescribedSets) {
+      return ex.sets.length
+    }
     return ex.sets.length + 1
   }
 

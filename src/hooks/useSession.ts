@@ -131,12 +131,18 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     const savedRaw = sessionStorage.getItem('activeSession')
     if (savedRaw) {
       const parsed = JSON.parse(savedRaw) as SavedSessionState
-      // Validate version and required fields to detect corruption/stale state
-      if (
+      // Validate version and ALL required fields to detect corruption/stale state
+      const isValid =
         parsed.version === SESSION_STATE_VERSION &&
         typeof parsed.programId === 'number' &&
-        typeof parsed.timestamp === 'number'
-      ) {
+        typeof parsed.timestamp === 'number' &&
+        typeof parsed.sessionIndex === 'number' &&
+        typeof parsed.engineExerciseIndex === 'number' &&
+        typeof parsed.engineCompletedSets === 'number' &&
+        typeof parsed.phase === 'string' &&
+        typeof parsed.warmupSetIndex === 'number' &&
+        typeof parsed.sessionStartTime === 'string'
+      if (isValid) {
         saved = parsed
       } else {
         // Version mismatch or corrupted state - clear atomically
@@ -168,6 +174,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const engine = engineRef.current
 
   // Integrate rehab exercises into session (computed early for initial phase)
+  // Use stable key to avoid recalculation when array reference changes but content is same
+  const conditionsKey = healthConditions?.map(c => c.id).join(',') ?? ''
   const rehabIntegration = useMemo(() => {
     if (!healthConditions || healthConditions.length === 0) {
       return { warmupRehab: [], activeWaitPool: [], cooldownRehab: [] }
@@ -178,7 +186,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       activeWaitPool: integrated.activeWaitPool,
       cooldownRehab: integrated.cooldownRehab,
     }
-  }, [programSession, healthConditions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programSession, conditionsKey])
 
   // Start with warmup_rehab if rehab exercises exist, then warmup if sets exist, else exercise
   const [phase, setPhase] = useState<SessionPhase>(() => {
@@ -276,27 +285,36 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }, [])
 
   // Resume rest timer interval if session was restored in rest_timer phase
+  const timerInitializedRef = useRef(false)
   useEffect(() => {
-    if (isRestorable && saved?.phase === 'rest_timer' && saved.timerEndTime) {
-      const remainingMs = saved.timerEndTime - Date.now()
-      if (remainingMs > 0) {
-        // Timer still running - start the interval
-        const endTime = saved.timerEndTime
-        // Get restSeconds for the current exercise from the saved state
-        const programExRestSeconds = programSession.exercises.find(
-          (_, idx) => idx === saved.engineExerciseIndex
-        )?.restSeconds ?? 120
-        restTimerRef.current = setInterval(() => {
-          // Recalculate from timerEndTime to handle browser tab suspension
-          const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
-          const elapsed = programExRestSeconds - remaining
-          setRestElapsed(elapsed)
-        }, 1000)
-      }
-      // If remainingMs <= 0, restElapsed was already set to 9999 (expired)
+    // Only run once on mount when restoring a session
+    if (timerInitializedRef.current) return
+    if (!isRestorable || saved?.phase !== 'rest_timer' || !saved.timerEndTime) return
+    timerInitializedRef.current = true
+
+    let isMounted = true
+    const remainingMs = saved.timerEndTime - Date.now()
+    if (remainingMs > 0) {
+      // Timer still running - start the interval
+      const endTime = saved.timerEndTime
+      // Get restSeconds for the current exercise from the saved state
+      const programExRestSeconds = programSession.exercises.find(
+        (_, idx) => idx === saved.engineExerciseIndex
+      )?.restSeconds ?? 120
+      restTimerRef.current = setInterval(() => {
+        if (!isMounted) return
+        // Recalculate from timerEndTime to handle browser tab suspension
+        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+        const elapsed = programExRestSeconds - remaining
+        setRestElapsed(elapsed)
+      }, 1000)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run only on mount
+    // If remainingMs <= 0, restElapsed was already set to 9999 (expired)
+
+    return () => {
+      isMounted = false
+    }
+  }, [isRestorable, saved, programSession.exercises])
 
   // Persist session state to sessionStorage for navigation resilience
   useEffect(() => {
@@ -321,6 +339,13 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     sessionStorage.setItem('activeSession', JSON.stringify(state))
   }, [phase, alternativeWeight, alternativeReps, warmupSetIndex, programId, programSession.order, engine])
 
+  // Track if component is mounted for safe setState in intervals
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => { isMountedRef.current = false }
+  }, [])
+
   const startRestTimer = useCallback(() => {
     setRestElapsed(0)
     const endTime = Date.now() + restSeconds * 1000
@@ -328,6 +353,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     setPhase('rest_timer')
     if (restTimerRef.current) clearInterval(restTimerRef.current)
     restTimerRef.current = setInterval(() => {
+      if (!isMountedRef.current) return
       // Recalculate from timerEndTime to handle browser tab suspension
       const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
       const elapsed = restSeconds - remaining

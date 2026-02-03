@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, Component, type ReactNode } from 'react'
+import { useMemo, useEffect, useRef, Component, type ReactNode } from 'react'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
 import { shouldDeload } from '../engine/progression'
@@ -61,10 +61,10 @@ function SessionContent({
   const availableWeightsData = userData?.availableWeightsData
   const recentPainLogs = userData?.recentPainLogs
 
-  // Determine current training phase and deload status
+  // Determine current training phase and deload status (READ ONLY - no DB writes)
   const phaseData = useLiveQuery(
     async () => {
-      if (!user?.id) return { phase: 'hypertrophy' as const, isDeload: false }
+      if (!user?.id) return { phase: 'hypertrophy' as const, isDeload: false, needsDeload: false, currentPhaseId: undefined }
 
       const phases = await db.trainingPhases
         .where('userId')
@@ -74,7 +74,7 @@ function SessionContent({
       const currentPhase = sortedPhases.find((p) => !p.endedAt)
 
       if (currentPhase?.phase === 'deload') {
-        return { phase: 'deload' as const, isDeload: true }
+        return { phase: 'deload' as const, isDeload: true, needsDeload: false, currentPhaseId: currentPhase.id }
       }
 
       const lastDeload = sortedPhases.find((p) => p.phase === 'deload')
@@ -89,7 +89,7 @@ function SessionContent({
           .toArray()
         const firstCompleted = allSessions
           .filter((s) => s.completedAt)
-          .sort((a, b) => a.completedAt!.getTime() - b.completedAt!.getTime())[0]
+          .sort((a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0))[0]
         if (firstCompleted?.completedAt) {
           weeksSince = Math.floor(
             (Date.now() - firstCompleted.completedAt.getTime()) / (7 * 24 * 60 * 60 * 1000)
@@ -98,25 +98,41 @@ function SessionContent({
       }
 
       const needsDeload = shouldDeload(weeksSince)
-      if (needsDeload) {
-        if (currentPhase) {
-          await db.trainingPhases.update(currentPhase.id!, { endedAt: new Date() })
+      const mappedPhase = currentPhase?.phase ?? 'hypertrophy'
+      const sessionPhase = mappedPhase === 'transition' ? 'hypertrophy' : mappedPhase
+      return {
+        phase: needsDeload ? 'deload' as const : sessionPhase as 'hypertrophy' | 'strength' | 'deload',
+        isDeload: needsDeload,
+        needsDeload,
+        currentPhaseId: currentPhase?.id,
+      }
+    },
+    [user?.id]
+  )
+
+  // Handle deload phase creation in useEffect (side effect, not during render)
+  const deloadCreatedRef = useRef(false)
+  useEffect(() => {
+    if (!phaseData?.needsDeload || deloadCreatedRef.current || !user?.id) return
+    deloadCreatedRef.current = true
+
+    const createDeload = async () => {
+      try {
+        if (phaseData.currentPhaseId) {
+          await db.trainingPhases.update(phaseData.currentPhaseId, { endedAt: new Date() })
         }
         await db.trainingPhases.add({
-          userId: user.id,
+          userId: user.id!,
           phase: 'deload',
           startedAt: new Date(),
           weekCount: 1,
         })
-        return { phase: 'deload' as const, isDeload: true }
+      } catch (error) {
+        console.error('Failed to create deload phase:', error)
       }
-
-      const mappedPhase = currentPhase?.phase ?? 'hypertrophy'
-      const sessionPhase = mappedPhase === 'transition' ? 'hypertrophy' : mappedPhase
-      return { phase: sessionPhase as 'hypertrophy' | 'strength' | 'deload', isDeload: false }
-    },
-    [user?.id]
-  )
+    }
+    createDeload()
+  }, [phaseData?.needsDeload, phaseData?.currentPhaseId, user?.id])
 
   // Validate sessionIndex is within bounds
   const programSession = program?.sessions?.[sessionIndex]

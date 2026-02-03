@@ -85,7 +85,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
     // Filter to completed sessions (have completedAt) and sort by completedAt desc
     const completedSessions = allSessions
       .filter((s) => s.completedAt)
-      .sort((a, b) => b.completedAt!.getTime() - a.completedAt!.getTime())
+      .sort((a, b) => (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0))
 
     const lastSession = completedSessions.length > 0 ? completedSessions[0] : undefined
 
@@ -166,10 +166,12 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       )
     } else if (completedSessions.length > 0) {
       // No deload ever — count weeks from first session
-      const firstSessionDate = completedSessions[completedSessions.length - 1].completedAt!
-      weeksSinceLastDeload = Math.floor(
-        (Date.now() - firstSessionDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
-      )
+      const firstSessionDate = completedSessions[completedSessions.length - 1].completedAt
+      if (firstSessionDate) {
+        weeksSinceLastDeload = Math.floor(
+          (Date.now() - firstSessionDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        )
+      }
     }
 
     const isDeload = shouldDeload(weeksSinceLastDeload) || currentPhase === 'deload'

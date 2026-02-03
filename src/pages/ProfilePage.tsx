@@ -48,13 +48,18 @@ function TrainingSettings({
 
   const handleSave = async () => {
     setSaving(true)
-    await db.userProfiles.update(userId, {
-      daysPerWeek: editDays,
-      minutesPerSession: editMinutes,
-      updatedAt: new Date(),
-    })
-    await onRegenerate()
-    setSaving(false)
+    try {
+      await db.userProfiles.update(userId, {
+        daysPerWeek: editDays,
+        minutesPerSession: editMinutes,
+        updatedAt: new Date(),
+      })
+      await onRegenerate()
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const daysOptions = [2, 3, 4, 5, 6]

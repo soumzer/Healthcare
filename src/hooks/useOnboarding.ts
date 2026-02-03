@@ -109,7 +109,9 @@ export function useOnboarding() {
         if (weights.length > 0) {
           await db.availableWeights.bulkAdd(weights)
         }
-      } catch { /* invalid JSON — skip */ }
+      } catch (error) {
+        console.warn('Invalid dumbbell range format in notes, skipping weight generation:', error)
+      }
     }
 
     // --- Generate workout program ---

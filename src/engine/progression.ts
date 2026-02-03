@@ -77,7 +77,8 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // Total actual reps is less than 75% of what was expected
   const totalExpected = input.programTargetSets * programTargetReps
   const totalActual = lastRepsPerSet.reduce((a, b) => a + b, 0)
-  const repDeficit = 1 - totalActual / totalExpected
+  // Guard against division by zero
+  const repDeficit = totalExpected > 0 ? 1 - totalActual / totalExpected : 0
 
   if (repDeficit > 0.25) {
     // Significant regression - decrease weight
