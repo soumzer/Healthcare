@@ -106,10 +106,18 @@ export default function HomePage() {
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
       <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
-      <p className="text-3xl font-bold mb-6">{info.nextSessionName}</p>
+      <p className="text-3xl font-bold mb-4">{info.nextSessionName}</p>
+
+      {info.preview && info.preview.exercises.length > 0 && (
+        <ul className="text-sm text-zinc-400 mb-4 space-y-0.5">
+          {info.preview.exercises.map((ex, idx) => (
+            <li key={idx}>{"\u2022 "}{ex.name}</li>
+          ))}
+        </ul>
+      )}
 
       <p className="text-zinc-400 mb-8">
-        {info.exerciseCount}{" exercices \u00B7 ~"}{info.estimatedMinutes}{" min"}
+        {"~ "}{info.estimatedMinutes}{" min"}
       </p>
 
       <div className="mt-auto pb-8">
