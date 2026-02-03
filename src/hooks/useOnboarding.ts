@@ -45,7 +45,7 @@ const initialState: OnboardingState = {
   equipment: [],
   goals: [],
   daysPerWeek: 3,
-  minutesPerSession: 60,
+  minutesPerSession: 75,
   programText: '',
   knownWeights: COMMON_EXERCISES_FOR_WEIGHTS.map(e => ({ ...e, weightKg: 0 })),
 }
