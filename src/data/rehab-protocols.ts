@@ -1328,4 +1328,616 @@ export const rehabProtocols: RehabProtocol[] = [
       },
     ],
   },
+
+  // =========================================================================
+  // 24. ANTERIOR ANKLE IMPINGEMENT (Impingement antérieur cheville)
+  // =========================================================================
+  {
+    targetZone: 'ankle_right',
+    conditionName: 'Impingement antérieur cheville',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 : mobilisation douce et étirements du mollet, éviter les activités qui provoquent le pincement. Phase 2 : renforcement en dorsiflexion avec résistance légère. Phase 3 : retour progressif aux squats profonds et activités sportives. Quand la dorsiflexion complète est indolore et le squat profond toléré, réduire à un programme d\'entretien (3x/semaine). Objectif : dorsiflexion symétrique et absence de douleur antérieure à la cheville.',
+    exercises: [
+      {
+        exerciseName: 'Mobilisation cheville bande (joint mobilization)',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'very_light',
+        notes:
+          'Bande élastique autour de la cheville, ancrée derrière. En fente, avancer le genou vers l\'avant pendant que la bande tire le talus vers l\'arrière. Améliore la mécanique articulaire et libère l\'espace antérieur. Faire quotidiennement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement mollet mur (wall calf stretch)',
+        sets: 3,
+        reps: '30-45 sec',
+        intensity: 'very_light',
+        notes:
+          'Gastrocnémien (genou tendu) puis soléaire (genou fléchi). La raideur du mollet limite la dorsiflexion et aggrave le conflit antérieur. Maintenir sans rebondir. Faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Dorsiflexion genou-au-mur (knee-to-wall)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Face au mur, pied à quelques centimètres, avancer le genou pour toucher le mur sans lever le talon. Mesurer la distance pour suivre les progrès. Test et exercice de mobilité en dorsiflexion. Objectif : 10-12 cm du mur.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Renforcement dorsiflexion bande',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Assis, bande autour de l\'avant-pied ancrée devant. Tirer le pied vers le tibia contre la résistance (dorsiflexion). Renforce le tibial antérieur et les extenseurs. Mouvement lent et contrôlé, 3 secondes en excentrique.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Foam roll mollet',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Rouler sur le gastrocnémien et le soléaire. S\'arrêter sur les points sensibles. Aide à relâcher les tensions qui limitent la dorsiflexion. Faire avant les mobilisations articulaires.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Cercles de cheville (ankle circles)',
+        sets: 2,
+        reps: '10/direction',
+        intensity: 'very_light',
+        notes:
+          'Cercles lents et contrôlés dans les deux sens. Maintient la mobilité globale de la cheville. Peut être fait assis ou debout. Excellent le matin pour réduire la raideur.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 25. DE QUERVAIN TENOSYNOVITIS (Tendinite de De Quervain)
+  // =========================================================================
+  {
+    targetZone: 'wrist_right',
+    conditionName: 'Tendinite de De Quervain',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos, attelle de pouce si nécessaire, étirements très doux. Phase 2 : étirements progressifs et exercices isométriques. Phase 3 : renforcement excentrique du pouce et du poignet. Quand le test de Finkelstein est négatif (pas de douleur) et la préhension indolore, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 douleur sur le bord radial du poignet lors des mouvements du pouce.',
+    exercises: [
+      {
+        exerciseName: 'Étirement pouce (thumb stretch)',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Pouce dans la paume, enrouler les doigts autour. Incliner doucement le poignet vers le petit doigt (déviation ulnaire). Version douce du test de Finkelstein. NE PAS forcer en phase aiguë — aller à la sensation d\'étirement sans douleur.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Finkelstein stretch doux (étirement radial)',
+        sets: 3,
+        reps: '20-30 sec',
+        intensity: 'very_light',
+        notes:
+          'Version contrôlée et progressive. Pouce dans la paume, déviation ulnaire très légère. Augmenter l\'amplitude progressivement sur plusieurs semaines. Arrêter immédiatement si douleur vive. Faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Massage avant-bras radial',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Masser le bord externe de l\'avant-bras (côté pouce) avec les doigts ou une balle. Relâche les tensions des muscles long abducteur et court extenseur du pouce. Faire avant les étirements pour préparer les tissus.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Extension pouce isométrique',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Pouce contre la table ou contre la main opposée, pousser vers l\'extérieur sans mouvement. Renforce les tendons affectés de manière sécuritaire. Intensité légère (30-50% effort max). Pas de douleur pendant l\'exercice.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Extension pouce excentrique',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Bande élastique autour du pouce, résister à l\'adduction (mouvement vers la paume) en contrôlant la descente sur 3-4 secondes. Introduire uniquement quand les isométriques sont indolores. Renforce les tendons de manière excentrique.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Mobilité poignet (flexion/extension)',
+        sets: 2,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Mouvements lents de flexion et extension du poignet. Maintient la mobilité articulaire. Éviter les mouvements qui reproduisent la douleur. Peut être fait plusieurs fois par jour.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 26. GENERAL WRIST TENDINITIS (Tendinite poignet générale)
+  // =========================================================================
+  {
+    targetZone: 'wrist_right',
+    conditionName: 'Tendinite poignet générale',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos relatif, éviter les mouvements répétitifs qui aggravent. Phase 2 : isométriques puis exercices excentriques légers. Phase 3 : renforcement progressif de la préhension et du poignet. Quand 3x15 exercices de renforcement sont indolores pendant 2 semaines, réduire à un programme d\'entretien (3x/semaine). Objectif : mouvements du poignet et préhension indolores dans les activités quotidiennes.',
+    exercises: [
+      {
+        exerciseName: 'Étirement fléchisseurs poignet',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Bras tendu, paume vers le haut, tirer doucement les doigts vers le bas avec l\'autre main. Étire les fléchisseurs du poignet. Maintenir sans rebondir. Faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement extenseurs poignet',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Bras tendu, paume vers le bas, tirer doucement les doigts vers le bas. Étire les extenseurs du poignet. Complément essentiel à l\'étirement des fléchisseurs. Maintenir sans rebondir.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Isométrique flexion poignet',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Avant-bras sur la table, paume vers le haut. Pousser contre la résistance de l\'autre main sans mouvement. Renforce les fléchisseurs de manière sécuritaire. Intensité légère (30-50% effort max).',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Isométrique extension poignet',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Avant-bras sur la table, paume vers le bas. Pousser vers le haut contre la résistance de l\'autre main. Renforce les extenseurs. Faire après les fléchisseurs pour équilibrer.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Curl poignet excentrique',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Avant-bras sur la table, haltère léger (1-2 kg). Descente excentrique lente sur 4-5 secondes, montée assistée par l\'autre main. Introduire en phase 2 quand les isométriques sont indolores. Progresser vers le concentrique complet.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Renforcement préhension progressive',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Balle souple, grip trainer, ou serviette roulée. Serrer et maintenir 5 secondes. Commencer très léger et augmenter progressivement la résistance. Faire uniquement si indolore.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 27. TFCC INJURY (Lésion TFCC - complexe fibrocartilagineux triangulaire)
+  // =========================================================================
+  {
+    targetZone: 'wrist_right',
+    conditionName: 'Lésion TFCC (complexe fibrocartilagineux triangulaire)',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : repos, attelle si prescrite, ÉVITER la déviation ulnaire. Phase 2 : isométriques en position neutre. Phase 3 : renforcement progressif en pronation/supination et préhension. Quand les mouvements de rotation de l\'avant-bras sont indolores et la préhension symétrique, réduire à un programme d\'entretien (3x/semaine). Objectif : 0 douleur sur le bord ulnaire du poignet lors des rotations et de la préhension. ATTENTION : la déviation ulnaire est contre-indiquée pendant tout le protocole.',
+    exercises: [
+      {
+        exerciseName: 'Isométrique poignet neutre',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Poignet en position neutre, pousser doucement dans chaque direction (flexion, extension, radial, ÉVITER ulnaire) contre la résistance de l\'autre main. Renforce sans stress sur le TFCC. Pas de douleur pendant l\'exercice.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Pronation/supination contrôlée',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'very_light',
+        notes:
+          'Coude fléchi à 90°, rotation lente de l\'avant-bras (paume vers le haut, puis vers le bas). Sans charge au début, puis avec un bâton léger ou un marteau. Mouvement lent et contrôlé, arrêter si douleur.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Renforcement pronation excentrique',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Marteau ou haltère lesté d\'un côté. Résister à la pronation en contrôlant la descente sur 3-4 secondes. Introduire uniquement quand les mouvements sans charge sont indolores. Renforce les rotateurs de l\'avant-bras.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Renforcement préhension isométrique',
+        sets: 3,
+        reps: '10 x 5 sec',
+        intensity: 'very_light',
+        notes:
+          'Serrer une balle souple ou une serviette roulée, poignet en position NEUTRE. Éviter la déviation ulnaire pendant la préhension. Maintenir 5 secondes. Commencer très léger.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Renforcement préhension progressive',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Progresser vers des résistances plus fortes (grip trainer) quand les isométriques sont indolores. Toujours maintenir le poignet en position neutre. Serrer et maintenir 3-5 secondes.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Mobilité poignet (éviter déviation ulnaire)',
+        sets: 2,
+        reps: '10',
+        intensity: 'very_light',
+        notes:
+          'Mouvements de flexion, extension, et déviation RADIALE uniquement. ÉVITER la déviation ulnaire qui stresse le TFCC. Maintient la mobilité dans les amplitudes sécuritaires.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 28. CERVICALGIA (Cervicalgie - douleur cervicale)
+  // =========================================================================
+  {
+    targetZone: 'neck',
+    conditionName: 'Cervicalgie (douleur cervicale)',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (aiguë) : chin tucks et étirements doux uniquement, éviter les amplitudes extrêmes. Phase 2 : ajout du renforcement isométrique et des étirements progressifs. Phase 3 : renforcement dynamique et correction posturale. Quand les mouvements cervicaux sont indolores dans toutes les directions et la posture est améliorée, réduire à un programme d\'entretien (3x/semaine). Objectif : amplitude cervicale complète sans douleur et posture neutre maintenue.',
+    exercises: [
+      {
+        exerciseName: 'Chin tuck (rétraction cervicale)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Exercice fondamental pour la cervicalgie. Rentrer le menton vers l\'arrière (double menton), tenir 5 secondes. Peut être fait assis ou debout. Faire 3-5x par jour pour reprogrammer la posture. Ajouter une résistance avec la main quand l\'exercice devient facile.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement trapèze supérieur',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Incliner la tête vers l\'épaule, main sur la tête pour appui léger. Abaisser l\'épaule opposée. Étire le trapèze supérieur souvent hypertendu. Maintenir sans rebondir, respirer profondément.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement élévateur de la scapula',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Regarder vers l\'aisselle, incliner la tête, main sur la tête pour appui léger. L\'élévateur de la scapula est souvent la source des douleurs cervicales latérales. Faire des deux côtés même si asymptomatique.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation cervicale douce',
+        sets: 2,
+        reps: '10/côté',
+        intensity: 'very_light',
+        notes:
+          'Tourner lentement la tête d\'un côté puis de l\'autre. Ne pas forcer l\'amplitude — aller jusqu\'à la sensation d\'étirement sans douleur. Aide à maintenir la mobilité cervicale. Faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Flexion/extension cervicale',
+        sets: 2,
+        reps: '10',
+        intensity: 'very_light',
+        notes:
+          'Baisser le menton vers la poitrine puis regarder vers le plafond. Mouvements lents et contrôlés. Éviter les amplitudes extrêmes en phase aiguë. Maintient la mobilité en flexion/extension.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Correction posturale (posture reset)',
+        sets: 3,
+        reps: '10',
+        intensity: 'very_light',
+        notes:
+          'Chin tuck + rétraction scapulaire combinés. Rentrer le menton, serrer les omoplates, tenir 5-10 secondes. Reprogramme la posture neutre. Faire toutes les heures si travail sur écran.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 29. CERVICAL RADICULOPATHY (Radiculopathie cervicale)
+  // =========================================================================
+  {
+    targetZone: 'neck',
+    conditionName: 'Radiculopathie cervicale',
+    frequency: 'daily',
+    priority: 1,
+    progressionCriteria:
+      'Phase 1 (aiguë) : nerve gliding très doux, chin tucks, éviter les positions qui aggravent. Phase 2 : étirements progressifs et renforcement postural. Phase 3 : retour aux activités normales avec maintien de la posture. ATTENTION : arrêter immédiatement tout exercice qui augmente les symptômes radiants (douleur, engourdissement, faiblesse dans le bras). Quand les symptômes radiants ont disparu depuis 4 semaines, réduire à un programme d\'entretien. Objectif : 0 symptôme radiant et amplitude cervicale fonctionnelle.',
+    exercises: [
+      {
+        exerciseName: 'Nerve gliding cervical (median/radial/ulnar)',
+        sets: 2,
+        reps: '5-10',
+        intensity: 'very_light',
+        notes:
+          'Glissements doux du nerf affecté. Mouvement TRÈS LENT et contrôlé. ARRÊTER IMMÉDIATEMENT si les symptômes augmentent (douleur, engourdissement, fourmillements). Le nerf doit glisser, pas être étiré. Faire 2-3x par jour si bien toléré.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Chin tuck (rétraction cervicale)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Exercice fondamental. Ouvre l\'espace des foramen intervertébraux et réduit la compression nerveuse. Rentrer le menton, tenir 5-8 secondes. Faire plusieurs fois par jour. Peut soulager immédiatement les symptômes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement trapèze supérieur (doux)',
+        sets: 3,
+        reps: '20-30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Version très douce. Incliner la tête vers l\'épaule SANS forcer. Si les symptômes radiants apparaissent, réduire l\'amplitude ou arrêter. Relâche les tensions musculaires qui peuvent contribuer à la compression.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rétraction scapulaire (posture)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Serrer les omoplates ensemble et vers le bas, maintenir 5 secondes. Améliore la posture et réduit la tension sur la région cervicale. Peut être fait assis au bureau. Faire plusieurs fois par jour.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Exercices posturaux (wall angel modifié)',
+        sets: 2,
+        reps: '8-10',
+        intensity: 'very_light',
+        notes:
+          'Dos contre le mur, chin tuck, faire glisser les bras vers le haut (amplitude limitée selon tolérance). Améliore la posture thoracique et cervicale. Arrêter si symptômes radiants.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Auto-massage sous-occipitaux',
+        sets: 2,
+        reps: '60 sec',
+        intensity: 'very_light',
+        notes:
+          'Avec les doigts ou une balle, masser doucement la base du crâne. Relâche les tensions des muscles sous-occipitaux qui peuvent contribuer aux symptômes. Pression légère, ne jamais forcer.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 30. TENSION HEADACHE (Céphalée de tension)
+  // =========================================================================
+  {
+    targetZone: 'neck',
+    conditionName: 'Céphalée de tension',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Exercices à faire quotidiennement et lors de l\'apparition des symptômes. Quand la fréquence des céphalées diminue significativement (< 1/semaine) et que la tension musculaire est bien contrôlée, réduire à un programme d\'entretien (3x/semaine). Objectif : réduction de la fréquence et de l\'intensité des céphalées, meilleure gestion de la tension musculaire cervicale.',
+    exercises: [
+      {
+        exerciseName: 'Release trapèze supérieur (auto-massage)',
+        sets: 2,
+        reps: '60-90 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Utiliser les doigts ou une balle pour masser le trapèze supérieur (entre le cou et l\'épaule). Insister sur les points de tension (trigger points). Pression modérée, respirer profondément. Faire dès l\'apparition des symptômes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Release sous-occipitaux (suboccipital release)',
+        sets: 2,
+        reps: '60-90 sec',
+        intensity: 'very_light',
+        notes:
+          'Couché sur le dos, placer deux balles de tennis (ou une balle double type peanut) sous la base du crâne. Laisser le poids de la tête créer la pression. Relâche les muscles sous-occipitaux, source fréquente des céphalées de tension.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Chin tuck (rétraction cervicale)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Rentrer le menton vers l\'arrière, tenir 5-8 secondes. Corrige la posture de tête avancée qui contribue aux céphalées de tension. Faire plusieurs fois par jour, surtout si travail sur écran.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement cervical latéral',
+        sets: 3,
+        reps: '30 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Incliner la tête vers l\'épaule, main sur la tête pour appui léger. Abaisser l\'épaule opposée. Étire le trapèze supérieur et les scalènes. Respirer profondément pendant l\'étirement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement cervical postérieur',
+        sets: 3,
+        reps: '30 sec',
+        intensity: 'very_light',
+        notes:
+          'Mains derrière la tête, baisser doucement le menton vers la poitrine. Étire les muscles postérieurs du cou (semi-épineux, splénius). Ne pas forcer, laisser le poids des bras créer l\'étirement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation cervicale douce',
+        sets: 2,
+        reps: '10/côté',
+        intensity: 'very_light',
+        notes:
+          'Tourner lentement la tête d\'un côté puis de l\'autre. Maintenir quelques secondes en fin de mouvement. Relâche les tensions et maintient la mobilité cervicale.',
+        placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 31. THORACIC STIFFNESS (Rigidité thoracique)
+  // =========================================================================
+  {
+    targetZone: 'upper_back',
+    conditionName: 'Rigidité thoracique',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Quand la mobilité thoracique est améliorée (wall angel avec contact complet des mains, rotation thoracique symétrique > 45°), réduire à un programme d\'entretien (3x/semaine). Maintenir la mobilité acquise avec des exercices réguliers, surtout si travail sédentaire. Objectif : extension et rotation thoracique complètes sans raideur ni douleur.',
+    exercises: [
+      {
+        exerciseName: 'Extension thoracique foam roller',
+        sets: 2,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Foam roller perpendiculaire sous le milieu du dos, mains derrière la tête. Faire des extensions en arrière, segment par segment. Améliore l\'extension thoracique souvent limitée par la position assise prolongée. Faire quotidiennement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Cat-cow (chat-vache)',
+        sets: 2,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'À quatre pattes, alterner entre flexion (dos rond, tête vers le bas) et extension (dos creux, tête vers le haut). Mouvements lents, synchronisés avec la respiration. Excellent pour la mobilité globale du rachis.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Thread the needle (rotation thoracique)',
+        sets: 3,
+        reps: '8-10/côté',
+        intensity: 'very_light',
+        notes:
+          'À quatre pattes, passer un bras sous le corps en tournant le thorax, puis ouvrir vers le plafond. Mouvements lents et contrôlés. Améliore la rotation thoracique. Excellent échauffement avant les exercices overhead.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Open book (rotation couché)',
+        sets: 3,
+        reps: '8-10/côté',
+        intensity: 'very_light',
+        notes:
+          'Couché sur le côté, genoux fléchis à 90°. Ouvrir le bras supérieur vers le côté opposé en tournant le thorax. Les genoux restent ensemble pour isoler la rotation thoracique. Maintenir la position ouverte 3-5 secondes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Wall angel (ange au mur)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Dos contre le mur, chin tuck, faire glisser les bras vers le haut en gardant le contact avec le mur. Diagnostic et exercice de mobilité thoracique. Si impossible de garder le contact, la mobilité thoracique est insuffisante.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement pectoral doorway',
+        sets: 3,
+        reps: '30-45 sec',
+        intensity: 'very_light',
+        notes:
+          'Dans un cadre de porte, avant-bras sur les montants, avancer le corps. 3 positions : coudes bas, à 90°, hauts pour les différentes fibres pectorales. Les pectoraux raccourcis contribuent à la cyphose et à la rigidité thoracique.',
+        placement: 'cooldown',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 32. POSTURAL UPPER BACK PAIN (Douleur posturale dos haut)
+  // =========================================================================
+  {
+    targetZone: 'upper_back',
+    conditionName: 'Douleur posturale dos haut',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Chin tucks : progresser vers une résistance (main contre le menton). Face pulls et retractions : augmenter la résistance progressivement. Wall angels : augmenter l\'amplitude. Quand capable de maintenir une bonne posture pendant 8 heures de travail sans fatigue significative, réduire à un programme d\'entretien (3x/semaine). Objectif : posture neutre automatique, 0 douleur entre les omoplates ou au niveau des trapèzes.',
+    exercises: [
+      {
+        exerciseName: 'Rétraction scapulaire (scapular squeeze)',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'very_light',
+        notes:
+          'Serrer les omoplates ensemble et vers le bas, maintenir 5 secondes. Exercice fondamental pour la posture. Renforce les rhomboïdes et le trapèze moyen/inférieur. Faire plusieurs fois par jour, surtout si travail sur écran.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Face pull (câble ou bande)',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'light',
+        notes:
+          'Tirer vers le visage puis rotation externe en fin de mouvement. Renforce les rotateurs externes et les rétracteurs scapulaires. Ratio recommandé : 1 série pour chaque série de poussée. Excellent en super-set avec le développé couché.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Wall angel (ange au mur)',
+        sets: 3,
+        reps: '10-12',
+        intensity: 'light',
+        notes:
+          'Dos contre le mur, chin tuck, faire glisser les bras vers le haut en gardant le contact. Corrige la posture antérieure des épaules et la tête avancée simultanément. Faire avant les exercices de poussée.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Chin tuck (rétraction cervicale)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes:
+          'Rentrer le menton vers l\'arrière, tenir 5-8 secondes. Corrige la tête avancée qui accompagne souvent les épaules en avant. Faire au minimum 3x par jour. Ajouter une résistance avec la main quand facile.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement pectoral (doorway stretch)',
+        sets: 3,
+        reps: '30-45 sec',
+        intensity: 'very_light',
+        notes:
+          'Les pectoraux raccourcis tirent les épaules vers l\'avant. Étirer dans le cadre d\'une porte à 3 angles différents. Faire après chaque séance et les jours de repos.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Band pull-apart',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'light',
+        notes:
+          'Bande devant, bras tendus, écarter en serrant les omoplates. Excellent en super-set avec les exercices de poussée. Bande légère à moyenne. Serrer les omoplates 2 secondes à chaque répétition.',
+        placement: 'active_wait',
+      },
+    ],
+  },
 ]
