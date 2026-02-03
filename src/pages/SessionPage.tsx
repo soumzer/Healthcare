@@ -13,7 +13,6 @@ import RestTimer from '../components/session/RestTimer'
 import ActiveWait from '../components/session/ActiveWait'
 import WeightPicker from '../components/session/WeightPicker'
 import CooldownView from '../components/session/CooldownView'
-import EndSessionPainCheck from '../components/session/EndSessionPainCheck'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 /** Data loader — resolves all async data then renders SessionRunner */
@@ -413,16 +412,6 @@ function SessionRunner({
       <CooldownView
         cooldownExercises={session.cooldownRehab}
         onComplete={session.completeCooldown}
-      />
-    )
-  }
-
-  if (session.phase === 'end_pain_check') {
-    return (
-      <EndSessionPainCheck
-        userConditions={session.userConditions}
-        onSubmit={session.submitPainChecks}
-        userId={userId}
       />
     )
   }

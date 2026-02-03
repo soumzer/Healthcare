@@ -26,7 +26,6 @@ export type SessionPhase =
   | 'occupied'
   | 'weight_picker'
   | 'cooldown'
-  | 'end_pain_check'
   | 'done'
 
 export interface UseSessionParams {
@@ -499,10 +498,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
       // If there are cooldown rehab exercises, show cooldown first
       if (rehabIntegration.cooldownRehab.length > 0) {
         setPhase('cooldown')
-      } else if (userConditions.length > 0) {
-        setPhase('end_pain_check')
       } else {
-        // No cooldown, no pain check — save session and finish
+        // No cooldown — save session and finish (pain check removed as redundant)
         await saveSessionToDb([])
         setPhase('done')
       }
@@ -516,7 +513,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         setPhase('exercise')
       }
     }
-  }, [engine, rehabIntegration.cooldownRehab.length, userConditions.length, saveSessionToDb, availableWeights])
+  }, [engine, rehabIntegration.cooldownRehab.length, saveSessionToDb, availableWeights])
 
   const completeWarmupRehab = useCallback(() => {
     if (warmupSets.length > 0) {
@@ -677,14 +674,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   )
 
   const completeCooldown = useCallback(async () => {
-    if (userConditions.length > 0) {
-      setPhase('end_pain_check')
-    } else {
-      // No conditions to check, save session and go to done
-      await saveSessionToDb([])
-      setPhase('done')
-    }
-  }, [userConditions.length, saveSessionToDb])
+    // Save session and go to done (pain check removed as redundant)
+    await saveSessionToDb([])
+    setPhase('done')
+  }, [saveSessionToDb])
 
   const completeRestTimer = useCallback(() => {
     lastRestElapsedRef.current = restElapsed
