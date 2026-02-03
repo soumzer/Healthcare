@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { calculateProgression, type ProgressionInput, type ProgressionResult } from '../progression'
+import { calculateProgression, type ProgressionResult } from '../progression'
 import { SessionEngine, type ExerciseHistory } from '../session-engine'
-import type { ProgramSession, ProgramExercise } from '../../db/types'
+import type { ProgramSession } from '../../db/types'
 
 // Simulate available weights at a typical gym
 const AVAILABLE_WEIGHTS = [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
@@ -103,15 +103,6 @@ describe('Progression Simulation - 2 Months No Initial Data', () => {
     // Simulate 24 sessions (3x/week for 8 weeks)
     for (let sessionNum = 1; sessionNum <= 24; sessionNum++) {
       const week = Math.ceil(sessionNum / 3)
-
-      // Build history from last session
-      const history: ExerciseHistory = lastRepsPerSet.length > 0 ? {
-        [exerciseId]: {
-          lastWeightKg: currentWeight,
-          lastReps: lastRepsPerSet,
-          lastAvgRIR: lastAvgRIR,
-        }
-      } : {}
 
       // Calculate progression
       let result: ProgressionResult
