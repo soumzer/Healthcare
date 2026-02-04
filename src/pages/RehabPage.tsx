@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
+import type { NotebookEntry, NotebookSet, BodyZone, PainReport } from '../db/types'
 import { generateRestDayRoutine, type RestDayVariant } from '../engine/rest-day'
 import { recordRehabExercisesDone } from '../utils/rehab-rotation'
 import { recordRehabCompletion, isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
@@ -86,6 +86,26 @@ export default function RehabPage() {
     [user?.id]
   )
 
+  // Load active PainReports (accentDaysRemaining > 0) to prioritise those zones in rehab rotation
+  const activePainReports = useLiveQuery(
+    () => user?.id
+      ? db.painReports
+          .where('userId').equals(user.id)
+          .filter(r => r.accentDaysRemaining > 0)
+          .toArray()
+      : [],
+    [user?.id]
+  )
+
+  const accentZones = useMemo(
+    () => {
+      if (!activePainReports || activePainReports.length === 0) return []
+      // Deduplicate zones
+      return [...new Set(activePainReports.map(r => r.zone))]
+    },
+    [activePainReports]
+  )
+
   const variant = useMemo(
     () => conditions && conditions.length > 0 ? pickVariant(conditions) : 'all' as RestDayVariant,
     [conditions]
@@ -93,9 +113,9 @@ export default function RehabPage() {
 
   const routine = useMemo(
     () => conditions && conditions.length > 0
-      ? generateRestDayRoutine(conditions, variant)
+      ? generateRestDayRoutine(conditions, variant, accentZones)
       : null,
-    [conditions, variant]
+    [conditions, variant, accentZones]
   )
 
   const [videoIdx] = useState(() => getNextVideoIndex())

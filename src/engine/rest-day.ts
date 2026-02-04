@@ -1,6 +1,6 @@
 import type { HealthCondition, BodyZone } from '../db/types'
 import { rehabProtocols, type RehabExercise } from '../data/rehab-protocols'
-import { selectRotatedExercises } from '../utils/rehab-rotation'
+import { selectRotatedExercises, selectRotatedExercisesWithAccent } from '../utils/rehab-rotation'
 
 export interface RestDayExercise {
   name: string
@@ -40,10 +40,14 @@ const MAX_REHAB_EXERCISES = 5
 /**
  * Generate a rest day routine based on active health conditions.
  * Selects up to MAX_REHAB_EXERCISES from matching rehab protocols using rotation.
+ *
+ * When accentZones are provided (from active PainReports), exercises targeting
+ * those zones are prioritised — at least 2 accent-zone exercises are guaranteed.
  */
 export function generateRestDayRoutine(
   conditions: HealthCondition[],
   variant: RestDayVariant = 'all',
+  accentZones: BodyZone[] = [],
 ): RestDayRoutine {
   const activeConditions = conditions.filter(c => c.isActive).filter(c => {
     if (variant === 'all') return true
@@ -56,7 +60,7 @@ export function generateRestDayRoutine(
   const seenNames = new Set<string>()
 
   if (activeConditions.length > 0) {
-    const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string }> = []
+    const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone: BodyZone }> = []
 
     for (const condition of activeConditions) {
       const protocol = rehabProtocols.find(p => p.targetZone === condition.bodyZone)
@@ -65,11 +69,17 @@ export function generateRestDayRoutine(
       for (const ex of protocol.exercises) {
         if (seenNames.has(ex.exerciseName)) continue
         seenNames.add(ex.exerciseName)
-        allExercisesWithProtocol.push({ exercise: ex, protocolName: protocol.conditionName })
+        allExercisesWithProtocol.push({
+          exercise: ex,
+          protocolName: protocol.conditionName,
+          targetZone: protocol.targetZone,
+        })
       }
     }
 
-    const selectedExercises = selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+    const selectedExercises = accentZones.length > 0
+      ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, MAX_REHAB_EXERCISES)
+      : selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
 
     for (const ex of selectedExercises) {
       exercises.push({

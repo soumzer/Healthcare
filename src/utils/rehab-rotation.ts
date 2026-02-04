@@ -10,6 +10,7 @@
  */
 
 import type { RehabExercise } from '../data/rehab-protocols'
+import type { BodyZone } from '../db/types'
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -209,4 +210,78 @@ export function selectRotatedExercises(
   }))
 
   return selectRehabExercises(enriched, maxCount)
+}
+
+// ---------------------------------------------------------------------------
+// Accent-aware selection (pain report zones)
+// ---------------------------------------------------------------------------
+
+const ACCENT_GUARANTEED_SLOTS = 2
+
+/**
+ * Select exercises with priority for zones that have active PainReports.
+ *
+ * Guarantees at least ACCENT_GUARANTEED_SLOTS (2) exercises from protocols
+ * whose targetZone matches one of the accentZones, then fills remaining
+ * slots with normal priority+rotation from the non-accent pool.
+ *
+ * Falls back to standard selectRotatedExercises when no accent zones exist.
+ */
+export function selectRotatedExercisesWithAccent(
+  allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone?: BodyZone }>,
+  accentZones: BodyZone[],
+  maxCount: number = DEFAULT_MAX_COUNT
+): RehabExercise[] {
+  // If no accent zones, fall back to normal rotation
+  if (accentZones.length === 0) {
+    return selectRotatedExercises(allExercisesWithProtocol, maxCount)
+  }
+
+  const accentSet = new Set(accentZones)
+  const history = getRehabExerciseHistory()
+
+  // 1. Separate exercises into accent (matching zones) and non-accent
+  const accentPool: RehabExerciseWithMeta[] = []
+  const normalPool: RehabExerciseWithMeta[] = []
+
+  for (const { exercise, protocolName, targetZone } of allExercisesWithProtocol) {
+    const meta: RehabExerciseWithMeta = {
+      exercise,
+      protocolName,
+      priority: assignPriority(exercise),
+      lastDoneAt: history[exercise.exerciseName] ?? null,
+    }
+
+    if (targetZone && accentSet.has(targetZone)) {
+      accentPool.push(meta)
+    } else {
+      normalPool.push(meta)
+    }
+  }
+
+  // If total exercises fit within maxCount, return all
+  const totalCount = accentPool.length + normalPool.length
+  if (totalCount <= maxCount) {
+    return [...accentPool, ...normalPool].map(e => e.exercise)
+  }
+
+  // 2. Select guaranteed accent exercises (up to ACCENT_GUARANTEED_SLOTS)
+  const accentSelected = selectRehabExercises(accentPool, ACCENT_GUARANTEED_SLOTS)
+
+  // 3. Fill remaining slots from the normal pool
+  const remainingSlots = maxCount - accentSelected.length
+  const normalSelected = selectRehabExercises(normalPool, remainingSlots)
+
+  // 4. If we still have room (accent pool was smaller than guaranteed slots),
+  //    backfill with more normal exercises
+  const combined = [...accentSelected, ...normalSelected]
+  if (combined.length < maxCount) {
+    // Get additional normal exercises not already selected
+    const selectedNames = new Set(combined.map(e => e.exerciseName))
+    const remaining = normalPool.filter(e => !selectedNames.has(e.exercise.exerciseName))
+    const backfill = selectRehabExercises(remaining, maxCount - combined.length)
+    combined.push(...backfill)
+  }
+
+  return combined
 }
