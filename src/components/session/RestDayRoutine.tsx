@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { HealthCondition, Goal } from '../../db/types'
+import type { HealthCondition } from '../../db/types'
 import { generateRestDayRoutine, type RestDayExercise, type RestDayVariant } from '../../engine/rest-day'
 import { recordRehabExercisesDone } from '../../utils/rehab-rotation'
 
@@ -11,16 +11,15 @@ const VARIANT_LABELS: Record<RestDayVariant, string> = {
 
 interface Props {
   conditions: HealthCondition[]
-  goals?: Goal[]
   variant?: RestDayVariant
   onComplete: () => void
   onSkip: () => void
 }
 
-export default function RestDayRoutine({ conditions, goals, variant = 'all', onComplete, onSkip }: Props) {
+export default function RestDayRoutine({ conditions, variant = 'all', onComplete, onSkip }: Props) {
   const routine = useMemo(
-    () => generateRestDayRoutine({ conditions, goals, variant }),
-    [conditions, goals, variant]
+    () => generateRestDayRoutine(conditions, variant),
+    [conditions, variant]
   )
   const [checked, setChecked] = useState<Set<number>>(() => new Set())
   const [expanded, setExpanded] = useState<number | null>(null)

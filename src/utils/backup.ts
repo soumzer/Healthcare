@@ -1,6 +1,6 @@
 import { db } from '../db'
 import { BACKUP_CONFIG } from '../constants/config'
-import type { UserProfile, HealthCondition, GymEquipment, AvailableWeight, WorkoutProgram, WorkoutSession, ExerciseProgress, PainLog, TrainingPhase } from '../db/types'
+import type { UserProfile, HealthCondition, GymEquipment, WorkoutProgram, WorkoutSession, ExerciseProgress, PainLog, TrainingPhase } from '../db/types'
 
 // Validation helpers
 function isValidBackupStructure(data: unknown): data is {
@@ -45,15 +45,6 @@ function sanitizeEquipment(e: Record<string, unknown>, userId: number): Omit<Gym
     type: String(e.type ?? 'other') as GymEquipment['type'],
     isAvailable: Boolean(e.isAvailable ?? true),
     notes: String(e.notes ?? ''),
-  }
-}
-
-function sanitizeWeight(w: Record<string, unknown>, userId: number): Omit<AvailableWeight, 'id'> {
-  return {
-    userId,
-    equipmentType: String(w.equipmentType ?? 'dumbbell') as AvailableWeight['equipmentType'],
-    weightKg: Number(w.weightKg ?? 0),
-    isAvailable: Boolean(w.isAvailable ?? true),
   }
 }
 
@@ -129,7 +120,6 @@ export async function exportData(userId: number): Promise<string> {
 
   const conditions = await db.healthConditions.where('userId').equals(userId).toArray()
   const equipment = await db.gymEquipment.where('userId').equals(userId).toArray()
-  const weights = await db.availableWeights.where('userId').equals(userId).toArray()
   const programs = await db.workoutPrograms.where('userId').equals(userId).toArray()
   const sessions = await db.workoutSessions.where('userId').equals(userId).toArray()
   const progress = await db.exerciseProgress.where('userId').equals(userId).toArray()
@@ -142,7 +132,6 @@ export async function exportData(userId: number): Promise<string> {
     profile,
     conditions,
     equipment,
-    weights,
     programs,
     sessions,
     progress,
@@ -152,12 +141,10 @@ export async function exportData(userId: number): Promise<string> {
 }
 
 export async function importData(json: string): Promise<number> {
-  // Validate size before parsing to prevent DoS
   if (json.length > BACKUP_CONFIG.MAX_SIZE_BYTES) {
     throw new Error('Fichier de backup trop volumineux (max 10MB)')
   }
 
-  // Parse and validate structure BEFORE any database operations
   let data: unknown
   try {
     data = JSON.parse(json)
@@ -173,8 +160,7 @@ export async function importData(json: string): Promise<number> {
     throw new Error('Version de backup non supportée')
   }
 
-  // Validate arrays are actually arrays before proceeding
-  const arrays = ['conditions', 'equipment', 'weights', 'programs', 'sessions', 'progress', 'painLogs', 'phases'] as const
+  const arrays = ['conditions', 'equipment', 'programs', 'sessions', 'progress', 'painLogs', 'phases'] as const
   for (const key of arrays) {
     if (data[key] !== undefined && !Array.isArray(data[key])) {
       throw new Error(`Format invalide pour ${key}`)
@@ -183,15 +169,13 @@ export async function importData(json: string): Promise<number> {
 
   return await db.transaction('rw',
     [db.userProfiles, db.healthConditions, db.gymEquipment,
-     db.availableWeights, db.workoutPrograms, db.workoutSessions,
+     db.workoutPrograms, db.workoutSessions,
      db.exerciseProgress, db.painLogs, db.trainingPhases],
     async () => {
-      // Clear user data tables (NOT exercises — those are seeded separately)
       await Promise.all([
         db.userProfiles.clear(),
         db.healthConditions.clear(),
         db.gymEquipment.clear(),
-        db.availableWeights.clear(),
         db.workoutPrograms.clear(),
         db.workoutSessions.clear(),
         db.exerciseProgress.clear(),
@@ -199,7 +183,6 @@ export async function importData(json: string): Promise<number> {
         db.trainingPhases.clear(),
       ])
 
-      // Strip id so Dexie auto-increments a new one, sanitize profile
       const profile = data.profile as Record<string, unknown>
       const profileData: Omit<UserProfile, 'id'> = {
         name: String(profile.name ?? ''),
@@ -207,7 +190,6 @@ export async function importData(json: string): Promise<number> {
         weight: Number(profile.weight ?? 70),
         age: Number(profile.age ?? 25),
         sex: (profile.sex === 'female' ? 'female' : 'male'),
-        goals: Array.isArray(profile.goals) ? profile.goals as UserProfile['goals'] : [],
         daysPerWeek: Number(profile.daysPerWeek ?? 3),
         minutesPerSession: Number(profile.minutesPerSession ?? 75),
         createdAt: profile.createdAt ? new Date(String(profile.createdAt)) : new Date(),
@@ -215,7 +197,6 @@ export async function importData(json: string): Promise<number> {
       }
       const userId = await db.userProfiles.add(profileData) as number
 
-      // Re-link all data to the new userId using sanitized extractors
       if (data.conditions?.length) {
         await db.healthConditions.bulkAdd(
           (data.conditions as Record<string, unknown>[]).map(c => sanitizeCondition(c, userId))
@@ -224,11 +205,6 @@ export async function importData(json: string): Promise<number> {
       if (data.equipment?.length) {
         await db.gymEquipment.bulkAdd(
           (data.equipment as Record<string, unknown>[]).map(e => sanitizeEquipment(e, userId))
-        )
-      }
-      if (data.weights?.length) {
-        await db.availableWeights.bulkAdd(
-          (data.weights as Record<string, unknown>[]).map(w => sanitizeWeight(w, userId))
         )
       }
       if (data.programs?.length) {

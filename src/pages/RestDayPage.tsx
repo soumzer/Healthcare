@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import RestDayRoutine from '../components/session/RestDayRoutine'
 import type { RestDayVariant } from '../engine/rest-day'
-import type { BodyZone, Goal } from '../db/types'
+import type { BodyZone } from '../db/types'
 import { recordRehabCompletion } from '../utils/rehab-cooldown'
 
 const UPPER_ZONES: ReadonlySet<BodyZone> = new Set([
@@ -22,19 +22,14 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
   'foot_left', 'foot_right',
 ])
 
-// Goals that benefit from rest day mobility/rehab routine
-const REST_DAY_ROUTINE_GOALS: Goal[] = ['mobility', 'posture', 'rehab']
-
 const STORAGE_KEY = 'rest_day_last_variant'
 
 function pickVariant(conditions: { bodyZone: BodyZone }[]): RestDayVariant {
   const hasUpper = conditions.some(c => UPPER_ZONES.has(c.bodyZone))
   const hasLower = conditions.some(c => LOWER_ZONES.has(c.bodyZone))
 
-  // If conditions only span one side, no need to split
   if (!hasUpper || !hasLower) return 'all'
 
-  // Alternate based on last used variant
   const last = localStorage.getItem(STORAGE_KEY) as RestDayVariant | null
   return last === 'upper' ? 'lower' : 'upper'
 }
@@ -49,9 +44,6 @@ export default function RestDayPage() {
     [user?.id]
   )
 
-  // Check if user has relevant goals for rest day routine
-  const hasRelevantGoals = user?.goals?.some(g => REST_DAY_ROUTINE_GOALS.includes(g)) ?? false
-
   const variant = useMemo(
     () => conditions && conditions.length > 0 ? pickVariant(conditions) : 'all' as RestDayVariant,
     [conditions]
@@ -61,7 +53,6 @@ export default function RestDayPage() {
     if (variant !== 'all') {
       localStorage.setItem(STORAGE_KEY, variant)
     }
-    // Record completion time for 12h cooldown
     recordRehabCompletion()
     navigate('/')
   }, [variant, navigate])
@@ -74,8 +65,7 @@ export default function RestDayPage() {
     )
   }
 
-  // No conditions AND no relevant goals — nothing to show
-  if (conditions.length === 0 && !hasRelevantGoals) {
+  if (conditions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
         <p className="text-zinc-400 mb-4">Aucune condition de santé active — pas de routine de repos personnalisée.</p>
@@ -92,7 +82,6 @@ export default function RestDayPage() {
   return (
     <RestDayRoutine
       conditions={conditions}
-      goals={user.goals}
       variant={variant}
       onComplete={handleComplete}
       onSkip={() => navigate('/')}

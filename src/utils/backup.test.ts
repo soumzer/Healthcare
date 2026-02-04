@@ -15,7 +15,6 @@ describe('backup', () => {
       weight: 112,
       age: 30,
       sex: 'male',
-      goals: ['muscle_gain', 'rehab'],
       daysPerWeek: 4,
       minutesPerSession: 90,
       createdAt: new Date(),
@@ -38,12 +37,6 @@ describe('backup', () => {
       type: 'free_weight',
       isAvailable: true,
       notes: '',
-    })
-    await db.availableWeights.add({
-      userId,
-      equipmentType: 'dumbbell',
-      weightKg: 20,
-      isAvailable: true,
     })
     await db.painLogs.add({
       userId,
@@ -74,8 +67,6 @@ describe('backup', () => {
     expect(data.conditions[0].label).toBe('Golf elbow')
     expect(data.equipment).toHaveLength(1)
     expect(data.equipment[0].name).toBe('Banc plat')
-    expect(data.weights).toHaveLength(1)
-    expect(data.weights[0].weightKg).toBe(20)
     expect(data.painLogs).toHaveLength(1)
     expect(data.painLogs[0].zone).toBe('elbow_right')
     expect(data.phases).toHaveLength(1)
@@ -93,15 +84,12 @@ describe('backup', () => {
     const userId = await seedUser()
     const json = await exportData(userId)
 
-    // Clear everything
     await db.delete()
     await db.open()
 
-    // Import
     const newUserId = await importData(json)
     expect(newUserId).toBeDefined()
 
-    // Verify all data restored
     const profile = await db.userProfiles.get(newUserId)
     expect(profile).toBeDefined()
     expect(profile!.name).toBe('Yassine')
@@ -114,9 +102,6 @@ describe('backup', () => {
     const equipment = await db.gymEquipment.where('userId').equals(newUserId).toArray()
     expect(equipment).toHaveLength(1)
 
-    const weights = await db.availableWeights.where('userId').equals(newUserId).toArray()
-    expect(weights).toHaveLength(1)
-
     const painLogs = await db.painLogs.where('userId').equals(newUserId).toArray()
     expect(painLogs).toHaveLength(1)
 
@@ -125,11 +110,9 @@ describe('backup', () => {
   })
 
   it('import clears existing data', async () => {
-    // Seed initial data
     const userId = await seedUser()
     const json = await exportData(userId)
 
-    // Add extra condition that should be wiped on import
     await db.healthConditions.add({
       userId,
       bodyZone: 'knee_left',
@@ -142,11 +125,9 @@ describe('backup', () => {
       createdAt: new Date(),
     })
 
-    // Verify we now have 2 conditions
     const beforeImport = await db.healthConditions.toArray()
     expect(beforeImport).toHaveLength(2)
 
-    // Import original backup (with only 1 condition)
     const newUserId = await importData(json)
 
     const afterImport = await db.healthConditions.where('userId').equals(newUserId).toArray()

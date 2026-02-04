@@ -164,6 +164,14 @@ export const rehabProtocols: RehabProtocol[] = [
           'Maintient l\'amplitude articulaire malgré l\'arthrite. La dorsiflexion genou-au-mur est particulièrement importante pour le squat et la marche. Ne pas forcer en cas de douleur articulaire aiguë — adapter l\'amplitude.',
         placement: 'warmup',
       },
+      {
+        exerciseName: 'Ankle mobility circles (cercles de cheville)',
+        sets: 2,
+        reps: '10 par sens',
+        intensity: 'very_light',
+        notes: 'En position assise ou debout sur une jambe, tracer de grands cercles avec le pied. Faire les deux sens (horaire et anti-horaire) pour chaque cheville. Améliore la mobilité et la proprioception.',
+        placement: 'rest_day',
+      },
     ],
   },
 
@@ -222,6 +230,14 @@ export const rehabProtocols: RehabProtocol[] = [
         notes:
           'Étirement passif des pectoraux raccourcis par la posture antérieure. 3 positions : coudes bas (fibres inférieures), coudes à 90° (fibres moyennes), coudes hauts (fibres supérieures). Faire en cooldown et les jours de repos.',
         placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Thoracic spine rotation (rotation thoracique)',
+        sets: 2,
+        reps: '8-10 par côté',
+        intensity: 'light',
+        notes: 'En position 4 pattes ou assis. Placer une main derrière la tête et tourner le coude vers le plafond en ouvrant la poitrine. Mouvement contrôlé, ne pas forcer l\'amplitude. Excellent pour la mobilité du haut du dos.',
+        placement: 'rest_day',
       },
     ],
   },
@@ -761,7 +777,7 @@ export const rehabProtocols: RehabProtocol[] = [
         reps: '60 sec',
         intensity: 'very_light',
         notes:
-          'Utiliser un foam roller ou pistolet de massage. Relâche les tensions du mollet qui affectent le pied via le nerf tibial et les tendons. Insister sur les points sensibles du gastrocnémien et du soléaire.',
+          'Utiliser un pistolet de massage (ou foam roller). Relâche les tensions du mollet qui affectent le pied via le nerf tibial et les tendons. Insister sur les points sensibles du gastrocnémien et du soléaire.',
         placement: 'warmup',
       },
       {
@@ -1937,6 +1953,59 @@ export const rehabProtocols: RehabProtocol[] = [
         notes:
           'Bande devant, bras tendus, écarter en serrant les omoplates. Excellent en super-set avec les exercices de poussée. Bande légère à moyenne. Serrer les omoplates 2 secondes à chaque répétition.',
         placement: 'active_wait',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 33. MAUVAISE POSTURE GÉNÉRALE
+  // =========================================================================
+  {
+    targetZone: 'upper_back',
+    conditionName: 'Mauvaise posture générale',
+    frequency: 'daily',
+    priority: 3,
+    progressionCriteria: 'Quand les exercices sont réalisés sans difficulté et que la posture s\'améliore au quotidien, maintenir en entretien 3x/semaine.',
+    exercises: [
+      {
+        exerciseName: 'Chin tuck (rétraction cervicale)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'very_light',
+        notes: 'Rentrer le menton en créant un "double menton", comme pour éloigner la tête du téléphone. Tenir 5 secondes. Renforce les muscles profonds du cou et corrige la posture "tête en avant".',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Wall angel (ange au mur)',
+        sets: 2,
+        reps: '10-12',
+        intensity: 'light',
+        notes: 'Dos, tête et fesses contre le mur. Bras en position de "stick-up" (90°), glisser les bras vers le haut en gardant le contact avec le mur. Excellent pour la mobilité des épaules et la posture thoracique.',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Band pull-apart',
+        sets: 3,
+        reps: '15-20',
+        intensity: 'light',
+        notes: 'Bras tendus devant, tirer la bande élastique en écartant les bras sur les côtés. Serrer les omoplates à la fin du mouvement. Renforce les muscles du haut du dos essentiels à une bonne posture.',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Thoracic extensions (extensions thoraciques)',
+        sets: 2,
+        reps: '10-12',
+        intensity: 'light',
+        notes: 'Sur un foam roller au niveau du haut du dos, mains derrière la tête. Étendre le dos sur le rouleau en ouvrant la poitrine. Mouvement contrôlé, ne pas hyper-étendre le bas du dos.',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Étirement pectoral (doorway stretch)',
+        sets: 2,
+        reps: '30-45 sec',
+        intensity: 'light',
+        notes: 'Avant-bras contre le cadre d\'une porte, coude à 90°. Avancer doucement pour étirer le pectoral. Faire les deux côtés. Contrebalance la posture "épaules en avant" causée par la position assise.',
+        placement: 'rest_day',
       },
     ],
   },

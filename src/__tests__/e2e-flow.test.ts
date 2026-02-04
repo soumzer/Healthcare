@@ -7,11 +7,9 @@ import { integrateRehab, type IntegratedSession } from '../engine/rehab-integrat
 import { suggestFiller } from '../engine/filler'
 import { generateWarmupSets } from '../engine/warmup'
 import { generateRestDayRoutine } from '../engine/rest-day'
-import { calculateProgression } from '../engine/progression'
 import type {
   HealthCondition,
   GymEquipment,
-  Goal,
   Exercise,
   WorkoutProgram,
   ProgramSession,
@@ -29,8 +27,6 @@ const USER_BODY = {
   age: 30,
   sex: 'male' as const,
 }
-
-const USER_GOALS: Goal[] = ['muscle_gain', 'rehab', 'posture']
 
 const USER_CONDITIONS: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[] = [
   {
@@ -132,7 +128,7 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
         weight: USER_BODY.weight,
         age: USER_BODY.age,
         sex: USER_BODY.sex,
-        goals: USER_GOALS,
+        goals: [],
         daysPerWeek: 4,
         minutesPerSession: 75,
         createdAt: now,
@@ -179,7 +175,7 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
 
       const input: ProgramGeneratorInput = {
         userId,
-        goals: USER_GOALS,
+        goals: [],
         conditions,
         equipment,
         availableWeights: [],
@@ -520,28 +516,12 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   })
 
   // -----------------------------------------------------------------------
-  // Step 5 — Progression check (next time Lower 1 comes up)
+  // Step 5 — Progression check (removed: automatic progression engine deleted)
+  // Progression is now manual via notebook-style UI.
   // -----------------------------------------------------------------------
 
-  describe('5. Verification de la progression', () => {
-    it('le moteur de progression recommande une augmentation avec RIR de 2', () => {
-      // Simulate with a weight and RIR that should trigger progression
-      // Target reps is 8, performed 10 reps (top of 8-10 range)
-      const result = calculateProgression({
-        programTargetReps: 8,
-        programTargetSets: 4,
-        lastWeightKg: 40,
-        lastRepsPerSet: [10, 10, 10, 10], // At top of range
-        lastAvgRIR: 2,
-        availableWeights: [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5, 55, 57.5, 60],
-        phase: 'hypertrophy',
-      })
-
-      expect(result.action).toBe('increase_weight')
-      expect(result.nextWeightKg).toBe(42.5)
-    })
-
-    it('le SessionEngine prescrit un poids augmente pour la session suivante', async () => {
+  describe('5. Verification de la progression (sans moteur automatique)', () => {
+    it('le SessionEngine prescrit le poids de la derniere session (pas de progression automatique)', async () => {
       // Build history from the first session
       const progressEntries = await db.exerciseProgress.where('userId').equals(userId).toArray()
       expect(progressEntries.length).toBeGreaterThan(0)
@@ -552,8 +532,6 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
       for (const entry of progressEntries) {
         const progEx = lower1Session.exercises.find(pe => pe.exerciseId === entry.exerciseId)
         if (progEx) {
-          // Only include actual performance data - NOT prescribedReps
-          // This is the fix for the "prescribedReps pollution" bug
           history[entry.exerciseId] = {
             lastWeightKg: entry.weightKg,
             lastReps: Array(entry.sets).fill(entry.reps),
@@ -563,7 +541,6 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
         }
       }
 
-      // Verify history was built
       expect(Object.keys(history).length).toBeGreaterThan(0)
 
       const newEngine = new SessionEngine(lower1Session, history, {
@@ -572,36 +549,13 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
 
       const exercises = newEngine.getAllExercises()
 
-      // Check progression results: at least one exercise should increase
-      let progressionChecked = false
+      // Without automatic progression, prescribed weight should equal last session's weight
       for (const ex of exercises) {
         const prevEntry = progressEntries.find(p => p.exerciseId === ex.exerciseId)
         if (prevEntry) {
-          progressionChecked = true
-          const result = newEngine.getProgressionResult(ex.exerciseId)
-          // With RIR=2, all sets completed at prescribed reps, rest within bounds:
-          // progression should recommend increase_weight or increase_reps
-          expect(result).toBeDefined()
-          expect(['increase_weight', 'increase_reps']).toContain(result!.action)
+          expect(ex.prescribedWeightKg).toBe(prevEntry.weightKg)
         }
       }
-
-      expect(progressionChecked).toBe(true)
-    })
-
-    it('maintient si les series ne sont pas completees', () => {
-      // Target reps is 11, but some sets didn't hit target
-      const result = calculateProgression({
-        programTargetReps: 11,
-        programTargetSets: 4,
-        lastWeightKg: 40,
-        lastRepsPerSet: [11, 11, 9, 8], // minReps is 8, below target of 11
-        lastAvgRIR: 0,
-        availableWeights: [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45],
-        phase: 'hypertrophy',
-      })
-
-      expect(result.action).toBe('maintain')
     })
   })
 

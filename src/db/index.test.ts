@@ -15,7 +15,6 @@ describe('HealthCoachDB', () => {
       weight: 112,
       age: 30,
       sex: 'male',
-      goals: ['weight_loss', 'rehab'],
       daysPerWeek: 4,
       minutesPerSession: 90,
       createdAt: new Date(),
@@ -26,13 +25,12 @@ describe('HealthCoachDB', () => {
     expect(saved).toBeDefined()
     expect(saved!.name).toBe('Test User')
     expect(saved!.height).toBe(196)
-    expect(saved!.goals).toContain('weight_loss')
   })
 
   it('creates a health condition linked to user', async () => {
     const userId = await db.userProfiles.add({
       name: 'Test', height: 196, weight: 112, age: 30, sex: 'male',
-      goals: ['rehab'], daysPerWeek: 4, minutesPerSession: 90,
+      daysPerWeek: 4, minutesPerSession: 90,
       createdAt: new Date(), updatedAt: new Date(),
     }) as number
     await db.healthConditions.add({
@@ -45,19 +43,5 @@ describe('HealthCoachDB', () => {
     expect(conditions).toHaveLength(1)
     expect(conditions[0].bodyZone).toBe('elbow_right')
     expect(conditions[0].label).toBe('Golf elbow')
-  })
-
-  it('tracks available weights', async () => {
-    const userId = 1
-    await db.availableWeights.bulkAdd([
-      { userId, equipmentType: 'dumbbell', weightKg: 2.5, isAvailable: true },
-      { userId, equipmentType: 'dumbbell', weightKg: 5, isAvailable: true },
-      { userId, equipmentType: 'dumbbell', weightKg: 3, isAvailable: false },
-    ])
-    const available = await db.availableWeights
-      .where('userId').equals(userId)
-      .filter(w => w.isAvailable)
-      .toArray()
-    expect(available).toHaveLength(2)
   })
 })
