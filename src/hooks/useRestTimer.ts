@@ -1,5 +1,23 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+function playTimerSound() {
+  try {
+    const ctx = new AudioContext()
+    const oscillator = ctx.createOscillator()
+    const gain = ctx.createGain()
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+    oscillator.connect(gain)
+    gain.connect(ctx.destination)
+    oscillator.start()
+    oscillator.stop(ctx.currentTime + 0.3)
+    // Close context after sound finishes
+    setTimeout(() => ctx.close(), 500)
+  } catch { /* ignore — AudioContext may not be available */ }
+}
+
 export interface UseRestTimerReturn {
   remaining: number
   isRunning: boolean
@@ -40,7 +58,8 @@ export function useRestTimer(restSeconds: number): UseRestTimerReturn {
         endTimeRef.current = null
         setIsRunning(false)
 
-        // Vibrate + sound notification
+        // Sound + vibrate notification
+        playTimerSound()
         try {
           if (navigator.vibrate) navigator.vibrate([200, 100, 200])
         } catch { /* ignore */ }
