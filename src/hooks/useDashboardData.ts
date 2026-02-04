@@ -1,45 +1,32 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
+import type { NotebookEntry } from '../db/types'
 
-export interface ProgressionItem {
+export interface ExerciseHistory {
+  exerciseId: number
   exerciseName: string
-  previousWeightKg: number  // best weight from 4+ entries ago
-  currentWeightKg: number   // best weight from most recent entry
-  trend: 'up' | 'same' | 'down'
+  /** All entries sorted by date descending */
+  entries: NotebookEntry[]
+  /** Best weight across all entries */
+  bestWeightKg: number
+  /** Most recent non-skipped entry's best weight */
+  currentWeightKg: number
+  /** Date of most recent entry */
+  lastDate: Date
+  /** Trend compared to 4+ entries ago */
+  trend: 'up' | 'same' | 'down' | null
 }
 
 export interface DashboardData {
-  thisWeekSessions: number
-  streakDays: number
-  progressionItems: ProgressionItem[]
+  exercises: ExerciseHistory[]
   hasData: boolean
   isLoading: boolean
 }
 
 const emptyData: DashboardData = {
-  thisWeekSessions: 0,
-  streakDays: 0,
-  progressionItems: [],
+  exercises: [],
   hasData: false,
   isLoading: true,
-}
-
-function getStartOfWeek(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  // Monday as start of week (day=0 is Sunday, so shift)
-  const diff = day === 0 ? 6 : day - 1
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - diff)
-  return d
-}
-
-function toDateString(d: Date): string {
-  // Use local date components to avoid UTC timezone shifts
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 export function useDashboardData(userId: number | undefined): DashboardData {
@@ -55,103 +42,70 @@ export function useDashboardData(userId: number | undefined): DashboardData {
       return { ...emptyData, isLoading: false }
     }
 
-    // --- thisWeekSessions ---
-    // Count distinct dates from non-rehab entries within current week (Monday-Sunday)
-    const now = new Date()
-    const weekStart = getStartOfWeek(now)
-    const thisWeekDates = new Set<string>()
+    // Group by exerciseId
+    const byExercise = new Map<number, NotebookEntry[]>()
     for (const entry of allEntries) {
-      if (entry.sessionIntensity === 'rehab') continue
-      const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date)
-      if (entryDate >= weekStart) {
-        thisWeekDates.add(toDateString(entryDate))
+      if (!byExercise.has(entry.exerciseId)) {
+        byExercise.set(entry.exerciseId, [])
       }
-    }
-    const thisWeekSessions = thisWeekDates.size
-
-    // --- streakDays ---
-    // Count consecutive days backwards from today where there's at least one entry (any type)
-    const allDates = new Set<string>()
-    for (const entry of allEntries) {
-      const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date)
-      allDates.add(toDateString(entryDate))
-    }
-    let streakDays = 0
-    const checkDate = new Date()
-    checkDate.setHours(0, 0, 0, 0)
-    // If no entry today, check from yesterday (streak survives until end of day)
-    if (!allDates.has(toDateString(checkDate))) {
-      checkDate.setDate(checkDate.getDate() - 1)
-    }
-    while (allDates.has(toDateString(checkDate))) {
-      streakDays++
-      checkDate.setDate(checkDate.getDate() - 1)
+      byExercise.get(entry.exerciseId)!.push(entry)
     }
 
-    // --- progressionItems ---
-    // Get non-rehab, non-skipped entries grouped by exercise
-    const nonRehabEntries = allEntries.filter(
-      (e) => e.sessionIntensity !== 'rehab' && !e.skipped && e.sets.length > 0
-    )
-
-    // Group by exerciseName, sorted by date ascending
-    const byExercise = new Map<string, typeof nonRehabEntries>()
-    for (const entry of nonRehabEntries) {
-      const name = entry.exerciseName
-      if (!byExercise.has(name)) {
-        byExercise.set(name, [])
-      }
-      byExercise.get(name)!.push(entry)
-    }
-
-    const progressionItems: ProgressionItem[] = []
-    for (const [exerciseName, entries] of byExercise) {
-      // Sort by date ascending
+    const exercises: ExerciseHistory[] = []
+    for (const [exerciseId, entries] of byExercise) {
+      // Sort by date descending
       entries.sort((a, b) => {
         const dateA = a.date instanceof Date ? a.date : new Date(a.date)
         const dateB = b.date instanceof Date ? b.date : new Date(b.date)
-        return dateA.getTime() - dateB.getTime()
+        return dateB.getTime() - dateA.getTime()
       })
 
-      // Need at least 2 entries to show progression (one current, one previous from 4+ ago)
-      if (entries.length < 2) continue
+      const exerciseName = entries[0].exerciseName
 
-      // Best weight from the most recent entry
-      const lastEntry = entries[entries.length - 1]
-      const currentWeightKg = Math.max(...lastEntry.sets.map((s) => s.weightKg))
+      // Non-skipped entries with sets for weight calculations
+      const withSets = entries.filter((e) => !e.skipped && e.sets.length > 0)
 
-      // Best weight from the entry 4+ entries ago (or the first entry if fewer than 5 entries)
-      const previousIndex = Math.max(0, entries.length - 5)
-      const previousEntry = entries[previousIndex]
-      const previousWeightKg = Math.max(...previousEntry.sets.map((s) => s.weightKg))
+      const bestWeightKg = withSets.length > 0
+        ? Math.max(...withSets.flatMap((e) => e.sets.map((s) => s.weightKg)))
+        : 0
 
-      let trend: 'up' | 'same' | 'down'
-      if (currentWeightKg > previousWeightKg) {
-        trend = 'up'
-      } else if (currentWeightKg < previousWeightKg) {
-        trend = 'down'
-      } else {
-        trend = 'same'
+      const currentWeightKg = withSets.length > 0
+        ? Math.max(...withSets[0].sets.map((s) => s.weightKg))
+        : 0
+
+      const lastDate = entries[0].date instanceof Date
+        ? entries[0].date
+        : new Date(entries[0].date)
+
+      // Trend: compare most recent to 4+ entries ago
+      let trend: 'up' | 'same' | 'down' | null = null
+      if (withSets.length >= 2) {
+        const previousIndex = Math.min(4, withSets.length - 1)
+        const previousWeightKg = Math.max(
+          ...withSets[previousIndex].sets.map((s) => s.weightKg),
+        )
+        if (currentWeightKg > previousWeightKg) trend = 'up'
+        else if (currentWeightKg < previousWeightKg) trend = 'down'
+        else trend = 'same'
       }
 
-      progressionItems.push({
+      exercises.push({
+        exerciseId,
         exerciseName,
-        previousWeightKg,
+        entries,
+        bestWeightKg,
         currentWeightKg,
+        lastDate,
         trend,
       })
     }
 
-    // Sort progression items alphabetically
-    progressionItems.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName))
-
-    const hasData = allEntries.length > 0
+    // Sort by most recently performed first
+    exercises.sort((a, b) => b.lastDate.getTime() - a.lastDate.getTime())
 
     return {
-      thisWeekSessions,
-      streakDays,
-      progressionItems,
-      hasData,
+      exercises,
+      hasData: true,
       isLoading: false,
     }
   }, [userId])

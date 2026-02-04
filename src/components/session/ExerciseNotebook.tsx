@@ -3,7 +3,7 @@ import { useNotebook } from '../../hooks/useNotebook'
 import { useRestTimer } from '../../hooks/useRestTimer'
 import { useExerciseNote } from '../../hooks/useExerciseNote'
 import { generateWarmupSets } from '../../engine/warmup'
-import type { BodyZone, NotebookEntry } from '../../db/types'
+import type { BodyZone } from '../../db/types'
 import type { FillerSuggestion } from '../../engine/filler'
 
 export interface ExerciseNotebookProps {
@@ -77,7 +77,7 @@ export default function ExerciseNotebook({
   const timer = useRestTimer(target.restSeconds)
   const exerciseNote = useExerciseNote(userId, exercise.exerciseId)
 
-  const [showDescription, setShowDescription] = useState(false)
+  const [showDescription, setShowDescription] = useState(exercise.isRehab)
   const [showSkipModal, setShowSkipModal] = useState(false)
   const [showOccupied, setShowOccupied] = useState(false)
   const [workingWeight, setWorkingWeight] = useState<string>('')
@@ -146,15 +146,21 @@ export default function ExerciseNotebook({
             <span className="text-zinc-400 text-sm">
               {target.sets} x {target.reps} reps — repos {formatRestLabel(target.restSeconds)}
             </span>
-            {intensityInfo && (
+            {exercise.isRehab ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/40 text-emerald-400">
+                Rehab
+              </span>
+            ) : intensityInfo && (
               <span className={`text-xs px-2 py-0.5 rounded-full ${intensityInfo.bg} ${intensityInfo.text}`}>
                 {intensityInfo.label}
               </span>
             )}
           </div>
-          <p className="text-zinc-500 text-xs mt-1">
-            Increment: {isCompound ? '+2.5kg' : '+1.25kg'} quand reussi
-          </p>
+          {!exercise.isRehab && (
+            <p className="text-zinc-500 text-xs mt-1">
+              Increment: {isCompound ? '+2.5kg' : '+1.25kg'} quand reussi
+            </p>
+          )}
         </div>
 
         {/* Description toggle */}
@@ -299,16 +305,6 @@ export default function ExerciseNotebook({
           </div>
         </div>
 
-        {/* History */}
-        {notebook.history.length > 0 && (
-          <div className="bg-zinc-900 rounded-xl p-3 mb-4">
-            <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Historique</p>
-            {notebook.history.map((entry, i) => (
-              <HistoryRow key={entry.id ?? i} entry={entry} />
-            ))}
-          </div>
-        )}
-
         {/* Exercise note */}
         <div className="bg-zinc-900 rounded-xl p-3 mb-4">
           <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Note</p>
@@ -350,30 +346,6 @@ export default function ExerciseNotebook({
 }
 
 // --- Sub-components ---
-
-function HistoryRow({ entry }: { entry: NotebookEntry }) {
-  if (entry.skipped) {
-    return (
-      <div className="text-zinc-500 text-xs mb-1">
-        {formatDate(entry.date)} — skip ({entry.skipZone})
-      </div>
-    )
-  }
-  const intensityInfo = INTENSITY_COLORS[entry.sessionIntensity]
-  return (
-    <div className="flex items-center gap-2 mb-1 text-xs">
-      <span className="text-zinc-500 w-16 flex-shrink-0">{formatDate(entry.date)}</span>
-      {intensityInfo && (
-        <span className={`px-1.5 py-0.5 rounded ${intensityInfo.bg} ${intensityInfo.text}`}>
-          {intensityInfo.label.charAt(0)}
-        </span>
-      )}
-      <span className="text-zinc-300 truncate">
-        {entry.sets.map(s => `${s.weightKg}x${s.reps}`).join(' / ')}
-      </span>
-    </div>
-  )
-}
 
 function SkipModal({ onSelect, onCancel }: { onSelect: (zone: BodyZone) => void; onCancel: () => void }) {
   return (
@@ -423,6 +395,9 @@ function OccupiedOverlay({
                   {s.sets}x{s.reps} — {s.duration}
                   {s.isRehab && <span className="text-emerald-400 ml-1">(rehab)</span>}
                 </p>
+                {s.notes && (
+                  <p className="text-zinc-500 text-xs mt-1">{s.notes}</p>
+                )}
               </div>
             ))}
           </div>
@@ -438,13 +413,6 @@ function OccupiedOverlay({
       </div>
     </div>
   )
-}
-
-function formatDate(date: Date): string {
-  const d = new Date(date)
-  const day = d.getDate().toString().padStart(2, '0')
-  const month = (d.getMonth() + 1).toString().padStart(2, '0')
-  return `${day}/${month}`
 }
 
 function formatRestLabel(seconds: number): string {

@@ -4,6 +4,7 @@ import type {
   GymEquipment,
   ProgramSession,
   ProgramExercise,
+  BodyZone,
 } from '../db/types'
 
 // ---------------------------------------------------------------------------
@@ -281,6 +282,34 @@ export function trimSessionToTimeBudget(
   return trimmed.map((ex, i) => ({ ...ex, order: i + 1 }))
 }
 
+// ---------------------------------------------------------------------------
+// Rehab substitution helpers
+// ---------------------------------------------------------------------------
+
+const ZONE_MUSCLE_GROUP: Record<BodyZone, 'upper' | 'lower' | 'core'> = {
+  neck: 'core',
+  shoulder_left: 'upper', shoulder_right: 'upper',
+  elbow_left: 'upper', elbow_right: 'upper',
+  wrist_left: 'upper', wrist_right: 'upper',
+  upper_back: 'upper',
+  lower_back: 'core',
+  hip_left: 'lower', hip_right: 'lower',
+  knee_left: 'lower', knee_right: 'lower',
+  ankle_left: 'lower', ankle_right: 'lower',
+  foot_left: 'lower', foot_right: 'lower',
+}
+
+function slotMuscleGroup(label: string): 'upper' | 'lower' | 'core' | null {
+  const l = label.toLowerCase()
+  if (l.includes('quad') || l.includes('leg') || l.includes('calf')
+    || l.includes('hip') || l.includes('unilateral') || l.includes('hinge')) return 'lower'
+  if (l.includes('push') || l.includes('pull') || l.includes('chest')
+    || l.includes('biceps') || l.includes('triceps') || l.includes('lateral')
+    || l.includes('rear delt') || l.includes('shrug') || l.includes('face')) return 'upper'
+  if (l.includes('core')) return 'core'
+  return null
+}
+
 function buildStructuredSession(
   name: string,
   order: number,
@@ -288,35 +317,73 @@ function buildStructuredSession(
   pool: Exercise[],
   intensity?: import('../db/types').SessionIntensity,
   minutesPerSession?: number,
+  conditions?: HealthCondition[],
 ): ProgramSession {
   const usedIds = new Set<number>()
   const programExercises: ProgramExercise[] = []
   let exerciseOrder = 1
 
+  // Rehab substitution: collect painful zones and rehab candidates
+  const painfulZones = (conditions ?? [])
+    .filter((c) => c.isActive && c.painLevel >= 7)
+    .map((c) => c.bodyZone)
+  const rehabPool = pool.filter((e) => e.isRehab && e.rehabTarget !== undefined)
+
   for (const slot of slots) {
     const candidates = slot.candidates(pool).filter((e) => !usedIds.has(e.id ?? 0))
     let picked: Exercise | undefined
+    let isRehabSubstitution = false
     if (slot.preferredName) {
       picked = pickPreferred(slot.preferredName, candidates, usedIds)
     } else {
       picked = pickOne(candidates, usedIds)
     }
+
+    // Rehab substitution: if no candidate found and there are painful zones,
+    // find a rehab exercise for a matching body zone
+    if (!picked && painfulZones.length > 0) {
+      const group = slotMuscleGroup(slot.label)
+      // Prefer rehab for zones matching the slot's muscle group
+      const matchingZones = group
+        ? painfulZones.filter((z) => ZONE_MUSCLE_GROUP[z] === group)
+        : painfulZones
+      const zonesToSearch = matchingZones.length > 0 ? matchingZones : painfulZones
+
+      const rehabCandidate = rehabPool.find((e) =>
+        !usedIds.has(e.id ?? 0)
+        && zonesToSearch.includes(e.rehabTarget!),
+      )
+      if (rehabCandidate) {
+        picked = rehabCandidate
+        usedIds.add(rehabCandidate.id ?? 0)
+        isRehabSubstitution = true
+      }
+    }
+
     if (picked) {
       // Adjust reps and rest based on session intensity
       // Isolation exercises are ALWAYS volume (high reps, moderate rest)
       let reps = slot.reps
       let rest = slot.rest
       let sets = slot.sets
-      const isIsolation = picked.category === 'isolation'
-      if (intensity === 'heavy' && !picked.isRehab && !isIsolation) {
-        // Heavy compounds: fewer reps, more rest, +1 set
-        reps = Math.min(slot.reps, 6)
-        rest = Math.max(slot.rest, 150)
-        sets = Math.max(slot.sets, 4)
-      } else if ((intensity === 'volume' || isIsolation) && !picked.isRehab) {
-        // Volume (or isolation in any session): more reps, less rest
-        reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
-        rest = Math.min(slot.rest, 90)
+
+      if (isRehabSubstitution) {
+        // Therapeutic parameters for rehab substitutions
+        sets = 2
+        reps = 12
+        rest = 60
+      } else {
+        const isIsolation = picked.category === 'isolation'
+        if (intensity === 'heavy' && !picked.isRehab && !isIsolation) {
+          // Heavy compounds: fewer reps, more rest, +1 set
+          reps = Math.min(slot.reps, 6)
+          rest = Math.max(slot.rest, 150)
+          sets = Math.max(slot.sets, 4)
+        } else if ((intensity === 'volume' || isIsolation) && !picked.isRehab) {
+          // Volume (or isolation in any session): more reps, less rest
+          reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
+          rest = Math.min(slot.rest, 90)
+        }
       }
       programExercises.push({
         exerciseId: picked.id ?? 0,
@@ -345,6 +412,7 @@ function buildFullBodySessions(
   available: Exercise[],
   daysPerWeek: number,
   minutesPerSession: number,
+  conditions?: HealthCondition[],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -642,14 +710,14 @@ function buildFullBodySessions(
   const trimmedB = trimSlotsToTimeBudget(fullBodyBSlots, minutesPerSession)
 
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Full Body A — Force', 1, trimmedA, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Full Body B — Volume', 2, trimmedB, available, 'volume', minutesPerSession),
+    buildStructuredSession('Full Body A — Force', 1, trimmedA, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Full Body B — Volume', 2, trimmedB, available, 'volume', minutesPerSession, conditions),
   ]
 
   if (daysPerWeek >= 3) {
     const trimmedC = trimSlotsToTimeBudget(fullBodyCSlots, minutesPerSession)
     sessions.push(
-      buildStructuredSession('Full Body C — Moderé', 3, trimmedC, available, 'moderate', minutesPerSession),
+      buildStructuredSession('Full Body C — Moderé', 3, trimmedC, available, 'moderate', minutesPerSession, conditions),
     )
   }
 
@@ -659,6 +727,7 @@ function buildFullBodySessions(
 function buildUpperLowerSessions(
   available: Exercise[],
   minutesPerSession: number,
+  conditions?: HealthCondition[],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -1012,10 +1081,10 @@ function buildUpperLowerSessions(
   const trimmedUpper2 = trimSlotsToTimeBudget(upper2Slots, minutesPerSession)
 
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Lower 1 — Force', 1, trimmedLower1, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Upper 1 — Force', 2, trimmedUpper1, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Lower 2 — Volume', 3, trimmedLower2, available, 'volume', minutesPerSession),
-    buildStructuredSession('Upper 2 — Volume', 4, trimmedUpper2, available, 'volume', minutesPerSession),
+    buildStructuredSession('Lower 1 — Force', 1, trimmedLower1, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Upper 1 — Force', 2, trimmedUpper1, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Lower 2 — Volume', 3, trimmedLower2, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Upper 2 — Volume', 4, trimmedUpper2, available, 'volume', minutesPerSession, conditions),
   ]
 
   return sessions
@@ -1024,6 +1093,7 @@ function buildUpperLowerSessions(
 function buildPushPullLegsSessions(
   available: Exercise[],
   minutesPerSession: number,
+  conditions?: HealthCondition[],
 ): ProgramSession[] {
   const nonRehab = available.filter((e) => !e.isRehab)
 
@@ -1497,12 +1567,12 @@ function buildPushPullLegsSessions(
   const trimmedLegsB = trimSlotsToTimeBudget(legsBSlots, minutesPerSession)
 
   return [
-    buildStructuredSession('Push A — Force', 1, trimmedPushA, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Pull A — Force', 2, trimmedPullA, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Legs A — Force', 3, trimmedLegsA, available, 'heavy', minutesPerSession),
-    buildStructuredSession('Push B — Volume', 4, trimmedPushB, available, 'volume', minutesPerSession),
-    buildStructuredSession('Pull B — Volume', 5, trimmedPullB, available, 'volume', minutesPerSession),
-    buildStructuredSession('Legs B — Volume', 6, trimmedLegsB, available, 'volume', minutesPerSession),
+    buildStructuredSession('Push A — Force', 1, trimmedPushA, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Pull A — Force', 2, trimmedPullA, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Legs A — Force', 3, trimmedLegsA, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Push B — Volume', 4, trimmedPushB, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Pull B — Volume', 5, trimmedPullB, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Legs B — Volume', 6, trimmedLegsB, available, 'volume', minutesPerSession, conditions),
   ]
 }
 
@@ -1554,13 +1624,13 @@ export function generateProgram(
   let sessions: ProgramSession[]
   switch (splitType) {
     case 'full_body':
-      sessions = buildFullBodySessions(eligible, input.daysPerWeek, minutesPerSession)
+      sessions = buildFullBodySessions(eligible, input.daysPerWeek, minutesPerSession, input.conditions)
       break
     case 'upper_lower':
-      sessions = buildUpperLowerSessions(eligible, minutesPerSession)
+      sessions = buildUpperLowerSessions(eligible, minutesPerSession, input.conditions)
       break
     case 'push_pull_legs':
-      sessions = buildPushPullLegsSessions(eligible, minutesPerSession)
+      sessions = buildPushPullLegsSessions(eligible, minutesPerSession, input.conditions)
       break
   }
 
