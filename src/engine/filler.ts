@@ -1,5 +1,15 @@
 import type { Exercise } from '../db/types'
-import type { RehabExerciseInfo } from './rehab-integrator'
+
+export interface RehabExerciseInfo {
+  exerciseName: string
+  sets: number
+  reps: string
+  intensity: string
+  notes: string
+  protocolName: string
+  priority: number
+  alternatives: string[]
+}
 
 // ---------------------------------------------------------------------------
 // Interfaces

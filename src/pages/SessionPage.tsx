@@ -3,14 +3,8 @@ import { useEffect, useRef, Component, type ReactNode } from 'react'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
 import type { ExerciseHistory } from '../engine/session-engine'
-import WarmupView from '../components/session/WarmupView'
-import WarmupRehabView from '../components/session/WarmupRehabView'
 import ExerciseView from '../components/session/ExerciseView'
-import SetLogger from '../components/session/SetLogger'
 import RestTimer from '../components/session/RestTimer'
-import ActiveWait from '../components/session/ActiveWait'
-import WeightPicker from '../components/session/WeightPicker'
-import CooldownView from '../components/session/CooldownView'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 /** Data loader — resolves all async data then renders SessionRunner */
@@ -43,20 +37,18 @@ function SessionContent({
     async () => {
       if (!user?.id) return null
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const [conditions, progressData, availableWeightsData, recentPainLogs] = await Promise.all([
+      const [conditions, progressData, recentPainLogs] = await Promise.all([
         db.healthConditions.where('userId').equals(user.id).and((c) => c.isActive).toArray(),
         db.exerciseProgress.where('userId').equals(user.id).toArray(),
-        db.availableWeights.where('userId').equals(user.id).and((w) => w.isAvailable).toArray(),
         db.painLogs.where('userId').equals(user.id).and((p) => p.date >= sevenDaysAgo).toArray(),
       ])
-      return { conditions, progressData, availableWeightsData, recentPainLogs }
+      return { conditions, progressData, recentPainLogs }
     },
     [user?.id]
   )
 
   const conditions = userData?.conditions
   const progressData = userData?.progressData
-  const availableWeightsData = userData?.availableWeightsData
   const recentPainLogs = userData?.recentPainLogs
 
   // Determine current training phase and deload status (READ ONLY - no DB writes)
@@ -191,11 +183,6 @@ function SessionContent({
     }
   }
 
-  // Build unique available weights list (undefined if empty, so engine uses defaults)
-  const availableWeights = availableWeightsData && availableWeightsData.length > 0
-    ? [...new Set(availableWeightsData.map((w) => w.weightKg))].sort((a, b) => a - b)
-    : undefined
-
   // Build exercise names map
   const exerciseNames: Record<number, string> = {}
   for (const ex of allExercises) {
@@ -225,7 +212,6 @@ function SessionContent({
       conditions={conditions ?? []}
       allExercises={allExercises}
       exerciseNames={exerciseNames}
-      availableWeights={availableWeights}
       phase={phaseData.phase}
       userBodyweightKg={user.weight}
     />
@@ -241,7 +227,6 @@ function SessionRunner({
   conditions,
   allExercises,
   exerciseNames,
-  availableWeights,
   phase: phaseFromData,
   userBodyweightKg,
 }: {
@@ -252,7 +237,6 @@ function SessionRunner({
   conditions: import('../db/types').HealthCondition[]
   allExercises: import('../db/types').Exercise[]
   exerciseNames: Record<number, string>
-  availableWeights: number[] | undefined
   phase: 'hypertrophy' | 'strength' | 'deload'
   userBodyweightKg?: number
 }) {
@@ -267,7 +251,6 @@ function SessionRunner({
     availableExercises: allExercises,
     exerciseNames,
     healthConditions: conditions.length > 0 ? conditions : undefined,
-    availableWeights,
     phase: phaseFromData,
     userBodyweightKg,
   })
@@ -288,25 +271,15 @@ function SessionRunner({
   }
 
   if (session.phase === 'warmup_rehab') {
-    return (
-      <WarmupRehabView
-        rehabExercises={session.warmupRehab}
-        onComplete={session.completeWarmupRehab}
-        onSubstitute={session.substituteWarmupRehab}
-      />
-    )
+    // WarmupRehabView removed — skip to warmup or exercise
+    session.completeWarmupRehab()
+    return null
   }
 
   if (session.phase === 'warmup') {
-    return (
-      <WarmupView
-        exerciseName={session.currentExercise?.exerciseName ?? ''}
-        warmupSets={session.warmupSets}
-        currentIndex={session.warmupSetIndex}
-        onComplete={session.completeWarmupSet}
-        onSkip={session.skipWarmup}
-      />
-    )
+    // WarmupView removed — will be reimplemented in Task 8
+    session.skipWarmup()
+    return null
   }
 
   if (session.phase === 'exercise') {
@@ -347,13 +320,11 @@ function SessionRunner({
   }
 
   if (session.phase === 'set_logger') {
+    // SetLogger removed — will be reimplemented in ExerciseNotebook (Task 7)
     return (
-      <SetLogger
-        prescribedReps={session.currentExercise?.prescribedReps ?? 8}
-        prescribedWeightKg={session.currentExercise?.prescribedWeightKg ?? 0}
-        userConditions={session.userConditions}
-        onSubmit={session.logSet}
-      />
+      <div className="p-6 text-center text-zinc-400">
+        <p>Set logger sera reimplemente dans le notebook.</p>
+      </div>
     )
   }
 
@@ -373,33 +344,38 @@ function SessionRunner({
   }
 
   if (session.phase === 'occupied') {
+    // ActiveWait removed — will be reimplemented in Task 8
     return (
-      <ActiveWait
-        fillerSuggestion={session.fillerSuggestion}
-        onMachineFree={session.markMachineFree}
-      />
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center">
+        <p className="text-white text-lg font-bold mb-4">Machine occupee</p>
+        <button
+          onClick={session.markMachineFree}
+          className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
+        >
+          Machine libre
+        </button>
+      </div>
     )
   }
 
   if (session.phase === 'weight_picker') {
-    return (
-      <WeightPicker
-        currentWeightKg={session.currentExercise?.prescribedWeightKg ?? 0}
-        prescribedReps={session.currentExercise?.prescribedReps ?? 0}
-        availableWeights={availableWeights}
-        onSelect={session.selectAlternativeWeight}
-        onCancel={session.cancelWeightPicker}
-      />
-    )
+    // WeightPicker removed — cancel back to exercise
+    session.cancelWeightPicker()
+    return null
   }
 
   if (session.phase === 'cooldown') {
+    // CooldownView removed — will be reimplemented in Task 8
     return (
-      <CooldownView
-        cooldownExercises={session.cooldownRehab}
-        onComplete={session.completeCooldown}
-        onSubstitute={session.substituteCooldownRehab}
-      />
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center">
+        <p className="text-white text-lg font-bold mb-4">Cooldown</p>
+        <button
+          onClick={() => session.completeCooldown()}
+          className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
+        >
+          Terminer
+        </button>
+      </div>
     )
   }
 

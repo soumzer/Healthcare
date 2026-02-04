@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { suggestFiller, type FillerInput } from '../filler'
-import type { RehabExerciseInfo } from '../rehab-integrator'
+import type { RehabExerciseInfo } from '../filler'
 import type { Exercise } from '../../db/types'
 
 // ---------------------------------------------------------------------------

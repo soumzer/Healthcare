@@ -3,8 +3,7 @@ import { db } from '../db'
 import { seedExercises } from '../data/seed'
 import { generateProgram, type ProgramGeneratorInput } from '../engine/program-generator'
 import { SessionEngine, type ExerciseHistory } from '../engine/session-engine'
-import { integrateRehab, type IntegratedSession } from '../engine/rehab-integrator'
-import { suggestFiller } from '../engine/filler'
+import { suggestFiller, type RehabExerciseInfo } from '../engine/filler'
 import { generateWarmupSets } from '../engine/warmup'
 import { generateRestDayRoutine } from '../engine/rest-day'
 import type {
@@ -94,7 +93,6 @@ let exerciseCatalog: Exercise[]
 let generatedProgram: ReturnType<typeof generateProgram>
 let savedProgram: WorkoutProgram
 let conditions: HealthCondition[]
-let integratedSessions: IntegratedSession[]
 
 // ---------------------------------------------------------------------------
 // E2E flow test
@@ -274,62 +272,7 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   })
 
   // -----------------------------------------------------------------------
-  // Step 2 — Rehab integration
-  // -----------------------------------------------------------------------
-
-  describe('2. Integration rehab dans les sessions', () => {
-    beforeAll(() => {
-      integratedSessions = savedProgram.sessions.map(session =>
-        integrateRehab(session, conditions)
-      )
-    })
-
-    it('warmupRehab contient des exercices pour le golf elbow', () => {
-      // Check across all integrated sessions
-      const allWarmupNames = integratedSessions.flatMap(s =>
-        s.warmupRehab.map(e => e.exerciseName)
-      )
-      // elbow_right protocol has warmup exercises: Massage, Curl poignet excentrique, Etirement flechisseurs
-      expect(allWarmupNames.some(n => n.toLowerCase().includes('golf elbow') || n.toLowerCase().includes('curl poignet'))).toBe(true)
-    })
-
-    it('warmupRehab contient Dead bug et Bird dog pour le dos', () => {
-      const allWarmupNames = integratedSessions.flatMap(s =>
-        s.warmupRehab.map(e => e.exerciseName)
-      )
-      expect(allWarmupNames.some(n => n.toLowerCase().includes('dead bug'))).toBe(true)
-      expect(allWarmupNames.some(n => n.toLowerCase().includes('bird dog'))).toBe(true)
-    })
-
-    it('activeWaitPool contient Pallof press et Face pull rehab', () => {
-      const allActiveWaitNames = integratedSessions.flatMap(s =>
-        s.activeWaitPool.map(e => e.exerciseName)
-      )
-      expect(allActiveWaitNames.some(n => n.toLowerCase().includes('pallof'))).toBe(true)
-      expect(allActiveWaitNames.some(n => n.toLowerCase().includes('face pull'))).toBe(true)
-    })
-
-    it('cooldownRehab contient Etirement pectoral pour la posture', () => {
-      const allCooldownNames = integratedSessions.flatMap(s =>
-        s.cooldownRehab.map(e => e.exerciseName)
-      )
-      // The upper_back protocol (posture) includes Etirement pectoral in cooldown
-      expect(allCooldownNames.some(n => n.toLowerCase().includes('pectoral'))).toBe(true)
-    })
-
-    it('chaque session recoit les memes exercices rehab (pas de filtrage par session)', () => {
-      // Since rehab integration is based on conditions (not session type),
-      // all sessions should receive the same rehab exercises
-      const firstWarmup = integratedSessions[0].warmupRehab.map(e => e.exerciseName).sort()
-      for (let i = 1; i < integratedSessions.length; i++) {
-        const currentWarmup = integratedSessions[i].warmupRehab.map(e => e.exerciseName).sort()
-        expect(currentWarmup).toEqual(firstWarmup)
-      }
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Step 3 — Warmup sets generation
+  // Step 2 — Warmup sets generation (rehab integration removed, will be reimplemented)
   // -----------------------------------------------------------------------
 
   describe('3. Generation des sets d\'echauffement', () => {
@@ -564,30 +507,44 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   // -----------------------------------------------------------------------
 
   describe('6. Filler exercise pendant l\'attente', () => {
-    it('suggere un exercice rehab depuis l\'activeWaitPool', () => {
-      // Get the first integrated session's activeWaitPool
-      const pool = integratedSessions[0].activeWaitPool
-      expect(pool.length).toBeGreaterThan(0)
+    it('suggere un exercice rehab depuis un pool', () => {
+      const pool: RehabExerciseInfo[] = [
+        {
+          exerciseName: 'Pallof press',
+          sets: 3, reps: '10', intensity: 'light',
+          notes: 'Anti-rotation', protocolName: 'Core', priority: 1, alternatives: [],
+        },
+      ]
 
       const filler = suggestFiller({
         activeWaitPool: pool,
-        nextExerciseMuscles: ['quadriceps'], // Lower body next → should avoid lower rehab
+        nextExerciseMuscles: ['quadriceps'],
         completedFillers: [],
       })
 
       expect(filler).not.toBeNull()
       expect(filler!.isRehab).toBe(true)
-      expect(filler!.name).toBeDefined()
+      expect(filler!.name).toBe('Pallof press')
       expect(filler!.sets).toBeGreaterThan(0)
     })
 
     it('ne suggere pas d\'exercice deja complete si d\'autres sont disponibles', () => {
-      const pool = integratedSessions[0].activeWaitPool
-      if (pool.length < 2) return // skip if only 1 exercise in pool
+      const pool: RehabExerciseInfo[] = [
+        {
+          exerciseName: 'Pallof press',
+          sets: 3, reps: '10', intensity: 'light',
+          notes: '', protocolName: 'Core', priority: 1, alternatives: [],
+        },
+        {
+          exerciseName: 'Dead bug',
+          sets: 3, reps: '10', intensity: 'light',
+          notes: '', protocolName: 'Core', priority: 1, alternatives: [],
+        },
+      ]
 
       const firstFiller = suggestFiller({
         activeWaitPool: pool,
-        nextExerciseMuscles: ['pectoraux'], // upper body
+        nextExerciseMuscles: ['pectoraux'],
         completedFillers: [],
       })
 
@@ -599,10 +556,8 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
         completedFillers: [firstFiller!.name],
       })
 
-      // Should get a different filler if pool has more exercises
-      if (secondFiller) {
-        expect(secondFiller.name).not.toBe(firstFiller!.name)
-      }
+      expect(secondFiller).not.toBeNull()
+      expect(secondFiller!.name).not.toBe(firstFiller!.name)
     })
   })
 

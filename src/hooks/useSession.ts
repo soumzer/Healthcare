@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { SessionEngine, type ExerciseHistory, type SessionEngineOptions } from '../engine/session-engine'
 import { generateWarmupSets, type WarmupSet } from '../engine/warmup'
 import { suggestFiller, type FillerSuggestion } from '../engine/filler'
-import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
+import type { RehabExerciseInfo } from '../engine/filler'
 import { db } from '../db'
 import { SESSION_CONFIG } from '../constants/config'
 import type {
@@ -179,23 +179,10 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   }
   const engine = engineRef.current
 
-  // Integrate rehab exercises into session (computed early for initial phase)
-  // Use stable key to avoid recalculation when array reference changes but content is same
-  const conditionsKey = healthConditions?.map(c => c.id).join(',') ?? ''
+  // Rehab integration stub — will be reimplemented with new notebook session flow (Tasks 7-9)
   const baseRehabIntegration = useMemo(() => {
-    if (!healthConditions || healthConditions.length === 0) {
-      return { warmupRehab: [], activeWaitPool: [], cooldownRehab: [] }
-    }
-    const integrated = integrateRehab(programSession, healthConditions, undefined, availableExercises)
-    return {
-      warmupRehab: integrated.warmupRehab,
-      activeWaitPool: integrated.activeWaitPool,
-      cooldownRehab: integrated.cooldownRehab,
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // Intentionally using conditionsKey string instead of healthConditions array reference
-    // to avoid recalculation when array reference changes but content is identical
-  }, [programSession, conditionsKey, availableExercises])
+    return { warmupRehab: [] as RehabExerciseInfo[], activeWaitPool: [] as RehabExerciseInfo[], cooldownRehab: [] as RehabExerciseInfo[] }
+  }, [])
 
   // Track rehab exercise substitutions (index -> new exercise name)
   const [warmupRehabSubs, setWarmupRehabSubs] = useState<Map<number, string>>(new Map())

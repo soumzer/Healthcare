@@ -321,7 +321,7 @@ describe('useSession - rehab integration', () => {
     expect(result.current.cooldownRehab).toEqual([])
   })
 
-  it('returns rehab exercises when healthConditions are provided', () => {
+  it('returns empty rehab arrays even with healthConditions (integration stubbed)', () => {
     const healthConditions: HealthCondition[] = [
       {
         userId: 1,
@@ -343,12 +343,10 @@ describe('useSession - rehab integration', () => {
 
     const { result } = renderHook(() => useSession(params))
 
-    // Should have at least some rehab exercises for elbow_right
-    const totalRehab =
-      result.current.warmupRehab.length +
-      result.current.activeWaitPool.length +
-      result.current.cooldownRehab.length
-    expect(totalRehab).toBeGreaterThan(0)
+    // Rehab integration is stubbed — always returns empty arrays
+    expect(result.current.warmupRehab).toEqual([])
+    expect(result.current.activeWaitPool).toEqual([])
+    expect(result.current.cooldownRehab).toEqual([])
   })
 
   it('returns no rehab exercises when healthConditions are inactive', () => {
@@ -500,7 +498,7 @@ describe('useSession - cooldown phase', () => {
     vi.useRealTimers()
   })
 
-  it('transitions to cooldown after all exercises when cooldownRehab exists', () => {
+  it('goes straight to done after all exercises when no cooldown rehab (integration stubbed)', async () => {
     const params: UseSessionParams = {
       ...defaultParams,
       userConditions: ['upper_back'],
@@ -508,32 +506,17 @@ describe('useSession - cooldown phase', () => {
     }
     const { result } = renderHook(() => useSession(params))
 
-    // Check that cooldownRehab has exercises (upper_back protocol has doorway stretch as cooldown)
-    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
+    // Rehab integration is stubbed — cooldownRehab is empty
+    expect(result.current.cooldownRehab.length).toBe(0)
 
     completeAll(result)
 
-    // Should be in cooldown phase
-    expect(result.current.phase).toBe('cooldown')
-  })
-
-  it('transitions from cooldown to done when user has conditions', async () => {
-    const params: UseSessionParams = {
-      ...defaultParams,
-      userConditions: ['upper_back'],
-      healthConditions: upperBackConditions,
-    }
-    const { result } = renderHook(() => useSession(params))
-
-    completeAll(result)
-
-    expect(result.current.phase).toBe('cooldown')
-    act(() => { result.current.completeCooldown() })
     // Flush async DB operations
     await act(async () => {
       await vi.runAllTimersAsync()
     })
-    // end_pain_check was removed - goes directly to done
+
+    // No cooldown exercises → goes directly to done
     expect(result.current.phase).toBe('done')
   })
 
@@ -541,33 +524,6 @@ describe('useSession - cooldown phase', () => {
     const { result } = renderHook(() => useSession(defaultParams))
     expect(result.current.completeWarmupRehab).toBeDefined()
     expect(typeof result.current.completeWarmupRehab).toBe('function')
-  })
-
-  it('cooldown is reachable after the last exercise when healthConditions have cooldown exercises', async () => {
-    const params: UseSessionParams = {
-      ...defaultParams,
-      userConditions: ['upper_back'],
-      healthConditions: upperBackConditions,
-    }
-    const { result } = renderHook(() => useSession(params))
-
-    // Verify cooldownRehab was computed from healthConditions
-    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
-
-    // Complete all exercises
-    completeAll(result)
-
-    // After the last exercise, session must enter 'cooldown' — not skip to done
-    expect(result.current.phase).toBe('cooldown')
-
-    // Complete cooldown to verify the full flow continues
-    act(() => { result.current.completeCooldown() })
-    // Flush async DB operations
-    await act(async () => {
-      await vi.runAllTimersAsync()
-    })
-    // end_pain_check was removed - goes directly to done
-    expect(result.current.phase).toBe('done')
   })
 })
 
@@ -593,16 +549,16 @@ describe('useSession - cooldown with DB persistence', () => {
     await db.open()
   })
 
-  it('skips end_pain_check when no conditions and cooldown exists', async () => {
+  it('goes straight to done when rehab integration is stubbed (no cooldown)', async () => {
     const params: UseSessionParams = {
       ...defaultParams,
-      userConditions: [], // no conditions
+      userConditions: [],
       healthConditions: upperBackConditions,
     }
     const { result } = renderHook(() => useSession(params))
 
-    // Verify cooldown rehab exists
-    expect(result.current.cooldownRehab.length).toBeGreaterThan(0)
+    // Rehab integration is stubbed — cooldownRehab is empty
+    expect(result.current.cooldownRehab.length).toBe(0)
 
     // Complete all exercises
     act(() => result.current.completeWarmup())
@@ -620,11 +576,15 @@ describe('useSession - cooldown with DB persistence', () => {
       act(() => result.current.logSet(12, 12.5, 3))
       act(() => result.current.completeRestTimer())
     }
-    act(() => result.current.startSet())
-    act(() => result.current.logSet(12, 12.5, 3))
 
-    expect(result.current.phase).toBe('cooldown')
-    await act(async () => { await result.current.completeCooldown() })
+    // Last set triggers advanceExerciseOrEnd
+    act(() => result.current.startSet())
+    await act(async () => {
+      result.current.logSet(12, 12.5, 3)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    // No cooldown → goes straight to done
     expect(result.current.phase).toBe('done')
   })
 
