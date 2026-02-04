@@ -5,7 +5,7 @@ import { db } from '../db'
 import ExerciseNotebook from '../components/session/ExerciseNotebook'
 import { fixedWarmupRoutine } from '../data/warmup-routine'
 import { selectCooldownExercises } from '../engine/cooldown'
-import { suggestFiller } from '../engine/filler'
+import { suggestFillerFromCatalog } from '../engine/filler'
 import type { BodyZone, Exercise, ProgramSession } from '../db/types'
 
 type SessionPhase = 'warmup' | 'exercises' | 'notebook' | 'cooldown' | 'done'
@@ -125,19 +125,13 @@ function SessionRunner({
   // Filler suggestions for machine occupied
   const fillerSuggestions = useMemo(() => {
     if (!currentCatalogExercise) return []
-    const nextIdx = currentExerciseIdx + 1
-    const nextEx = nextIdx < programSession.exercises.length
-      ? exerciseMap.get(programSession.exercises[nextIdx].exerciseId)
-      : undefined
-    const nextMuscles = nextEx?.primaryMuscles ?? []
-    const suggestion = suggestFiller({
-      activeWaitPool: [],
-      nextExerciseMuscles: nextMuscles,
+    const sessionMuscles = currentCatalogExercise.primaryMuscles
+    return suggestFillerFromCatalog({
+      sessionMuscles,
       completedFillers: [],
-      allExercises,
+      exerciseCatalog: allExercises,
     })
-    return suggestion ? [suggestion] : []
-  }, [currentExerciseIdx, programSession.exercises, exerciseMap, allExercises, currentCatalogExercise])
+  }, [currentCatalogExercise, allExercises])
 
   const handleNextExercise = useCallback(() => {
     // Mark current as done

@@ -69,7 +69,32 @@ const CORE_MUSCLES = [
 ]
 
 // ---------------------------------------------------------------------------
-// Main function
+// New simplified API for notebook session flow
+// ---------------------------------------------------------------------------
+
+/**
+ * Suggests filler exercises from the exercise catalog (mobility/cooldown).
+ * Simpler API for the new notebook session flow.
+ */
+export function suggestFillerFromCatalog(input: {
+  sessionMuscles: string[]
+  completedFillers: string[]
+  exerciseCatalog: Exercise[]
+  count?: number  // default 3
+}): FillerSuggestion[] {
+  const { sessionMuscles, completedFillers, exerciseCatalog, count = 3 } = input
+
+  const candidates = exerciseCatalog.filter(ex =>
+    (ex.category === 'mobility' || ex.tags.includes('cooldown')) &&
+    !completedFillers.includes(ex.name) &&
+    !hasMuscleConflictFromPrimary(ex.primaryMuscles, sessionMuscles)
+  )
+
+  return candidates.slice(0, count).map(toMobilityFillerSuggestion)
+}
+
+// ---------------------------------------------------------------------------
+// Main function (legacy)
 // ---------------------------------------------------------------------------
 
 /**
