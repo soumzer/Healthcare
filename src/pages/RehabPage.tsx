@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import RestDayRoutine from '../components/session/RestDayRoutine'
-import type { RestDayVariant } from '../engine/rest-day'
-import type { BodyZone } from '../db/types'
+import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
+import { generateRestDayRoutine, type RestDayVariant } from '../engine/rest-day'
+import { recordRehabExercisesDone } from '../utils/rehab-rotation'
 import { recordRehabCompletion, isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
 
 const UPPER_ZONES: ReadonlySet<BodyZone> = new Set([
@@ -31,6 +31,18 @@ const EXTERNAL_VIDEOS = [
   { id: 'ankles_feet', label: 'Ankles & feet mobility', duration: '5 min' },
 ]
 
+const VARIANT_LABELS: Record<RestDayVariant, string> = {
+  upper: 'Haut du corps',
+  lower: 'Bas du corps',
+  all: 'Routine complete',
+}
+
+const INTENSITY_LABELS: Record<string, { label: string; className: string }> = {
+  very_light: { label: 'Tres leger', className: 'text-emerald-400 bg-emerald-900/30' },
+  light: { label: 'Leger', className: 'text-blue-400 bg-blue-900/30' },
+  moderate: { label: 'Modere', className: 'text-amber-400 bg-amber-900/30' },
+}
+
 function getNextVideoIndex(): number {
   const lastIdx = parseInt(localStorage.getItem('rehab_video_idx') ?? '-1', 10)
   return (lastIdx + 1) % EXTERNAL_VIDEOS.length
@@ -44,6 +56,25 @@ function pickVariant(conditions: { bodyZone: BodyZone }[]): RestDayVariant {
 
   const last = localStorage.getItem(STORAGE_KEY) as RestDayVariant | null
   return last === 'upper' ? 'lower' : 'upper'
+}
+
+/** Check if reps string is time-based (e.g. "30s", "45s") */
+function isTimeBased(reps: string): boolean {
+  return /^\d+s$/.test(reps.trim())
+}
+
+/** Per-exercise local state for notebook logging */
+interface ExerciseLogState {
+  /** Logged sets for this exercise */
+  sets: NotebookSet[]
+  /** Current weight input */
+  weightInput: string
+  /** Current reps input */
+  repsInput: string
+  /** Whether this exercise is expanded */
+  expanded: boolean
+  /** Whether this time-based exercise is checked off */
+  checked: boolean
 }
 
 export default function RehabPage() {
@@ -60,20 +91,162 @@ export default function RehabPage() {
     [conditions]
   )
 
+  const routine = useMemo(
+    () => conditions && conditions.length > 0
+      ? generateRestDayRoutine(conditions, variant)
+      : null,
+    [conditions, variant]
+  )
+
   const [videoIdx] = useState(() => getNextVideoIndex())
   const [videoDone, setVideoDone] = useState(false)
   const video = EXTERNAL_VIDEOS[videoIdx]
 
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  // Per-exercise state
+  const [exerciseLogs, setExerciseLogs] = useState<Record<number, ExerciseLogState>>({})
+
+  /** Get or create log state for an exercise index */
+  const getLog = useCallback((index: number): ExerciseLogState => {
+    return exerciseLogs[index] ?? {
+      sets: [],
+      weightInput: '0',
+      repsInput: '',
+      expanded: false,
+      checked: false,
+    }
+  }, [exerciseLogs])
+
+  const updateLog = useCallback((index: number, patch: Partial<ExerciseLogState>) => {
+    setExerciseLogs(prev => ({
+      ...prev,
+      [index]: { ...prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }, ...patch },
+    }))
+  }, [])
+
+  const toggleExpand = useCallback((index: number) => {
+    setExerciseLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      return { ...prev, [index]: { ...current, expanded: !current.expanded } }
+    })
+  }, [])
+
+  const toggleChecked = useCallback((index: number) => {
+    setExerciseLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      return { ...prev, [index]: { ...current, checked: !current.checked } }
+    })
+  }, [])
+
+  const addSet = useCallback((index: number) => {
+    setExerciseLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      const weight = parseFloat(current.weightInput) || 0
+      const reps = parseInt(current.repsInput) || 0
+      if (reps <= 0) return prev
+      return {
+        ...prev,
+        [index]: {
+          ...current,
+          sets: [...current.sets, { weightKg: weight, reps }],
+          repsInput: '',
+        },
+      }
+    })
+  }, [])
+
+  const removeLastSet = useCallback((index: number) => {
+    setExerciseLogs(prev => {
+      const current = prev[index]
+      if (!current || current.sets.length === 0) return prev
+      return {
+        ...prev,
+        [index]: { ...current, sets: current.sets.slice(0, -1) },
+      }
+    })
+  }, [])
+
   const available = isRehabAvailable()
   const cooldownText = getRemainingCooldownText()
 
-  const handleComplete = useCallback(() => {
-    if (variant !== 'all') {
-      localStorage.setItem(STORAGE_KEY, variant)
+  /** Count exercises that have data (sets logged or checked for time-based) */
+  const exercisesWithData = useMemo(() => {
+    if (!routine) return 0
+    return routine.exercises.filter((ex, idx) => {
+      const log = getLog(idx)
+      if (isTimeBased(ex.reps)) return log.checked
+      return log.sets.length > 0
+    }).length
+  }, [routine, exerciseLogs, getLog])
+
+  const canSave = exercisesWithData > 0
+
+  const handleSave = useCallback(async () => {
+    if (!user?.id || !routine || isSaving) return
+    setIsSaving(true)
+
+    try {
+      const now = new Date()
+      const completedNames: string[] = []
+
+      // Save each exercise that has data as a NotebookEntry
+      for (let i = 0; i < routine.exercises.length; i++) {
+        const ex = routine.exercises[i]
+        const log = getLog(i)
+        const timeBased = isTimeBased(ex.reps)
+
+        // Skip exercises with no data
+        if (timeBased && !log.checked) continue
+        if (!timeBased && log.sets.length === 0) continue
+
+        const entry: NotebookEntry = {
+          userId: user.id!,
+          exerciseId: 0, // rehab exercises don't have DB IDs
+          exerciseName: ex.name,
+          date: now,
+          sessionIntensity: 'rehab',
+          sets: timeBased
+            ? [{ weightKg: 0, reps: ex.sets }] // For time-based, record sets count as reps
+            : log.sets.filter(s => s.reps > 0),
+          skipped: false,
+        }
+        await db.notebookEntries.add(entry)
+        completedNames.push(ex.name)
+      }
+
+      // Record completed exercises for rotation tracking
+      if (completedNames.length > 0) {
+        recordRehabExercisesDone(completedNames)
+      }
+
+      // Record rehab completion (cooldown)
+      if (variant !== 'all') {
+        localStorage.setItem(STORAGE_KEY, variant)
+      }
+      localStorage.setItem('rehab_video_idx', String(videoIdx))
+      recordRehabCompletion()
+
+      // Decrement accentDaysRemaining on active PainReports
+      const activePainReports = await db.painReports
+        .where('userId').equals(user.id!)
+        .and(r => r.accentDaysRemaining > 0)
+        .toArray()
+
+      for (const report of activePainReports) {
+        await db.painReports.update(report.id!, {
+          accentDaysRemaining: Math.max(0, report.accentDaysRemaining - 1),
+        })
+      }
+
+      setSaved(true)
+    } finally {
+      setIsSaving(false)
     }
-    localStorage.setItem('rehab_video_idx', String(videoIdx))
-    recordRehabCompletion()
-  }, [variant, videoIdx])
+  }, [user, routine, isSaving, getLog, variant, videoIdx])
+
+  // --- Render ---
 
   if (!user || conditions === undefined) {
     return (
@@ -111,6 +284,22 @@ export default function RehabPage() {
     )
   }
 
+  if (saved) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] px-6 text-center overflow-hidden">
+        <div className="w-16 h-16 rounded-full bg-emerald-600/20 flex items-center justify-center mb-4">
+          <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="text-2xl font-bold mb-2">Session enregistree</p>
+        <p className="text-zinc-400">
+          {exercisesWithData} exercice{exercisesWithData > 1 ? 's' : ''} de rehab enregistre{exercisesWithData > 1 ? 's' : ''}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] overflow-auto">
       {/* External video suggestion */}
@@ -139,13 +328,225 @@ export default function RehabPage() {
         </button>
       </div>
 
-      {/* Rest day routine (rehab exercises) */}
-      <RestDayRoutine
-        conditions={conditions}
-        variant={variant}
-        onComplete={handleComplete}
-        onSkip={() => {/* stay on page */}}
-      />
+      {/* Notebook-style rehab exercises */}
+      {routine && (
+        <div className="flex flex-col flex-1 p-4">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">
+              Jour de repos
+            </p>
+            <h2 className="text-xl font-bold">
+              {VARIANT_LABELS[variant]} &middot; ~{routine.totalMinutes} min
+            </h2>
+            <p className="text-zinc-400 text-sm mt-1">
+              Saisis tes series ou coche les exercices chronometres
+            </p>
+          </div>
+
+          {/* Exercise list */}
+          <div className="flex-1 space-y-3">
+            {routine.exercises.map((exercise, index) => {
+              const log = getLog(index)
+              const timeBased = isTimeBased(exercise.reps)
+              const hasData = timeBased ? log.checked : log.sets.length > 0
+              const intensityInfo = INTENSITY_LABELS[exercise.intensity]
+
+              return (
+                <div key={exercise.name} className="bg-zinc-900 rounded-xl overflow-hidden">
+                  {/* Header row */}
+                  <button
+                    onClick={() => toggleExpand(index)}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left"
+                  >
+                    {/* Done indicator */}
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                        hasData
+                          ? 'bg-emerald-600'
+                          : 'bg-zinc-800 border border-zinc-700'
+                      }`}
+                    >
+                      {hasData && (
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+
+                    {/* Exercise info */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium ${hasData ? 'text-zinc-400' : 'text-white'}`}>
+                        {exercise.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-zinc-400 text-xs">
+                          {exercise.sets}&times;{exercise.reps}
+                        </span>
+                        {intensityInfo && (
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${intensityInfo.className}`}>
+                            {intensityInfo.label}
+                          </span>
+                        )}
+                        {log.sets.length > 0 && !timeBased && (
+                          <span className="text-emerald-400 text-xs">
+                            {log.sets.length} serie{log.sets.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expand chevron */}
+                    <svg
+                      className={`w-5 h-5 text-zinc-400 transition-transform ${log.expanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Expanded content */}
+                  {log.expanded && (
+                    <div className="px-4 pb-4 pt-0 border-t border-zinc-800">
+                      {/* Notes */}
+                      {exercise.notes && (
+                        <p className="text-zinc-400 text-sm leading-relaxed mt-3 mb-3">
+                          {exercise.notes}
+                        </p>
+                      )}
+
+                      {timeBased ? (
+                        /* Time-based exercise: just a checkbox */
+                        <button
+                          onClick={() => toggleChecked(index)}
+                          className={`mt-2 w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                            log.checked
+                              ? 'bg-emerald-900/30 border border-emerald-700'
+                              : 'bg-zinc-800 border border-zinc-700'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              log.checked
+                                ? 'bg-emerald-600 border-emerald-600'
+                                : 'border-zinc-500 bg-transparent'
+                            }`}
+                          >
+                            {log.checked && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm ${log.checked ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                            {exercise.sets} &times; {exercise.reps} — Fait
+                          </span>
+                        </button>
+                      ) : (
+                        /* Weight/reps exercise: notebook-style input */
+                        <div className="mt-2 space-y-3">
+                          {/* Logged sets */}
+                          {log.sets.length > 0 && (
+                            <div className="space-y-1.5">
+                              {log.sets.map((s, si) => (
+                                <div
+                                  key={si}
+                                  className="flex items-center gap-2 bg-zinc-800/60 rounded-lg px-3 py-2"
+                                >
+                                  <span className="text-zinc-500 text-xs w-6">S{si + 1}</span>
+                                  <span className="text-white text-sm">
+                                    {s.weightKg > 0 ? `${s.weightKg} kg` : 'PDC'}
+                                  </span>
+                                  <span className="text-zinc-500 text-sm">&times;</span>
+                                  <span className="text-white text-sm">{s.reps} reps</span>
+                                  {si === log.sets.length - 1 && (
+                                    <button
+                                      onClick={() => removeLastSet(index)}
+                                      className="ml-auto text-zinc-500 hover:text-red-400 transition-colors"
+                                      aria-label="Supprimer derniere serie"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Input row: weight + reps + add button */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 flex items-center gap-1 bg-zinc-800 rounded-lg px-3 py-2">
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step={0.5}
+                                placeholder="0"
+                                value={log.weightInput}
+                                onChange={e => updateLog(index, { weightInput: e.target.value })}
+                                className="w-14 bg-transparent text-white text-sm text-right outline-none placeholder-zinc-600"
+                              />
+                              <span className="text-zinc-500 text-xs">kg</span>
+                            </div>
+                            <span className="text-zinc-600">&times;</span>
+                            <div className="flex-1 flex items-center gap-1 bg-zinc-800 rounded-lg px-3 py-2">
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                placeholder="reps"
+                                value={log.repsInput}
+                                onChange={e => updateLog(index, { repsInput: e.target.value })}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    addSet(index)
+                                  }
+                                }}
+                                className="w-14 bg-transparent text-white text-sm text-right outline-none placeholder-zinc-600"
+                              />
+                              <span className="text-zinc-500 text-xs">reps</span>
+                            </div>
+                            <button
+                              onClick={() => addSet(index)}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-3 py-2 transition-colors"
+                              aria-label="Ajouter une serie"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Save button */}
+          <div className="pt-6 pb-4">
+            <button
+              onClick={handleSave}
+              disabled={!canSave || isSaving}
+              className={`w-full font-semibold rounded-xl py-4 text-lg transition-colors ${
+                canSave && !isSaving
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
