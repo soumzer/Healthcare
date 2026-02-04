@@ -116,7 +116,7 @@ export default function HomePage() {
 
   // Ready — start session
   return (
-    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-12">
+    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
       <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
       <p className="text-3xl font-bold mb-4">{info.nextSessionName}</p>
 
@@ -128,22 +128,20 @@ export default function HomePage() {
         </ul>
       )}
 
-      <p className="text-zinc-400 mb-8">
+      <p className="text-zinc-400 mb-6">
         {"~ "}{info.estimatedMinutes}{" min"}
       </p>
 
-      <div className="mt-auto pb-8">
-        <button
-          onClick={() =>
-            navigate(
-              `/session?programId=${info.programId}&sessionIndex=${info.nextSessionIndex}`
-            )
-          }
-          className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
-        >
-          {"Commencer la s\u00E9ance"}
-        </button>
-      </div>
+      <button
+        onClick={() =>
+          navigate(
+            `/session?programId=${info.programId}&sessionIndex=${info.nextSessionIndex}`
+          )
+        }
+        className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
+      >
+        {"Commencer la s\u00E9ance"}
+      </button>
     </div>
   )
 }

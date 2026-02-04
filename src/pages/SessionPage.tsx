@@ -242,7 +242,8 @@ function SessionRunner({
                 next.has(i) ? next.delete(i) : next.add(i)
                 return next
               })}
-              className="w-full flex items-center gap-3 bg-zinc-900 rounded-lg px-3 py-2 text-left"
+              className="w-full flex items-center gap-3 bg-zinc-900 rounded-lg px-3 py-2 text-left touch-action-manipulation"
+              style={{ touchAction: 'manipulation' }}
             >
               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                 warmupChecked.has(i) ? 'bg-emerald-600 border-emerald-600' : 'border-zinc-600'
@@ -300,9 +301,9 @@ function SessionRunner({
               >
                 {/* Status icon */}
                 <div className="w-6 flex-shrink-0 text-center">
-                  {status.status === 'done' && <span className="text-emerald-400">&#10003;</span>}
-                  {status.status === 'skipped' && <span className="text-red-400">&#10007;</span>}
-                  {status.status === 'pending' && <span className="text-zinc-600">&#9675;</span>}
+                  {status.status === 'done' && <span className="text-emerald-400">{'\u2713'}</span>}
+                  {status.status === 'skipped' && <span className="text-red-400">/</span>}
+                  {status.status === 'pending' && <span className="text-zinc-600">{'\u25CB'}</span>}
                 </div>
 
                 {/* Exercise info */}

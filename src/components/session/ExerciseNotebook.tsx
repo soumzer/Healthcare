@@ -130,9 +130,9 @@ export default function ExerciseNotebook({
         />
       )}
 
-      <div className="flex-1 overflow-auto px-4 pt-4 pb-32">
+      <div className="flex-1 overflow-auto px-4 pt-3 pb-24">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <button onClick={onNext} className="text-zinc-400 text-sm">
             Passer
           </button>
@@ -140,8 +140,8 @@ export default function ExerciseNotebook({
         </div>
 
         {/* Exercise name + intensity badge */}
-        <div className="mb-3">
-          <h1 className="text-xl font-bold uppercase">{exercise.exerciseName}</h1>
+        <div className="mb-2">
+          <h1 className="text-lg font-bold uppercase">{exercise.exerciseName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-zinc-400 text-sm">
               {target.sets} x {target.reps} reps — repos {formatRestLabel(target.restSeconds)}
@@ -167,20 +167,20 @@ export default function ExerciseNotebook({
         {exercise.instructions && (
           <button
             onClick={() => setShowDescription(d => !d)}
-            className="text-zinc-400 text-xs underline mb-3"
+            className="text-zinc-400 text-xs underline mb-2"
           >
             {showDescription ? 'Masquer description' : 'Voir description'}
           </button>
         )}
         {showDescription && exercise.instructions && (
-          <p className="text-zinc-400 text-sm bg-zinc-900 rounded-lg p-3 mb-3">
+          <p className="text-zinc-400 text-sm bg-zinc-900 rounded-lg p-3 mb-2">
             {exercise.instructions}
           </p>
         )}
 
         {/* Warmup (compounds only) */}
         {isCompound && (
-          <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+          <div className="bg-zinc-900 rounded-xl p-3 mb-3">
             <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Echauffement</p>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-zinc-400 text-sm">Poids travail:</span>
@@ -211,7 +211,7 @@ export default function ExerciseNotebook({
           const lastEntry = notebook.history.find(e => !e.skipped && e.sets.length > 0)
           if (!lastEntry) return null
           return (
-            <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+            <div className="bg-zinc-900 rounded-xl p-3 mb-3">
               <p className="text-zinc-400 text-xs uppercase tracking-wider mb-1">Dernière fois</p>
               <p className="text-white text-sm">
                 {lastEntry.sets.map(s => `${s.weightKg}kg \u00d7 ${s.reps}`).join(' \u00b7 ')}
@@ -221,7 +221,7 @@ export default function ExerciseNotebook({
         })()}
 
         {/* Set input */}
-        <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+        <div className="bg-zinc-900 rounded-xl p-3 mb-3">
           <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Series</p>
 
           {/* Completed sets */}
@@ -282,7 +282,7 @@ export default function ExerciseNotebook({
         </div>
 
         {/* Rest timer */}
-        <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+        <div className="bg-zinc-900 rounded-xl p-3 mb-3">
           <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Repos</p>
           <div className="flex items-center gap-4">
             <span className={`text-3xl font-mono font-bold ${timer.remaining === 0 && timer.isRunning === false && notebook.currentSets.length > 0 ? 'text-emerald-400' : 'text-white'}`}>
@@ -306,7 +306,7 @@ export default function ExerciseNotebook({
         </div>
 
         {/* Exercise note */}
-        <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+        <div className="bg-zinc-900 rounded-xl p-3 mb-3">
           <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Note</p>
           <textarea
             value={exerciseNote.note}

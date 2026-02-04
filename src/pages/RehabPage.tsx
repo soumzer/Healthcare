@@ -201,10 +201,10 @@ export default function RehabPage() {
     }).length
   }, [routine, exerciseLogs, getLog])
 
-  const canSave = exercisesWithData > 0
+  const canSave = exercisesWithData > 0 || videoDone
 
   const handleSave = useCallback(async () => {
-    if (!user?.id || !routine || isSaving) return
+    if (!user?.id || isSaving) return
     setIsSaving(true)
 
     try {
@@ -212,8 +212,8 @@ export default function RehabPage() {
       const completedNames: string[] = []
 
       // Save each exercise that has data as a NotebookEntry
-      for (let i = 0; i < routine.exercises.length; i++) {
-        const ex = routine.exercises[i]
+      for (let i = 0; i < (routine?.exercises.length ?? 0); i++) {
+        const ex = routine!.exercises[i]
         const log = getLog(i)
         const timeBased = isTimeBased(ex.reps)
 

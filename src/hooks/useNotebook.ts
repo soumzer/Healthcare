@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
@@ -169,6 +169,8 @@ export function useNotebook(
 ): UseNotebookReturn {
   const [currentSets, setCurrentSets] = useState<NotebookSet[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [todayEntryId, setTodayEntryId] = useState<number | null>(null)
+  const [loadedEntry, setLoadedEntry] = useState(false)
 
   // Load last N entries for this exercise
   const history = useLiveQuery(
@@ -184,6 +186,22 @@ export function useNotebook(
     [userId, exerciseId],
     [] as NotebookEntry[]
   )
+
+  // Load today's entry for editing (re-open completed exercise)
+  useEffect(() => {
+    if (loadedEntry || history.length === 0) return
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayEntry = history.find(e => {
+      const d = e.date instanceof Date ? e.date : new Date(e.date)
+      return d >= today && !e.skipped && e.sets.length > 0
+    })
+    if (todayEntry?.id) {
+      setCurrentSets(todayEntry.sets)
+      setTodayEntryId(todayEntry.id)
+    }
+    setLoadedEntry(true)
+  }, [history, loadedEntry])
 
   // Last weight from history (used by ExerciseNotebook to pre-fill input)
   const lastWeight = history.length > 0 && !history[0].skipped && history[0].sets.length > 0
@@ -207,16 +225,24 @@ export function useNotebook(
     setIsSaving(true)
     try {
       const validSets = currentSets.filter(s => s.reps > 0)
-      const entry: NotebookEntry = {
-        userId,
-        exerciseId,
-        exerciseName,
-        date: new Date(),
-        sessionIntensity,
-        sets: validSets,
-        skipped: false,
+      if (todayEntryId) {
+        // Update existing entry instead of creating a duplicate
+        await db.notebookEntries.update(todayEntryId, {
+          sets: validSets,
+          date: new Date(),
+        })
+      } else {
+        const entry: NotebookEntry = {
+          userId,
+          exerciseId,
+          exerciseName,
+          date: new Date(),
+          sessionIntensity,
+          sets: validSets,
+          skipped: false,
+        }
+        await db.notebookEntries.add(entry)
       }
-      await db.notebookEntries.add(entry)
       setCurrentSets([])
       onNext()
     } finally {
@@ -228,14 +254,15 @@ export function useNotebook(
     if (isSaving) return { conditionCreated: false }
     setIsSaving(true)
     try {
-      // Save skipped entry
+      // Save skipped entry (include any sets entered before skip)
+      const validSets = currentSets.filter(s => s.reps > 0)
       const entry: NotebookEntry = {
         userId,
         exerciseId,
         exerciseName,
         date: new Date(),
         sessionIntensity,
-        sets: [],
+        sets: validSets,
         skipped: true,
         skipZone: zone,
       }
