@@ -43,15 +43,15 @@ export default function HomePage() {
   if (info.status === 'no_program') {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] px-6 text-center overflow-hidden">
-        <p className="text-2xl font-bold mb-2">Bienvenue !</p>
+        <p className="text-2xl font-bold mb-2">Aucun programme</p>
         <p className="text-zinc-400 mb-8">
-          {"Compl\u00E9tez votre profil pour commencer."}
+          {"Allez dans le profil pour g\u00E9n\u00E9rer un programme."}
         </p>
         <button
-          onClick={() => navigate('/onboarding')}
+          onClick={() => navigate('/profile')}
           className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
         >
-          {"Commencer l'onboarding"}
+          Aller au profil
         </button>
       </div>
     )
