@@ -450,10 +450,10 @@ describe('generateProgram', () => {
 
   const baseInput = {
     userId: 1,
-    goals: ['muscle_gain' as const],
+
     conditions: [],
     equipment: allEquipment,
-    availableWeights: [],
+
     minutesPerSession: 60,
   }
 
@@ -875,10 +875,10 @@ describe('Upper/Lower structured sessions', () => {
 
   const ulInput = {
     userId: 1,
-    goals: ['muscle_gain' as const],
+
     conditions: [],
     equipment: ulEquipment,
-    availableWeights: [],
+
     daysPerWeek: 4,
     minutesPerSession: 60,
   }
@@ -1379,10 +1379,10 @@ describe('Push/Pull/Legs structured sessions', () => {
 
   const pplInput = {
     userId: 1,
-    goals: ['muscle_gain' as const],
+
     conditions: [],
     equipment: pplEquipment,
-    availableWeights: [],
+
     daysPerWeek: 5,
     minutesPerSession: 75,
   }
@@ -1809,10 +1809,10 @@ describe('Full Body structured sessions', () => {
   describe('2 days/week', () => {
     const fbInput2 = {
       userId: 1,
-      goals: ['muscle_gain' as const],
+  
       conditions: [],
       equipment: fbEquipment,
-      availableWeights: [],
+  
       daysPerWeek: 2,
       minutesPerSession: 60,
     }
@@ -1875,10 +1875,10 @@ describe('Full Body structured sessions', () => {
   describe('3 days/week', () => {
     const fbInput3 = {
       userId: 1,
-      goals: ['muscle_gain' as const],
+  
       conditions: [],
       equipment: fbEquipment,
-      availableWeights: [],
+  
       daysPerWeek: 3,
       minutesPerSession: 60,
     }
@@ -2152,10 +2152,10 @@ describe('Lower back contraindication filtering — hip hinge slot adaptation', 
 
   const sdtBaseInput = {
     userId: 1,
-    goals: ['muscle_gain' as const],
+
     conditions: [] as HealthCondition[],
     equipment: sdtEquipment,
-    availableWeights: [],
+
     minutesPerSession: 60,
   }
 
@@ -2479,10 +2479,10 @@ describe('generateProgram — minutesPerSession', () => {
       const result = generateProgram(
         {
           userId: 1,
-          goals: ['muscle_gain'],
+
           conditions: [],
           equipment: allEquipment,
-          availableWeights: [],
+      
           daysPerWeek,
           minutesPerSession: 45,
         },
@@ -2501,10 +2501,10 @@ describe('generateProgram — minutesPerSession', () => {
       const short = generateProgram(
         {
           userId: 1,
-          goals: ['muscle_gain'],
+
           conditions: [],
           equipment: allEquipment,
-          availableWeights: [],
+      
           daysPerWeek,
           minutesPerSession: 45,
         },
@@ -2514,10 +2514,10 @@ describe('generateProgram — minutesPerSession', () => {
       const long = generateProgram(
         {
           userId: 1,
-          goals: ['muscle_gain'],
+
           conditions: [],
           equipment: allEquipment,
-          availableWeights: [],
+      
           daysPerWeek,
           minutesPerSession: 90,
         },
@@ -2545,10 +2545,10 @@ describe('generateProgram — minutesPerSession', () => {
       const result = generateProgram(
         {
           userId: 1,
-          goals: ['muscle_gain'],
+
           conditions: [],
           equipment: allEquipment,
-          availableWeights: [],
+      
           daysPerWeek,
           minutesPerSession: 60,
         },

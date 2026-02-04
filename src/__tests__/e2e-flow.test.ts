@@ -173,10 +173,8 @@ describe('E2E flow: onboarding -> programme -> notebook session -> dashboard', (
 
       const input: ProgramGeneratorInput = {
         userId,
-        goals: [],
         conditions,
         equipment,
-        availableWeights: [],
         daysPerWeek: 4,
         minutesPerSession: 75,
       }

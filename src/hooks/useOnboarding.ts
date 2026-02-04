@@ -85,10 +85,8 @@ export function useOnboarding() {
     const generatedProgram = generateProgram(
       {
         userId,
-        goals: [],
         conditions: conditionsForGenerator,
         equipment: equipmentForGenerator,
-        availableWeights: [],
         daysPerWeek: state.daysPerWeek,
         minutesPerSession: state.minutesPerSession,
       },

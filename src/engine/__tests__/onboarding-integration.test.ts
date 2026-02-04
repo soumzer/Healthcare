@@ -12,7 +12,6 @@ interface SimulatedOnboardingState {
   body: { name: string; height: number; weight: number; age: number; sex: 'male' | 'female' }
   conditions: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[]
   equipment: Omit<GymEquipment, 'id' | 'userId'>[]
-  goals: string[]
   daysPerWeek: number
   minutesPerSession: number
 }
@@ -70,10 +69,8 @@ async function simulateOnboardingSubmit(state: SimulatedOnboardingState): Promis
   const generatedProgram = generateProgram(
     {
       userId,
-      goals: state.goals,
       conditions: conditionsForGenerator,
       equipment: equipmentForGenerator,
-      availableWeights: [],
       daysPerWeek: state.daysPerWeek,
       minutesPerSession: state.minutesPerSession,
     },
@@ -136,7 +133,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Alice', height: 165, weight: 60, age: 30, sex: 'female' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -151,7 +147,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Bob', height: 180, weight: 85, age: 28, sex: 'male' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -167,7 +162,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Claire', height: 170, weight: 65, age: 35, sex: 'female' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 3,
       minutesPerSession: 45,
     })
@@ -183,7 +177,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Dan', height: 175, weight: 80, age: 25, sex: 'male' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 5,
       minutesPerSession: 75,
     })
@@ -199,7 +192,7 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Eve', height: 160, weight: 55, age: 40, sex: 'female' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['weight_loss'],
+
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -214,7 +207,7 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Frank', height: 185, weight: 90, age: 32, sex: 'male' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain', 'posture'],
+
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -230,7 +223,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Grace', height: 170, weight: 65, age: 28, sex: 'female' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -247,7 +239,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Hank', height: 175, weight: 78, age: 30, sex: 'male' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -262,7 +253,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Iris', height: 168, weight: 62, age: 27, sex: 'female' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -279,7 +269,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Jack', height: 180, weight: 82, age: 29, sex: 'male' },
       conditions: [],
       equipment: typicalEquipment,
-      goals: ['muscle_gain'],
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -310,7 +299,7 @@ describe('Onboarding → Program Generation integration', () => {
         },
       ],
       equipment: typicalEquipment,
-      goals: ['rehab', 'muscle_gain'],
+
       daysPerWeek: 4,
       minutesPerSession: 60,
     })
@@ -332,7 +321,6 @@ describe('Onboarding → Program Generation integration', () => {
       body: { name: 'Leo', height: 178, weight: 75, age: 26, sex: 'male' },
       conditions: [],
       equipment: [], // No equipment — bodyweight only
-      goals: ['muscle_gain'],
       daysPerWeek: 3,
       minutesPerSession: 45,
     })

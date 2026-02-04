@@ -12,10 +12,8 @@ import type {
 
 export interface ProgramGeneratorInput {
   userId: number
-  goals?: string[]
   conditions: HealthCondition[]
   equipment: GymEquipment[]
-  availableWeights?: { weightKg: number }[]
   daysPerWeek: number
   minutesPerSession: number
 }
