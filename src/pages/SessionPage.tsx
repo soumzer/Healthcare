@@ -86,6 +86,48 @@ function SessionRunner({
   )
   const [sessionStartTime] = useState(() => new Date())
   const [warmupChecked, setWarmupChecked] = useState<Set<number>>(() => new Set())
+  const [recovered, setRecovered] = useState(false)
+
+  // Recover session state from today's notebookEntries
+  const todayEntries = useLiveQuery(async () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return db.notebookEntries
+      .where('userId').equals(userId)
+      .filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date)
+        return d >= today
+      })
+      .toArray()
+  }, [userId])
+
+  // Once todayEntries load, recover exercise statuses
+  if (todayEntries && !recovered) {
+    const exerciseIds = programSession.exercises.map(e => e.exerciseId)
+    const todayByExercise = new Map<number, typeof todayEntries[0]>()
+    for (const entry of todayEntries) {
+      if (exerciseIds.includes(entry.exerciseId)) {
+        todayByExercise.set(entry.exerciseId, entry)
+      }
+    }
+
+    if (todayByExercise.size > 0) {
+      const newStatuses = programSession.exercises.map(e => {
+        const entry = todayByExercise.get(e.exerciseId)
+        if (entry) {
+          return {
+            exerciseId: e.exerciseId,
+            status: entry.skipped ? 'skipped' as const : 'done' as const,
+            skipZone: entry.skipZone,
+          }
+        }
+        return { exerciseId: e.exerciseId, status: 'pending' as const }
+      })
+      setExerciseStatuses(newStatuses)
+      setPhase('exercises')
+    }
+    setRecovered(true)
+  }
 
   // Build exercise catalog lookup
   const exerciseMap = useMemo(() => {

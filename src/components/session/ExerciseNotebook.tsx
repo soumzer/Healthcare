@@ -83,7 +83,7 @@ export default function ExerciseNotebook({
   // Warmup sets for compounds
   const isCompound = exercise.category === 'compound'
   const ww = parseFloat(workingWeight) || 0
-  const warmupSets = isCompound && ww > 20 ? generateWarmupSets(ww) : []
+  const warmupSets = isCompound && ww > 0 ? generateWarmupSets(ww) : []
 
   // Set input state
   const [inputWeight, setInputWeight] = useState('')
@@ -190,7 +190,7 @@ export default function ExerciseNotebook({
               <div className="flex flex-wrap gap-2">
                 {warmupSets.map((ws, i) => (
                   <span key={i} className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded">
-                    {ws.label || `${ws.weightKg}kg`} x {ws.reps}
+                    {ws.weightKg > 0 ? `${ws.weightKg}kg` : ws.label} x {ws.reps}
                   </span>
                 ))}
               </div>
