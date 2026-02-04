@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
@@ -8,6 +8,7 @@ const MAX_HISTORY = 5
 export interface UseNotebookReturn {
   currentSets: NotebookSet[]
   history: NotebookEntry[]
+  lastWeight: number | null
   isSaving: boolean
   addSet: (weightKg: number, reps: number) => void
   updateSet: (index: number, weightKg: number, reps: number) => void
@@ -42,17 +43,10 @@ export function useNotebook(
     [] as NotebookEntry[]
   )
 
-  // Pre-fill weight from last session when starting a new exercise
-  useEffect(() => {
-    if (currentSets.length === 0 && history.length > 0) {
-      const lastEntry = history[0]
-      if (lastEntry.sets.length > 0 && !lastEntry.skipped) {
-        const lastWeight = lastEntry.sets[0].weightKg
-        // Pre-fill first set weight only (reps left empty for user to enter)
-        setCurrentSets([{ weightKg: lastWeight, reps: 0 }])
-      }
-    }
-  }, [history, currentSets.length])
+  // Last weight from history (used by ExerciseNotebook to pre-fill input)
+  const lastWeight = history.length > 0 && !history[0].skipped && history[0].sets.length > 0
+    ? history[0].sets[0].weightKg
+    : null
 
   const addSet = useCallback((weightKg: number, reps: number) => {
     setCurrentSets(prev => [...prev, { weightKg, reps }])
@@ -124,6 +118,7 @@ export function useNotebook(
   return {
     currentSets,
     history,
+    lastWeight,
     isSaving,
     addSet,
     updateSet,

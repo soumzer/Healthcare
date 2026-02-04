@@ -132,12 +132,28 @@ describe('useDashboardData', () => {
     })
   })
 
-  it('returns streak=0 if no entry today', async () => {
+  it('streak survives if last entry was yesterday', async () => {
     const userId = await createUser()
 
-    // Entry only yesterday, not today
+    // Entry only yesterday, not today — streak should still count
     await db.notebookEntries.add(
       makeEntry(userId, 'Bench Press', daysAgo(1), [{ weightKg: 60, reps: 8 }])
+    )
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.streakDays).toBe(1)
+    })
+  })
+
+  it('returns streak=0 if no entry today or yesterday', async () => {
+    const userId = await createUser()
+
+    // Entry only 2 days ago — streak is broken
+    await db.notebookEntries.add(
+      makeEntry(userId, 'Bench Press', daysAgo(2), [{ weightKg: 60, reps: 8 }])
     )
 
     const { result } = renderHook(() => useDashboardData(userId))

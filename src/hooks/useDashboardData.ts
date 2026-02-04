@@ -79,6 +79,10 @@ export function useDashboardData(userId: number | undefined): DashboardData {
     let streakDays = 0
     const checkDate = new Date()
     checkDate.setHours(0, 0, 0, 0)
+    // If no entry today, check from yesterday (streak survives until end of day)
+    if (!allDates.has(toDateString(checkDate))) {
+      checkDate.setDate(checkDate.getDate() - 1)
+    }
     while (allDates.has(toDateString(checkDate))) {
       streakDays++
       checkDate.setDate(checkDate.getDate() - 1)

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNotebook } from '../../hooks/useNotebook'
 import { useRestTimer } from '../../hooks/useRestTimer'
 import { generateWarmupSets } from '../../engine/warmup'
@@ -89,10 +89,17 @@ export default function ExerciseNotebook({
   const [inputWeight, setInputWeight] = useState('')
   const [inputReps, setInputReps] = useState('')
 
+  // Pre-fill weight from last session when history loads
+  useEffect(() => {
+    if (notebook.lastWeight !== null && inputWeight === '') {
+      setInputWeight(String(notebook.lastWeight))
+    }
+  }, [notebook.lastWeight])
+
   const handleAddSet = useCallback(() => {
     const w = parseFloat(inputWeight)
     const r = parseInt(inputReps, 10)
-    if (!w || !r || r <= 0) return
+    if (isNaN(w) || w < 0 || !r || r <= 0) return
     notebook.addSet(w, r)
     // Keep weight, clear reps for next set
     setInputReps('')
