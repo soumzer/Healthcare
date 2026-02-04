@@ -402,8 +402,8 @@ describe('useSession - progression engine integration', () => {
     }
     const { result } = renderHook(() => useSession(params))
     act(() => result.current.completeWarmup())
-    // Exercise 1: reached top of range (10 reps) with good RIR -> 42.5kg
-    expect(result.current.currentExercise!.prescribedWeightKg).toBe(42.5)
+    // No automatic progression — uses last weight directly
+    expect(result.current.currentExercise!.prescribedWeightKg).toBe(40)
   })
 
   it('maintains weight when reps were not all completed', () => {
@@ -432,9 +432,9 @@ describe('useSession - progression engine integration', () => {
     }
     const { result } = renderHook(() => useSession(params))
     act(() => result.current.completeWarmup())
-    // No 42.5 available, and 45 > 43.5 -> increase_reps
+    // No 42.5 available, and 45 > 43.5 -> uses last weight directly
     expect(result.current.currentExercise!.prescribedWeightKg).toBe(40)
-    expect(result.current.currentExercise!.prescribedReps).toBe(9)
+    expect(result.current.currentExercise!.prescribedReps).toBe(8)
   })
 
   it('uses 0kg for exercise with no history', () => {

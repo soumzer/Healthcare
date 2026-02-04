@@ -1,6 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import { shouldDeload } from '../engine/progression'
 import type { ProgramSession, WorkoutProgram } from '../db/types'
 
 export interface NextSessionExercisePreview {
@@ -174,7 +173,9 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       }
     }
 
-    const isDeload = shouldDeload(weeksSinceLastDeload) || currentPhase === 'deload'
+    // Automatic deload detection removed with progression engine.
+    // Deload is now only active when explicitly set as the current phase.
+    const isDeload = currentPhase === 'deload'
 
     const preview: NextSessionPreview = {
       sessionName: nextProgramSession.name,

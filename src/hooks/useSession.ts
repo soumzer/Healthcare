@@ -3,10 +3,8 @@ import { SessionEngine, type ExerciseHistory, type SessionEngineOptions } from '
 import { generateWarmupSets, type WarmupSet } from '../engine/warmup'
 import { suggestFiller, type FillerSuggestion } from '../engine/filler'
 import { integrateRehab, type RehabExerciseInfo } from '../engine/rehab-integrator'
-import { getPhaseRecommendation } from '../engine/progression'
 import { db } from '../db'
 import { SESSION_CONFIG } from '../constants/config'
-import type { PainAdjustment } from '../engine/pain-feedback'
 import type {
   ProgramSession,
   SessionExercise,
@@ -15,7 +13,6 @@ import type {
   HealthCondition,
   PainCheck,
   SessionSet,
-  TrainingPhase,
 } from '../db/types'
 
 export type SessionPhase =
@@ -40,7 +37,6 @@ export interface UseSessionParams {
   healthConditions?: HealthCondition[]
   availableWeights?: number[]
   phase?: 'hypertrophy' | 'strength' | 'deload'
-  painAdjustments?: PainAdjustment[]
   /** User's body weight for estimating starting weights on new exercises */
   userBodyweightKg?: number
 }
@@ -124,7 +120,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     healthConditions,
     availableWeights,
     phase: trainingPhase,
-    painAdjustments,
     userBodyweightKg,
   } = params
 
@@ -175,9 +170,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
   const engineRef = useRef<SessionEngine | null>(null)
   if (engineRef.current === null) {
     engineRef.current = new SessionEngine(programSession, history, engineOptions)
-    if (painAdjustments?.length) {
-      engineRef.current.applyPainAdjustments(painAdjustments)
-    }
     // Restore engine position if saved session is valid
     if (isRestorable && saved) {
       for (let i = 0; i < saved.engineExerciseIndex; i++) {
@@ -483,8 +475,6 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
         const effectivePhase = currentPhaseName === 'transition' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'strength' | 'deload'
 
         // Save exercise progress for each completed exercise
-        let progressionCount = 0
-        let totalExerciseCount = 0
         for (const ex of allExercises) {
           if (ex.status === 'completed' && ex.sets.length > 0) {
             const avgRIR =
@@ -531,59 +521,14 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
               prescribedReps: ex.prescribedReps,
               prescribedRestSeconds: programExercise?.restSeconds,
             })
-
-            totalExerciseCount++
-            // Track whether this exercise progressed (for phase recommendation)
-            const prevProgress = engine.getProgressionResult(ex.exerciseId)
-            if (prevProgress && (prevProgress.action === 'increase_weight' || prevProgress.action === 'increase_reps')) {
-              progressionCount++
-            }
           }
         }
 
-        // Phase transition logic: check if phase should change
-        if (currentPhaseRecord && totalExerciseCount > 0) {
-          const progressionConsistency = progressionCount / totalExerciseCount
-
-          // Get average pain level from recent pain logs
-          const recentPainLogs = await db.painLogs
-            .where('userId')
-            .equals(userId)
-            .toArray()
-          const last2WeeksPain = recentPainLogs.filter(
-            (p) => now.getTime() - p.date.getTime() < 14 * 24 * 60 * 60 * 1000
-          )
-          const avgPainLevel = last2WeeksPain.length > 0
-            ? last2WeeksPain.reduce((sum, p) => sum + p.level, 0) / last2WeeksPain.length
-            : 0
-
-          const mappedPhase = currentPhaseName === 'deload' ? 'hypertrophy' : currentPhaseName as 'hypertrophy' | 'transition' | 'strength'
-          const recommendation = getPhaseRecommendation({
-            currentPhase: mappedPhase,
-            weeksInPhase: currentPhaseRecord.weekCount,
-            avgPainLevel,
-            progressionConsistency,
+        // Update week count on current phase (phase transitions removed with progression engine)
+        if (currentPhaseRecord) {
+          await db.trainingPhases.update(currentPhaseRecord.id!, {
+            weekCount: weekNumber,
           })
-
-          if (recommendation !== mappedPhase) {
-            // Close current phase
-            await db.trainingPhases.update(currentPhaseRecord.id!, {
-              endedAt: now,
-            })
-
-            // Create new phase
-            await db.trainingPhases.add({
-              userId,
-              phase: recommendation as TrainingPhase['phase'],
-              startedAt: now,
-              weekCount: 1,
-            })
-          } else {
-            // Update week count
-            await db.trainingPhases.update(currentPhaseRecord.id!, {
-              weekCount: weekNumber,
-            })
-          }
         }
       } catch (error) {
         console.error('Failed to save session data:', error)
@@ -889,21 +834,8 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
             availableExercises.find((e) => e.id === currentExercise.exerciseId)?.instructions ?? '',
         }
       : null,
-    substitutionSuggestion: (() => {
-      if (!currentExercise) return null
-      const result = engine.getProgressionResult(currentExercise.exerciseId)
-      if (!result || result.action !== 'maintain' || !result.reason.includes('Plafond')) return null
-      const exerciseData = availableExercises.find((e) => e.id === currentExercise.exerciseId)
-      if (!exerciseData?.alternatives?.length) return null
-      // Find an alternative that exists in the catalog
-      for (const altName of exerciseData.alternatives) {
-        const alt = availableExercises.find(
-          (e) => e.name === altName && !e.isRehab
-        )
-        if (alt?.id !== undefined) return { name: altName, exerciseId: alt.id }
-      }
-      return null
-    })(),
+    // Substitution suggestions removed with automatic progression engine
+    substitutionSuggestion: null,
     currentSetNumber,
     totalSets,
     warmupSets,

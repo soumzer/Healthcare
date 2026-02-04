@@ -1,9 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, useEffect, useRef, Component, type ReactNode } from 'react'
+import { useEffect, useRef, Component, type ReactNode } from 'react'
 import { db } from '../db'
 import { useSession } from '../hooks/useSession'
-import { shouldDeload } from '../engine/progression'
-import { calculatePainAdjustments, type PainFeedbackEntry } from '../engine/pain-feedback'
 import type { ExerciseHistory } from '../engine/session-engine'
 import WarmupView from '../components/session/WarmupView'
 import WarmupRehabView from '../components/session/WarmupRehabView'
@@ -97,13 +95,15 @@ function SessionContent({
         }
       }
 
-      const needsDeload = shouldDeload(weeksSince)
+      // Automatic deload detection removed with progression engine.
+      // Deload is now only active when explicitly set as the current phase.
       const mappedPhase = currentPhase?.phase ?? 'hypertrophy'
       const sessionPhase = mappedPhase === 'transition' ? 'hypertrophy' : mappedPhase
+      const isDeloadPhase = mappedPhase === 'deload'
       return {
-        phase: needsDeload ? 'deload' as const : sessionPhase as 'hypertrophy' | 'strength' | 'deload',
-        isDeload: needsDeload,
-        needsDeload,
+        phase: isDeloadPhase ? 'deload' as const : sessionPhase as 'hypertrophy' | 'strength' | 'deload',
+        isDeload: isDeloadPhase,
+        needsDeload: false,
         currentPhaseId: currentPhase?.id,
       }
     },
@@ -141,26 +141,6 @@ function SessionContent({
     sessionIndex >= (program.sessions?.length ?? 0) ||
     !programSession
   )
-
-  // useMemo MUST be called before any early return (Rules of Hooks)
-  const referenceWeights = useMemo(() => {
-    if (!progressData || progressData.length === 0) return new Map<number, number>()
-    const refMap = new Map<number, number>()
-    const byExercise = new Map<number, typeof progressData>()
-    for (const p of progressData) {
-      const list = byExercise.get(p.exerciseId) ?? []
-      list.push(p)
-      byExercise.set(p.exerciseId, list)
-    }
-    for (const [exerciseId, entries] of byExercise) {
-      const sorted = entries.sort((a, b) => b.date.getTime() - a.date.getTime())
-      const healthyEntry = sorted.find((e) => e.avgRepsInReserve >= 0)
-      if (healthyEntry) {
-        refMap.set(exerciseId, healthyEntry.weightKg)
-      }
-    }
-    return refMap
-  }, [progressData])
 
   // Handle invalid sessionIndex early with clear error
   if (isSessionIndexInvalid) {
@@ -222,40 +202,6 @@ function SessionContent({
     if (ex.id !== undefined) exerciseNames[ex.id] = ex.name
   }
 
-  // Build pain feedback entries from recent pain logs
-  const painFeedback: PainFeedbackEntry[] = (() => {
-    if (!recentPainLogs || recentPainLogs.length === 0) return []
-    const byZone = new Map<string, { maxPain: number; duringExercises: Set<string> }>()
-    for (const log of recentPainLogs) {
-      const existing = byZone.get(log.zone) ?? { maxPain: 0, duringExercises: new Set<string>() }
-      existing.maxPain = Math.max(existing.maxPain, log.level)
-      if (log.context === 'during_set' && log.exerciseName) {
-        existing.duringExercises.add(log.exerciseName)
-      }
-      byZone.set(log.zone, existing)
-    }
-    return Array.from(byZone.entries()).map(([zone, data]) => ({
-      zone: zone as import('../db/types').BodyZone,
-      maxPainLevel: data.maxPain,
-      duringExercises: Array.from(data.duringExercises),
-    }))
-  })()
-
-  // Calculate pain adjustments for session exercises
-  const painAdjustments = (() => {
-    if (painFeedback.length === 0) return undefined
-    const sessionExercises = programSession.exercises.map((pe) => {
-      const ex = allExercises.find((e) => e.id === pe.exerciseId)
-      return {
-        exerciseId: pe.exerciseId,
-        exerciseName: ex?.name ?? exerciseNames[pe.exerciseId] ?? '',
-        contraindications: ex?.contraindications ?? [],
-      }
-    })
-    const adjustments = calculatePainAdjustments(painFeedback, sessionExercises, referenceWeights)
-    return adjustments.length > 0 ? adjustments : undefined
-  })()
-
   if (!programSession.exercises || programSession.exercises.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
@@ -281,7 +227,6 @@ function SessionContent({
       exerciseNames={exerciseNames}
       availableWeights={availableWeights}
       phase={phaseData.phase}
-      painAdjustments={painAdjustments}
       userBodyweightKg={user.weight}
     />
   )
@@ -298,7 +243,6 @@ function SessionRunner({
   exerciseNames,
   availableWeights,
   phase: phaseFromData,
-  painAdjustments,
   userBodyweightKg,
 }: {
   programSession: import('../db/types').ProgramSession
@@ -310,7 +254,6 @@ function SessionRunner({
   exerciseNames: Record<number, string>
   availableWeights: number[] | undefined
   phase: 'hypertrophy' | 'strength' | 'deload'
-  painAdjustments?: import('../engine/pain-feedback').PainAdjustment[]
   userBodyweightKg?: number
 }) {
   const navigate = useNavigate()
@@ -326,7 +269,6 @@ function SessionRunner({
     healthConditions: conditions.length > 0 ? conditions : undefined,
     availableWeights,
     phase: phaseFromData,
-    painAdjustments,
     userBodyweightKg,
   })
 
@@ -379,7 +321,7 @@ function SessionRunner({
             programExercises={programSession.exercises.length}
           </p>
           <p className="text-zinc-400 text-xs mb-4">
-            pain={painAdjustments?.length ?? 0} phase={phaseFromData}
+            phase={phaseFromData}
           </p>
           <button onClick={() => navigate('/')} className="bg-white text-black font-semibold rounded-xl py-3 px-6">
             Retour

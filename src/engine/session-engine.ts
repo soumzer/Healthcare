@@ -1,5 +1,3 @@
-import { calculateProgression, type ProgressionResult } from './progression'
-import type { PainAdjustment } from './pain-feedback'
 import type { ProgramSession, ProgramExercise, SessionExercise, SessionSet } from '../db/types'
 
 /**
@@ -37,7 +35,6 @@ export class SessionEngine {
   private occupied: boolean = false
   private history: ExerciseHistory
   private options: SessionEngineOptions
-  private progressionResults: Map<number, ProgressionResult> = new Map()
 
   constructor(
     programSession: ProgramSession,
@@ -78,19 +75,9 @@ export class SessionEngine {
       return closest ?? estimated
     }
 
-    // During deload, reduce weight to 60% of last weight used
-    if (this.options.phase === 'deload') {
-      const deloadWeight = Math.round(prev.lastWeightKg * 0.6 * 2) / 2 // round to nearest 0.5kg
-      const availableWeights = this.options.availableWeights ?? generateDefaultWeights(prev.lastWeightKg)
-      // Find closest available weight at or below the deload target
-      const closest = availableWeights
-        .filter(w => w <= deloadWeight)
-        .sort((a, b) => b - a)[0]
-      return closest ?? deloadWeight
-    }
-
-    const result = this.runProgression(pe, prev)
-    return result.nextWeightKg
+    // With automatic progression removed, simply use last session's weight.
+    // The user will manually adjust weights in the notebook-style UI.
+    return prev.lastWeightKg
   }
 
   private calculatePrescribedReps(pe: ProgramExercise): number {
@@ -98,89 +85,9 @@ export class SessionEngine {
     // No history = use program's target reps
     if (!prev) return pe.targetReps
 
-    // During deload, use moderate rep range (10) — 60% weight at original reps would be too easy
-    if (this.options.phase === 'deload') {
-      return Math.max(pe.targetReps, 10)
-    }
-
-    const result = this.runProgression(pe, prev)
-    return result.nextReps
-  }
-
-  private runProgression(pe: ProgramExercise, prev: ExerciseHistoryEntry): ProgressionResult {
-    // Cache result to avoid double calculation (weight + reps for same exercise)
-    const cached = this.progressionResults.get(pe.exerciseId)
-    if (cached) return cached
-
-    // Look up exercise category from catalog
-    const exerciseData = this.options.exerciseCatalog?.find(e => e.id === pe.exerciseId)
-    const exerciseCategory = exerciseData?.category as 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core' | undefined
-
-    // Use PROGRAM's target reps, NOT history's prescribed reps
-    // This is the key fix for the "prescribedReps pollution" bug
-    const result = calculateProgression({
-      programTargetReps: pe.targetReps,
-      programTargetSets: pe.sets,
-      lastWeightKg: prev.lastWeightKg,
-      lastRepsPerSet: prev.lastReps,
-      lastAvgRIR: prev.lastAvgRIR,
-      availableWeights: this.options.availableWeights?.length
-        ? this.options.availableWeights
-        : generateDefaultWeights(prev.lastWeightKg),
-      phase: this.options.phase ?? 'hypertrophy',
-      sessionIntensity: this.options.sessionIntensity,
-      exerciseCategory,
-    })
-
-    this.progressionResults.set(pe.exerciseId, result)
-    return result
-  }
-
-  getProgressionResult(exerciseId: number): ProgressionResult | undefined {
-    return this.progressionResults.get(exerciseId)
-  }
-
-  applyPainAdjustments(adjustments: PainAdjustment[]): void {
-    for (const adj of adjustments) {
-      const exercise = this.exercises.find((e) => e.exerciseId === adj.exerciseId)
-      if (!exercise) continue
-
-      if (adj.action === 'reduce_weight' && adj.weightMultiplier) {
-        const baseWeight = adj.referenceWeightKg ?? exercise.prescribedWeightKg
-        exercise.prescribedWeightKg =
-          Math.round(baseWeight * adj.weightMultiplier * 2) / 2
-      }
-
-      if (adj.action === 'no_progression') {
-        // Reset to last session's weight — undo any progression
-        const prev = this.history[exercise.exerciseId]
-        if (prev) {
-          exercise.prescribedWeightKg = prev.lastWeightKg
-          // Keep current prescribed reps (already calculated from program's targetReps)
-          // Do NOT reset to history's prescribedReps - that was the bug!
-        }
-      }
-    }
-
-    // Remove skipped exercises entirely
-    const skippedIds = new Set(
-      adjustments.filter((a) => a.action === 'skip').map((a) => a.exerciseId)
-    )
-    if (skippedIds.size > 0) {
-      // Track which exercise is current before removing
-      const currentExerciseId = this.currentIndex < this.exercises.length
-        ? this.exercises[this.currentIndex].exerciseId
-        : null
-      this.exercises = this.exercises.filter((e) => !skippedIds.has(e.exerciseId))
-      // Recalculate currentIndex: find the current exercise in the filtered list
-      if (currentExerciseId !== null && !skippedIds.has(currentExerciseId)) {
-        this.currentIndex = this.exercises.findIndex((e) => e.exerciseId === currentExerciseId)
-        if (this.currentIndex < 0) this.currentIndex = 0
-      } else {
-        // Current exercise was skipped — reset to 0 (next available)
-        this.currentIndex = 0
-      }
-    }
+    // Without automatic progression, use the program's target reps.
+    // The user will manually adjust in the notebook-style UI.
+    return pe.targetReps
   }
 
   getCurrentExercise(): SessionExercise {
