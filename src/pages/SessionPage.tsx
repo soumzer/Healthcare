@@ -1,204 +1,58 @@
+import { useState, useCallback, useMemo, Component, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useRef, Component, type ReactNode } from 'react'
-import { db } from '../db'
-import { useSession } from '../hooks/useSession'
-import type { ExerciseHistory } from '../engine/session-engine'
-import ExerciseView from '../components/session/ExerciseView'
-import RestTimer from '../components/session/RestTimer'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { db } from '../db'
+import ExerciseNotebook from '../components/session/ExerciseNotebook'
+import { fixedWarmupRoutine } from '../data/warmup-routine'
+import { selectCooldownExercises } from '../engine/cooldown'
+import { suggestFiller } from '../engine/filler'
+import type { BodyZone, Exercise, ProgramSession } from '../db/types'
 
-/** Data loader — resolves all async data then renders SessionRunner */
-function SessionContent({
-  programId,
-  sessionIndex,
-}: {
-  programId: number
-  sessionIndex: number
-}) {
-  // Combine independent queries that don't depend on user
-  const baseData = useLiveQuery(
-    async () => {
-      const [program, user, allExercises] = await Promise.all([
-        db.workoutPrograms.get(programId),
-        db.userProfiles.toCollection().first(),
-        db.exercises.toArray(),
-      ])
-      return { program, user, allExercises }
-    },
-    [programId]
-  )
+type SessionPhase = 'warmup' | 'exercises' | 'notebook' | 'cooldown' | 'done'
 
-  const program = baseData?.program
-  const user = baseData?.user
-  const allExercises = baseData?.allExercises
+interface ExerciseStatus {
+  exerciseId: number
+  status: 'pending' | 'done' | 'skipped'
+  skipZone?: BodyZone
+}
 
-  // Combine all user-dependent queries into a single hook to prevent cascading re-renders
-  const userData = useLiveQuery(
-    async () => {
-      if (!user?.id) return null
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const [conditions, progressData, recentPainLogs] = await Promise.all([
-        db.healthConditions.where('userId').equals(user.id).and((c) => c.isActive).toArray(),
-        db.exerciseProgress.where('userId').equals(user.id).toArray(),
-        db.painLogs.where('userId').equals(user.id).and((p) => p.date >= sevenDaysAgo).toArray(),
-      ])
-      return { conditions, progressData, recentPainLogs }
-    },
-    [user?.id]
-  )
+function SessionContent({ programId, sessionIndex }: { programId: number; sessionIndex: number }) {
+  const navigate = useNavigate()
 
-  const conditions = userData?.conditions
-  const progressData = userData?.progressData
-  const recentPainLogs = userData?.recentPainLogs
+  const data = useLiveQuery(async () => {
+    const [program, user, allExercises] = await Promise.all([
+      db.workoutPrograms.get(programId),
+      db.userProfiles.toCollection().first(),
+      db.exercises.toArray(),
+    ])
+    if (!user?.id || !program) return null
 
-  // Determine current training phase and deload status (READ ONLY - no DB writes)
-  const phaseData = useLiveQuery(
-    async () => {
-      if (!user?.id) return { phase: 'hypertrophy' as const, isDeload: false, needsDeload: false, currentPhaseId: undefined }
+    const conditions = await db.healthConditions
+      .where('userId').equals(user.id)
+      .and(c => c.isActive)
+      .toArray()
 
-      const phases = await db.trainingPhases
-        .where('userId')
-        .equals(user.id)
-        .toArray()
-      const sortedPhases = phases.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
-      const currentPhase = sortedPhases.find((p) => !p.endedAt)
+    return { program, user, allExercises, conditions }
+  }, [programId])
 
-      if (currentPhase?.phase === 'deload') {
-        return { phase: 'deload' as const, isDeload: true, needsDeload: false, currentPhaseId: currentPhase.id }
-      }
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
+        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
-      const lastDeload = sortedPhases.find((p) => p.phase === 'deload')
-      let weeksSince = 0
-      if (lastDeload) {
-        const deloadEnd = lastDeload.endedAt ?? lastDeload.startedAt
-        weeksSince = Math.floor((Date.now() - deloadEnd.getTime()) / (7 * 24 * 60 * 60 * 1000))
-      } else {
-        const allSessions = await db.workoutSessions
-          .where('userId')
-          .equals(user.id)
-          .toArray()
-        const firstCompleted = allSessions
-          .filter((s) => s.completedAt)
-          .sort((a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0))[0]
-        if (firstCompleted?.completedAt) {
-          weeksSince = Math.floor(
-            (Date.now() - firstCompleted.completedAt.getTime()) / (7 * 24 * 60 * 60 * 1000)
-          )
-        }
-      }
+  const { program, user, allExercises, conditions } = data
+  const programSession = program.sessions?.[sessionIndex]
 
-      // Automatic deload detection removed with progression engine.
-      // Deload is now only active when explicitly set as the current phase.
-      const mappedPhase = currentPhase?.phase ?? 'hypertrophy'
-      const sessionPhase = mappedPhase === 'transition' ? 'hypertrophy' : mappedPhase
-      const isDeloadPhase = mappedPhase === 'deload'
-      return {
-        phase: isDeloadPhase ? 'deload' as const : sessionPhase as 'hypertrophy' | 'strength' | 'deload',
-        isDeload: isDeloadPhase,
-        needsDeload: false,
-        currentPhaseId: currentPhase?.id,
-      }
-    },
-    [user?.id]
-  )
-
-  // Handle deload phase creation in useEffect (side effect, not during render)
-  const deloadCreatedRef = useRef(false)
-  useEffect(() => {
-    if (!phaseData?.needsDeload || deloadCreatedRef.current || !user?.id) return
-    deloadCreatedRef.current = true
-
-    const createDeload = async () => {
-      try {
-        if (phaseData.currentPhaseId) {
-          await db.trainingPhases.update(phaseData.currentPhaseId, { endedAt: new Date() })
-        }
-        await db.trainingPhases.add({
-          userId: user.id!,
-          phase: 'deload',
-          startedAt: new Date(),
-          weekCount: 1,
-        })
-      } catch (error) {
-        console.error('Failed to create deload phase:', error)
-      }
-    }
-    createDeload()
-  }, [phaseData?.needsDeload, phaseData?.currentPhaseId, user?.id])
-
-  // Validate sessionIndex is within bounds
-  const programSession = program?.sessions?.[sessionIndex]
-  const isSessionIndexInvalid = program && (
-    sessionIndex < 0 ||
-    sessionIndex >= (program.sessions?.length ?? 0) ||
-    !programSession
-  )
-
-  // Handle invalid sessionIndex early with clear error
-  if (isSessionIndexInvalid) {
+  if (!programSession || !programSession.exercises?.length) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
         <p className="text-red-400 text-lg font-bold mb-2">Seance introuvable</p>
-        <p className="text-zinc-400 text-sm mb-4">
-          La seance {sessionIndex + 1} n'existe pas dans ce programme.
-          {program?.sessions?.length ? ` (${program.sessions.length} seance${program.sessions.length > 1 ? 's' : ''} disponible${program.sessions.length > 1 ? 's' : ''})` : ''}
-        </p>
-        <a href="/" className="bg-white text-black font-semibold rounded-xl py-3 px-6">
-          Retour a l'accueil
-        </a>
-      </div>
-    )
-  }
-
-  if (!program || !programSession || !user || !allExercises || !progressData || !phaseData || conditions === undefined || recentPainLogs === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
-        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-white text-lg">Chargement...</p>
-        <p className="text-zinc-400 text-xs mt-2">
-          {!program ? 'programme' : !programSession ? 'session' : !user ? 'profil' : !allExercises ? 'exercices' : !progressData ? 'progression' : !phaseData ? 'phase' : conditions === undefined ? 'conditions' : 'douleurs'}
-        </p>
-      </div>
-    )
-  }
-
-  // Build history from progress data — use latest ExerciseProgress entry per exercise
-  const history: ExerciseHistory = {}
-  const latestByExercise = new Map<number, typeof progressData[0]>()
-  for (const p of progressData) {
-    const existing = latestByExercise.get(p.exerciseId)
-    if (!existing || p.date > existing.date) {
-      latestByExercise.set(p.exerciseId, p)
-    }
-  }
-  for (const [exerciseId, p] of latestByExercise) {
-    // Only include actual performance data - NOT prescribedReps
-    // This prevents the "prescribedReps pollution" bug where deload reps
-    // would pollute future calculations
-    history[exerciseId] = {
-      lastWeightKg: p.weightKg,
-      lastReps: p.repsPerSet ?? Array(p.sets).fill(p.reps),
-      lastAvgRIR: p.avgRepsInReserve,
-      lastAvgRestSeconds: p.avgRestSeconds,
-    }
-  }
-
-  // Build exercise names map
-  const exerciseNames: Record<number, string> = {}
-  for (const ex of allExercises) {
-    if (ex.id !== undefined) exerciseNames[ex.id] = ex.name
-  }
-
-  if (!programSession.exercises || programSession.exercises.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
-        <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice dans cette séance</p>
-        <p className="text-zinc-400 text-xs mb-4">
-          program={programId} session={sessionIndex} sessions={program.sessions.length}
-        </p>
-        <a href="/" className="bg-white text-black font-semibold rounded-xl py-3 px-6">
+        <button onClick={() => navigate('/')} className="bg-white text-black font-semibold rounded-xl py-3 px-6">
           Retour
-        </a>
+        </button>
       </div>
     )
   }
@@ -206,60 +60,343 @@ function SessionContent({
   return (
     <SessionRunner
       programSession={programSession}
-      history={history}
       userId={user.id!}
       programId={programId}
-      conditions={conditions ?? []}
       allExercises={allExercises}
-      exerciseNames={exerciseNames}
-      phase={phaseData.phase}
-      userBodyweightKg={user.weight}
+      conditions={conditions}
     />
   )
 }
 
-/** Session runner — only mounts when all data is loaded */
 function SessionRunner({
   programSession,
-  history,
   userId,
   programId,
-  conditions,
   allExercises,
-  exerciseNames,
-  phase: phaseFromData,
-  userBodyweightKg,
+  conditions,
 }: {
-  programSession: import('../db/types').ProgramSession
-  history: ExerciseHistory
+  programSession: ProgramSession
   userId: number
   programId: number
-  conditions: import('../db/types').HealthCondition[]
-  allExercises: import('../db/types').Exercise[]
-  exerciseNames: Record<number, string>
-  phase: 'hypertrophy' | 'strength' | 'deload'
-  userBodyweightKg?: number
+  allExercises: Exercise[]
+  conditions: { bodyZone: BodyZone }[]
 }) {
   const navigate = useNavigate()
+  const [phase, setPhase] = useState<SessionPhase>('warmup')
+  const [currentExerciseIdx, setCurrentExerciseIdx] = useState(0)
+  const [exerciseStatuses, setExerciseStatuses] = useState<ExerciseStatus[]>(() =>
+    programSession.exercises.map(e => ({ exerciseId: e.exerciseId, status: 'pending' }))
+  )
+  const [sessionStartTime] = useState(() => new Date())
+  const [warmupChecked, setWarmupChecked] = useState<Set<number>>(() => new Set())
 
-  const session = useSession({
-    programSession,
-    history,
-    userId,
-    programId,
-    userConditions: conditions.map((c) => c.bodyZone),
-    availableExercises: allExercises,
-    exerciseNames,
-    healthConditions: conditions.length > 0 ? conditions : undefined,
-    phase: phaseFromData,
-    userBodyweightKg,
-  })
+  // Build exercise catalog lookup
+  const exerciseMap = useMemo(() => {
+    const map = new Map<number, Exercise>()
+    for (const ex of allExercises) {
+      if (ex.id !== undefined) map.set(ex.id, ex)
+    }
+    return map
+  }, [allExercises])
 
-  if (session.phase === 'done') {
+  // Session muscles for cooldown
+  const sessionMuscles = useMemo(() => {
+    const muscles = new Set<string>()
+    for (const pe of programSession.exercises) {
+      const ex = exerciseMap.get(pe.exerciseId)
+      if (ex) {
+        for (const m of ex.primaryMuscles) muscles.add(m)
+      }
+    }
+    return [...muscles]
+  }, [programSession.exercises, exerciseMap])
+
+  const cooldownExercises = useMemo(
+    () => selectCooldownExercises(sessionMuscles, allExercises),
+    [sessionMuscles, allExercises]
+  )
+
+  // Current exercise info
+  const currentProgramExercise = programSession.exercises[currentExerciseIdx]
+  const currentCatalogExercise = currentProgramExercise
+    ? exerciseMap.get(currentProgramExercise.exerciseId)
+    : undefined
+
+  // Filler suggestions for machine occupied
+  const fillerSuggestions = useMemo(() => {
+    if (!currentCatalogExercise) return []
+    const nextIdx = currentExerciseIdx + 1
+    const nextEx = nextIdx < programSession.exercises.length
+      ? exerciseMap.get(programSession.exercises[nextIdx].exerciseId)
+      : undefined
+    const nextMuscles = nextEx?.primaryMuscles ?? []
+    const suggestion = suggestFiller({
+      activeWaitPool: [],
+      nextExerciseMuscles: nextMuscles,
+      completedFillers: [],
+      allExercises,
+    })
+    return suggestion ? [suggestion] : []
+  }, [currentExerciseIdx, programSession.exercises, exerciseMap, allExercises, currentCatalogExercise])
+
+  const handleNextExercise = useCallback(() => {
+    // Mark current as done
+    setExerciseStatuses(prev => prev.map((s, i) =>
+      i === currentExerciseIdx ? { ...s, status: 'done' as const } : s
+    ))
+    setPhase('exercises')
+  }, [currentExerciseIdx])
+
+  const handleSkipExercise = useCallback((zone: BodyZone) => {
+    setExerciseStatuses(prev => prev.map((s, i) =>
+      i === currentExerciseIdx ? { ...s, status: 'skipped' as const, skipZone: zone } : s
+    ))
+    setPhase('exercises')
+  }, [currentExerciseIdx])
+
+  const handleOpenExercise = useCallback((idx: number) => {
+    setCurrentExerciseIdx(idx)
+    setPhase('notebook')
+  }, [])
+
+  const allDone = exerciseStatuses.every(s => s.status !== 'pending')
+
+  const handleFinishSession = useCallback(async () => {
+    try {
+      await db.workoutSessions.add({
+        userId,
+        programId,
+        sessionName: programSession.name,
+        startedAt: sessionStartTime,
+        completedAt: new Date(),
+        exercises: programSession.exercises.map((pe, i) => ({
+          exerciseId: pe.exerciseId,
+          exerciseName: exerciseMap.get(pe.exerciseId)?.name ?? '',
+          prescribedSets: pe.targetSets,
+          prescribedReps: pe.targetReps,
+          prescribedWeightKg: 0,
+          sets: [],
+          order: i + 1,
+          status: exerciseStatuses[i]?.status === 'done' ? 'completed' as const : 'skipped' as const,
+          skippedReason: exerciseStatuses[i]?.status === 'skipped' ? 'pain' as const : undefined,
+        })),
+        endPainChecks: [],
+        notes: '',
+      })
+    } catch (error) {
+      console.error('Failed to save session:', error)
+    }
+    setPhase('done')
+  }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap])
+
+  // --- Render phases ---
+
+  if (phase === 'warmup') {
     return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)] p-4 items-center justify-center text-center overflow-hidden">
-        <p className="text-3xl font-bold mb-4">Bravo !</p>
-        <p className="text-zinc-400 mb-8">Séance enregistrée avec succès.</p>
+      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+        <div className="text-center mb-6">
+          <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Echauffement</p>
+          <h2 className="text-xl font-bold">{programSession.name}</h2>
+          <p className="text-zinc-400 text-sm mt-1">Halteres legeres ou barre a vide</p>
+        </div>
+
+        <div className="flex-1 space-y-1">
+          {fixedWarmupRoutine.map((item, i) => (
+            <button
+              key={i}
+              onClick={() => setWarmupChecked(prev => {
+                const next = new Set(prev)
+                next.has(i) ? next.delete(i) : next.add(i)
+                return next
+              })}
+              className="w-full flex items-center gap-3 bg-zinc-900 rounded-lg px-3 py-2 text-left"
+            >
+              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                warmupChecked.has(i) ? 'bg-emerald-600 border-emerald-600' : 'border-zinc-600'
+              }`}>
+                {warmupChecked.has(i) && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className={`text-sm ${warmupChecked.has(i) ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                {item.name}
+              </span>
+              <span className="text-zinc-500 text-xs ml-auto">{item.reps}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-6 pb-4">
+          <button
+            onClick={() => setPhase('exercises')}
+            className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
+          >
+            C'est parti
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'exercises') {
+    return (
+      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold">{programSession.name}</h2>
+          <p className="text-zinc-400 text-sm">
+            {exerciseStatuses.filter(s => s.status !== 'pending').length}/{programSession.exercises.length} exercices
+          </p>
+        </div>
+
+        <div className="flex-1 space-y-2">
+          {programSession.exercises.map((pe, idx) => {
+            const catalog = exerciseMap.get(pe.exerciseId)
+            const status = exerciseStatuses[idx]
+            const intensity = programSession.intensity as 'heavy' | 'volume' | 'moderate' | undefined
+            return (
+              <button
+                key={pe.exerciseId}
+                onClick={() => handleOpenExercise(idx)}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                  status.status === 'done' ? 'bg-zinc-900/50' :
+                  status.status === 'skipped' ? 'bg-red-900/20' :
+                  'bg-zinc-900'
+                }`}
+              >
+                {/* Status icon */}
+                <div className="w-6 flex-shrink-0 text-center">
+                  {status.status === 'done' && <span className="text-emerald-400">&#10003;</span>}
+                  {status.status === 'skipped' && <span className="text-red-400">&#10007;</span>}
+                  {status.status === 'pending' && <span className="text-zinc-600">&#9675;</span>}
+                </div>
+
+                {/* Exercise info */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-medium text-sm ${status.status !== 'pending' ? 'text-zinc-400' : 'text-white'}`}>
+                    {catalog?.name ?? `Exercise #${pe.exerciseId}`}
+                  </p>
+                  <p className="text-zinc-500 text-xs">
+                    {pe.targetSets}x{pe.targetReps} — repos {pe.restSeconds}s
+                  </p>
+                </div>
+
+                {/* Intensity badge */}
+                {intensity && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    intensity === 'heavy' ? 'bg-blue-900/40 text-blue-400' :
+                    intensity === 'volume' ? 'bg-emerald-900/40 text-emerald-400' :
+                    'bg-amber-900/40 text-amber-400'
+                  }`}>
+                    {intensity === 'heavy' ? 'F' : intensity === 'volume' ? 'V' : 'M'}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="pt-6 pb-4">
+          {allDone ? (
+            <button
+              onClick={() => cooldownExercises.length > 0 ? setPhase('cooldown') : handleFinishSession()}
+              className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
+            >
+              {cooldownExercises.length > 0 ? 'Cooldown' : 'Terminer la seance'}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                const nextPending = exerciseStatuses.findIndex(s => s.status === 'pending')
+                if (nextPending >= 0) handleOpenExercise(nextPending)
+              }}
+              className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
+            >
+              Continuer
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'notebook' && currentProgramExercise && currentCatalogExercise) {
+    const intensity = (programSession.intensity ?? 'volume') as 'heavy' | 'volume' | 'moderate'
+    return (
+      <ExerciseNotebook
+        exercise={{
+          exerciseId: currentProgramExercise.exerciseId,
+          exerciseName: currentCatalogExercise.name,
+          instructions: currentCatalogExercise.instructions,
+          category: currentCatalogExercise.category as 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core',
+          primaryMuscles: currentCatalogExercise.primaryMuscles,
+          isRehab: currentCatalogExercise.isRehab,
+        }}
+        target={{
+          sets: currentProgramExercise.targetSets,
+          reps: currentProgramExercise.targetReps,
+          restSeconds: currentProgramExercise.restSeconds,
+          intensity,
+        }}
+        exerciseIndex={currentExerciseIdx}
+        totalExercises={programSession.exercises.length}
+        userId={userId}
+        fillerSuggestions={fillerSuggestions}
+        onNext={handleNextExercise}
+        onSkip={handleSkipExercise}
+      />
+    )
+  }
+
+  if (phase === 'cooldown') {
+    return (
+      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+        <div className="text-center mb-6">
+          <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Cooldown</p>
+          <h2 className="text-xl font-bold">Etirements</h2>
+        </div>
+
+        <div className="flex-1 space-y-3">
+          {cooldownExercises.map((ex, i) => (
+            <div key={ex.id ?? i} className="bg-zinc-900 rounded-xl px-4 py-3">
+              <p className="text-white font-medium">{ex.name}</p>
+              <p className="text-zinc-400 text-sm mt-1">{ex.instructions}</p>
+            </div>
+          ))}
+          {cooldownExercises.length === 0 && (
+            <p className="text-zinc-500 text-center">Pas d'etirements specifiques aujourd'hui.</p>
+          )}
+        </div>
+
+        <div className="pt-6 pb-4">
+          <button
+            onClick={handleFinishSession}
+            className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
+          >
+            Terminer la seance
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'done') {
+    const doneCount = exerciseStatuses.filter(s => s.status === 'done').length
+    const skippedCount = exerciseStatuses.filter(s => s.status === 'skipped').length
+    const duration = Math.round((Date.now() - sessionStartTime.getTime()) / 60000)
+
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-6 text-center">
+        <p className="text-3xl font-bold mb-2">Bravo !</p>
+        <p className="text-zinc-400 mb-6">Seance enregistree.</p>
+        <div className="bg-zinc-900 rounded-xl p-4 mb-8 w-full max-w-sm text-left space-y-1">
+          <p className="text-sm text-zinc-300">{doneCount} exercice{doneCount > 1 ? 's' : ''} complete{doneCount > 1 ? 's' : ''}</p>
+          {skippedCount > 0 && (
+            <p className="text-sm text-amber-400">{skippedCount} skip{skippedCount > 1 ? 's' : ''} (douleur)</p>
+          )}
+          <p className="text-sm text-zinc-500">Duree: ~{duration} min</p>
+        </div>
         <button
           onClick={() => navigate('/')}
           className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
@@ -270,126 +407,12 @@ function SessionRunner({
     )
   }
 
-  if (session.phase === 'warmup_rehab') {
-    // WarmupRehabView removed — skip to warmup or exercise
-    session.completeWarmupRehab()
-    return null
-  }
-
-  if (session.phase === 'warmup') {
-    // WarmupView removed — will be reimplemented in Task 8
-    session.skipWarmup()
-    return null
-  }
-
-  if (session.phase === 'exercise') {
-    if (!session.currentExercise) {
-      return (
-        <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center overflow-hidden">
-          <p className="text-red-400 text-lg font-bold mb-2">Aucun exercice trouvé</p>
-          <p className="text-zinc-400 text-xs mb-1">
-            engineTotal={session.totalExercises} idx={session.exerciseIndex}
-          </p>
-          <p className="text-zinc-400 text-xs mb-1">
-            programExercises={programSession.exercises.length}
-          </p>
-          <p className="text-zinc-400 text-xs mb-4">
-            phase={phaseFromData}
-          </p>
-          <button onClick={() => navigate('/')} className="bg-white text-black font-semibold rounded-xl py-3 px-6">
-            Retour
-          </button>
-        </div>
-      )
-    }
-    return (
-      <ExerciseView
-        exercise={session.currentExercise}
-        currentSet={session.currentSetNumber}
-        totalSets={session.totalSets}
-        exerciseIndex={session.exerciseIndex}
-        totalExercises={session.totalExercises}
-        substitutionSuggestion={session.substitutionSuggestion}
-        userId={userId}
-        onDone={session.startSet}
-        onOccupied={session.markOccupied}
-        onNoWeight={session.openWeightPicker}
-        onSubstitute={session.substituteExercise}
-      />
-    )
-  }
-
-  if (session.phase === 'set_logger') {
-    // SetLogger removed — will be reimplemented in ExerciseNotebook (Task 7)
-    return (
-      <div className="p-6 text-center text-zinc-400">
-        <p>Set logger sera reimplemente dans le notebook.</p>
-      </div>
-    )
-  }
-
-  if (session.phase === 'rest_timer') {
-    return (
-      <RestTimer
-        restSeconds={session.restSeconds}
-        restElapsed={session.restElapsed}
-        nextSet={session.currentSetNumber}
-        totalSets={session.totalSets}
-        nextWeightKg={session.currentExercise?.prescribedWeightKg ?? 0}
-        nextReps={session.currentExercise?.prescribedReps ?? 0}
-        exerciseName={session.currentExercise?.exerciseName ?? ''}
-        onSkip={session.completeRestTimer}
-      />
-    )
-  }
-
-  if (session.phase === 'occupied') {
-    // ActiveWait removed — will be reimplemented in Task 8
-    return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center">
-        <p className="text-white text-lg font-bold mb-4">Machine occupee</p>
-        <button
-          onClick={session.markMachineFree}
-          className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
-        >
-          Machine libre
-        </button>
-      </div>
-    )
-  }
-
-  if (session.phase === 'weight_picker') {
-    // WeightPicker removed — cancel back to exercise
-    session.cancelWeightPicker()
-    return null
-  }
-
-  if (session.phase === 'cooldown') {
-    // CooldownView removed — will be reimplemented in Task 8
-    return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-4 text-center">
-        <p className="text-white text-lg font-bold mb-4">Cooldown</p>
-        <button
-          onClick={() => session.completeCooldown()}
-          className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
-        >
-          Terminer
-        </button>
-      </div>
-    )
-  }
-
   return null
 }
 
-class SessionErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
+class SessionErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
-  static getDerivedStateFromError(error: Error) {
-    return { error }
-  }
+  static getDerivedStateFromError(error: Error) { return { error } }
   render() {
     if (this.state.error) {
       return (
@@ -409,13 +432,10 @@ class SessionErrorBoundary extends Component<
   }
 }
 
-// Safe integer parsing with bounds validation
 function parseIntSafe(val: string | null, defaultVal: number, min = 0, max = Number.MAX_SAFE_INTEGER): number {
   if (val === null) return defaultVal
   const num = parseInt(val, 10)
-  if (!Number.isInteger(num) || num < min || num > max) {
-    return defaultVal
-  }
+  if (!Number.isInteger(num) || num < min || num > max) return defaultVal
   return num
 }
 
