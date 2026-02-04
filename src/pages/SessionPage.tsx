@@ -226,14 +226,14 @@ function SessionRunner({
 
   if (phase === 'warmup') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
-        <div className="text-center mb-6">
+      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden p-4">
+        <div className="text-center mb-4">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Echauffement</p>
           <h2 className="text-xl font-bold">{programSession.name}</h2>
           <p className="text-zinc-400 text-sm mt-1">Halteres legeres ou barre a vide</p>
         </div>
 
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 overflow-y-auto space-y-1">
           {fixedWarmupRoutine.map((item, i) => (
             <button
               key={i}
@@ -262,7 +262,7 @@ function SessionRunner({
           ))}
         </div>
 
-        <div className="pt-6 pb-4">
+        <div className="pt-3 pb-2 flex-shrink-0">
           <button
             onClick={() => setPhase('exercises')}
             className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"
@@ -276,7 +276,7 @@ function SessionRunner({
 
   if (phase === 'exercises') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
+      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden p-4">
         <div className="mb-4">
           <h2 className="text-xl font-bold">{programSession.name}</h2>
           <p className="text-zinc-400 text-sm">
@@ -284,7 +284,7 @@ function SessionRunner({
           </p>
         </div>
 
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2">
           {programSession.exercises.map((pe, idx) => {
             const catalog = exerciseMap.get(pe.exerciseId)
             const status = exerciseStatuses[idx]
@@ -331,7 +331,7 @@ function SessionRunner({
           })}
         </div>
 
-        <div className="pt-6 pb-4">
+        <div className="pt-3 pb-2 flex-shrink-0">
           {allDone ? (
             <button
               onClick={() => cooldownExercises.length > 0 ? setPhase('cooldown') : handleFinishSession()}
@@ -385,13 +385,13 @@ function SessionRunner({
 
   if (phase === 'cooldown') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
-        <div className="text-center mb-6">
+      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden p-4">
+        <div className="text-center mb-4">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Cooldown</p>
           <h2 className="text-xl font-bold">Etirements</h2>
         </div>
 
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 overflow-y-auto space-y-3">
           {cooldownExercises.map((ex, i) => (
             <div key={ex.id ?? i} className="bg-zinc-900 rounded-xl px-4 py-3">
               <p className="text-white font-medium">{ex.name}</p>
@@ -403,7 +403,7 @@ function SessionRunner({
           )}
         </div>
 
-        <div className="pt-6 pb-4">
+        <div className="pt-3 pb-2 flex-shrink-0">
           <button
             onClick={handleFinishSession}
             className="w-full bg-white text-black font-semibold rounded-xl py-4 text-lg"

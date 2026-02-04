@@ -334,36 +334,42 @@ function buildStructuredSession(
   const painfulZones = (conditions ?? [])
     .filter((c) => c.isActive && c.painLevel >= 7)
     .map((c) => c.bodyZone)
+  const painfulZoneSet = new Set(painfulZones)
   const rehabPool = pool.filter((e) => e.isRehab && e.rehabTarget !== undefined)
 
   for (const slot of slots) {
-    const candidates = slot.candidates(pool).filter((e) => !usedIds.has(e.id ?? 0))
+    const allCandidates = slot.candidates(pool).filter((e) => !usedIds.has(e.id ?? 0))
     let picked: Exercise | undefined
     let isRehabSubstitution = false
-    if (slot.preferredName) {
-      picked = pickPreferred(slot.preferredName, candidates, usedIds)
-    } else {
-      picked = pickOne(candidates, usedIds)
-    }
 
-    // Rehab substitution: if no candidate found and there are painful zones,
-    // find a rehab exercise for a matching body zone
-    if (!picked && painfulZones.length > 0) {
-      const group = slotMuscleGroup(slot.label)
-      // Prefer rehab for zones matching the slot's muscle group
-      const matchingZones = group
-        ? painfulZones.filter((z) => ZONE_MUSCLE_GROUP[z] === group)
-        : painfulZones
-      const zonesToSearch = matchingZones.length > 0 ? matchingZones : painfulZones
+    // Check if any candidate in this slot is contraindicated for a painful zone
+    // If so, replace the entire slot with a rehab exercise (don't substitute with another exercise that stresses the same area)
+    const contraindicatedEx = painfulZoneSet.size > 0
+      ? allCandidates.find((e) => e.contraindications.some((z) => painfulZoneSet.has(z)))
+      : undefined
 
+    if (contraindicatedEx) {
+      // Find the affected zone and substitute with rehab
+      const affectedZone = contraindicatedEx.contraindications.find((z) => painfulZoneSet.has(z))!
       const rehabCandidate = rehabPool.find((e) =>
-        !usedIds.has(e.id ?? 0)
-        && zonesToSearch.includes(e.rehabTarget!),
+        !usedIds.has(e.id ?? 0) && e.rehabTarget === affectedZone,
       )
       if (rehabCandidate) {
         picked = rehabCandidate
         usedIds.add(rehabCandidate.id ?? 0)
         isRehabSubstitution = true
+      }
+    }
+
+    // Normal flow: pick from safe (non-contraindicated) candidates
+    if (!picked) {
+      const safeCandidates = allCandidates.filter(
+        (e) => !e.contraindications.some((z) => painfulZoneSet.has(z)),
+      )
+      if (slot.preferredName) {
+        picked = pickPreferred(slot.preferredName, safeCandidates, usedIds)
+      } else {
+        picked = pickOne(safeCandidates, usedIds)
       }
     }
 
@@ -712,19 +718,14 @@ function buildFullBodySessions(
   // -----------------------------------------------------------------------
 
   // DUP: Day A = heavy, Day B = volume, Day C = moderate
-  // Pre-trim slots as a first pass, then buildStructuredSession will trim again after intensity adjustments
-  const trimmedA = trimSlotsToTimeBudget(fullBodyASlots, minutesPerSession)
-  const trimmedB = trimSlotsToTimeBudget(fullBodyBSlots, minutesPerSession)
-
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Full Body A — Force', 1, trimmedA, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Full Body B — Volume', 2, trimmedB, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Full Body A — Force', 1, fullBodyASlots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Full Body B — Volume', 2, fullBodyBSlots, available, 'volume', minutesPerSession, conditions),
   ]
 
   if (daysPerWeek >= 3) {
-    const trimmedC = trimSlotsToTimeBudget(fullBodyCSlots, minutesPerSession)
     sessions.push(
-      buildStructuredSession('Full Body C — Moderé', 3, trimmedC, available, 'moderate', minutesPerSession, conditions),
+      buildStructuredSession('Full Body C — Moderé', 3, fullBodyCSlots, available, 'moderate', minutesPerSession, conditions),
     )
   }
 
@@ -1076,17 +1077,11 @@ function buildUpperLowerSessions(
 
   // DUP: Session 1 & 2 = heavy (fewer reps, more weight)
   //      Session 3 & 4 = volume (more reps, less weight)
-  // Pre-trim slots as a first pass, then buildStructuredSession will trim again after intensity adjustments
-  const trimmedLower1 = trimSlotsToTimeBudget(lower1Slots, minutesPerSession)
-  const trimmedUpper1 = trimSlotsToTimeBudget(upper1Slots, minutesPerSession)
-  const trimmedLower2 = trimSlotsToTimeBudget(lower2Slots, minutesPerSession)
-  const trimmedUpper2 = trimSlotsToTimeBudget(upper2Slots, minutesPerSession)
-
   const sessions: ProgramSession[] = [
-    buildStructuredSession('Lower 1 — Force', 1, trimmedLower1, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Upper 1 — Force', 2, trimmedUpper1, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Lower 2 — Volume', 3, trimmedLower2, available, 'volume', minutesPerSession, conditions),
-    buildStructuredSession('Upper 2 — Volume', 4, trimmedUpper2, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Lower 1 — Force', 1, lower1Slots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Upper 1 — Force', 2, upper1Slots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Lower 2 — Volume', 3, lower2Slots, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Upper 2 — Volume', 4, upper2Slots, available, 'volume', minutesPerSession, conditions),
   ]
 
   return sessions
@@ -1555,21 +1550,13 @@ function buildPushPullLegsSessions(
   // -----------------------------------------------------------------------
 
   // DUP: A sessions = heavy, B sessions = volume
-  // Pre-trim slots as a first pass, then buildStructuredSession will trim again after intensity adjustments
-  const trimmedPushA = trimSlotsToTimeBudget(pushASlots, minutesPerSession)
-  const trimmedPullA = trimSlotsToTimeBudget(pullASlots, minutesPerSession)
-  const trimmedLegsA = trimSlotsToTimeBudget(legsASlots, minutesPerSession)
-  const trimmedPushB = trimSlotsToTimeBudget(pushBSlots, minutesPerSession)
-  const trimmedPullB = trimSlotsToTimeBudget(pullBSlots, minutesPerSession)
-  const trimmedLegsB = trimSlotsToTimeBudget(legsBSlots, minutesPerSession)
-
   return [
-    buildStructuredSession('Push A — Force', 1, trimmedPushA, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Pull A — Force', 2, trimmedPullA, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Legs A — Force', 3, trimmedLegsA, available, 'heavy', minutesPerSession, conditions),
-    buildStructuredSession('Push B — Volume', 4, trimmedPushB, available, 'volume', minutesPerSession, conditions),
-    buildStructuredSession('Pull B — Volume', 5, trimmedPullB, available, 'volume', minutesPerSession, conditions),
-    buildStructuredSession('Legs B — Volume', 6, trimmedLegsB, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Push A — Force', 1, pushASlots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Pull A — Force', 2, pullASlots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Legs A — Force', 3, legsASlots, available, 'heavy', minutesPerSession, conditions),
+    buildStructuredSession('Push B — Volume', 4, pushBSlots, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Pull B — Volume', 5, pullBSlots, available, 'volume', minutesPerSession, conditions),
+    buildStructuredSession('Legs B — Volume', 6, legsBSlots, available, 'volume', minutesPerSession, conditions),
   ]
 }
 
@@ -1599,17 +1586,13 @@ export function generateProgram(
     input.equipment,
   )
 
-  // Step 2 — filter by contraindications
-  const afterContraindications = filterExercisesByContraindications(
-    afterEquipment,
-    input.conditions,
-  )
-
-  // Step 3 — exclude cardio exercises from strength training pool
+  // Step 2 — exclude cardio exercises from strength training pool
   // Cardio exercises (bike, treadmill, elliptique) have primaryMuscles like
   // 'quadriceps' which causes them to be picked for strength slots.
   // They remain available for warmup/cooldown but not for the main program.
-  const eligible = afterContraindications.filter(
+  // NOTE: Contraindication filtering is now done per-slot in buildStructuredSession
+  // so that contraindicated slots get rehab substitution instead of alternative exercises.
+  const eligible = afterEquipment.filter(
     (e) => !e.tags.includes('cardio'),
   )
 

@@ -66,18 +66,18 @@ export default function HomePage() {
     const showRestDayRoutine = hasActiveConditions
 
     return (
-      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-12">
+      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
         <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
-        <p className="text-zinc-400 mb-6">
+        <p className="text-zinc-400 mb-4">
           {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
         </p>
 
         {info.restRecommendation && (
-          <p className="text-zinc-400 text-sm mb-6">{info.restRecommendation}</p>
+          <p className="text-zinc-400 text-sm mb-4">{info.restRecommendation}</p>
         )}
 
         {showRestDayRoutine && (
-          <div className="mb-6">
+          <div className="mb-4">
             <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
             <div className="space-y-1 text-zinc-400 text-sm">
               <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
@@ -85,7 +85,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="mt-auto space-y-3 pb-8">
+        <div className="space-y-3">
           {showRestDayRoutine && (
             <button
               onClick={() => rehabAvailable && navigate('/rehab')}

@@ -130,7 +130,7 @@ export default function ExerciseNotebook({
         />
       )}
 
-      <div className="flex-1 overflow-auto px-4 pt-3 pb-24">
+      <div className="flex-1 overflow-auto px-4 pt-3 pb-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <button onClick={onNext} className="text-zinc-400 text-sm">
