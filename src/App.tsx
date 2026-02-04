@@ -19,7 +19,7 @@ function App() {
   if (!user) return <OnboardingPage />
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-16">
+    <div className="min-h-screen bg-zinc-950 text-white pb-[var(--nav-h)]">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/session" element={<SessionPage />} />

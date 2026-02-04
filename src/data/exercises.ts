@@ -3070,4 +3070,172 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     rehabTarget: 'foot_left',
     tags: ['rehab', 'foot', 'ankle', 'mobility', 'circles'],
   },
+
+  // =========================================================================
+  // BODYWEIGHT EXERCISES - LOWER BODY (6)
+  // =========================================================================
+  {
+    name: 'Squat poids de corps',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'fessiers'],
+    secondaryMuscles: ['ischio-jambiers', 'mollets'],
+    equipmentNeeded: [],
+    contraindications: ['knee_left', 'knee_right'],
+    alternatives: [],
+    instructions:
+      "Pieds largeur d'épaules, pointes légèrement ouvertes. Descendre en poussant les hanches en arrière jusqu'à ce que les cuisses soient parallèles au sol. Garder le dos droit et les talons au sol.",
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'squat', 'bodyweight'],
+  },
+  {
+    name: 'Squat sumo poids de corps',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'fessiers', 'adducteurs'],
+    secondaryMuscles: ['ischio-jambiers'],
+    equipmentNeeded: [],
+    contraindications: ['knee_left', 'knee_right', 'hip_left', 'hip_right'],
+    alternatives: [],
+    instructions:
+      "Pieds largement écartés (1.5x largeur d'épaules), pointes à 45°. Descendre en gardant les genoux dans l'axe des pieds. Accentue le travail des adducteurs et fessiers.",
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'squat', 'bodyweight'],
+  },
+  {
+    name: 'Fentes poids de corps',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'fessiers'],
+    secondaryMuscles: ['ischio-jambiers'],
+    equipmentNeeded: [],
+    contraindications: ['knee_left', 'knee_right', 'ankle_left', 'ankle_right'],
+    alternatives: [],
+    instructions:
+      'Grand pas en avant, descendre jusqu\'à ce que le genou arrière frôle le sol. Le genou avant ne dépasse pas la pointe du pied. Alterner les jambes.',
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'unilateral', 'bodyweight'],
+  },
+  {
+    name: 'Squat bulgare poids de corps',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'fessiers'],
+    secondaryMuscles: ['ischio-jambiers'],
+    equipmentNeeded: [],
+    contraindications: ['knee_left', 'knee_right', 'ankle_left', 'ankle_right'],
+    alternatives: [],
+    instructions:
+      'Pied arrière surélevé sur une chaise ou un banc. Descendre en contrôlant jusqu\'à ce que le genou arrière frôle le sol. Garder le buste droit.',
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'unilateral', 'bodyweight'],
+  },
+  {
+    name: 'Glute bridge',
+    category: 'compound',
+    primaryMuscles: ['fessiers'],
+    secondaryMuscles: ['ischio-jambiers', 'lombaires'],
+    equipmentNeeded: [],
+    contraindications: ['lower_back'],
+    alternatives: [],
+    instructions:
+      "Allongé sur le dos, pieds à plat largeur de hanches. Pousser les hanches vers le plafond en serrant les fessiers. Tenir 1-2s en haut. Variante : une jambe pour plus d'intensité.",
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'glutes', 'bodyweight'],
+  },
+  {
+    name: 'Mollets debout poids de corps',
+    category: 'isolation',
+    primaryMuscles: ['gastrocnémiens'],
+    secondaryMuscles: ['soléaire'],
+    equipmentNeeded: [],
+    contraindications: ['ankle_left', 'ankle_right', 'foot_left', 'foot_right'],
+    alternatives: [],
+    instructions:
+      "Debout sur une marche ou un rebord, talons dans le vide. Monter sur la pointe des pieds, tenir 1s, redescendre lentement sous l'horizontale. Appui mural pour l'équilibre.",
+    isRehab: false,
+    tags: ['legs', 'lower_body', 'calves', 'bodyweight'],
+  },
+
+  // =========================================================================
+  // BODYWEIGHT EXERCISES - UPPER BODY PUSH (5)
+  // =========================================================================
+  {
+    name: 'Pompes classiques',
+    category: 'compound',
+    primaryMuscles: ['pectoraux'],
+    secondaryMuscles: ['triceps', 'deltoïdes antérieurs'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right', 'wrist_left', 'wrist_right'],
+    alternatives: [],
+    instructions:
+      'Mains légèrement plus larges que les épaules. Corps gainé en planche. Descendre la poitrine au sol, coudes à 45°. Remonter en poussant fort.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'chest', 'bodyweight'],
+  },
+  {
+    name: 'Pompes pieds surélevés',
+    category: 'compound',
+    primaryMuscles: ['pectoraux'],
+    secondaryMuscles: ['triceps', 'deltoïdes antérieurs'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right', 'wrist_left', 'wrist_right'],
+    alternatives: [],
+    instructions:
+      'Pieds surélevés sur un banc ou une chaise (30-45cm). Accentue le travail du haut des pectoraux et des deltoïdes. Descendre la poitrine au sol.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'chest', 'bodyweight'],
+  },
+  {
+    name: 'Pompes inclinées',
+    category: 'compound',
+    primaryMuscles: ['pectoraux'],
+    secondaryMuscles: ['triceps', 'deltoïdes antérieurs'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right', 'wrist_left', 'wrist_right'],
+    alternatives: [],
+    instructions:
+      'Mains surélevées sur un banc ou un rebord. Version plus facile, cible le bas des pectoraux. Idéal pour les débutants ou en fin de série.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'chest', 'bodyweight'],
+  },
+  {
+    name: 'Pompes diamant',
+    category: 'compound',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['pectoraux', 'deltoïdes antérieurs'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right', 'wrist_left', 'wrist_right', 'elbow_left', 'elbow_right'],
+    alternatives: [],
+    instructions:
+      'Mains rapprochées sous la poitrine, pouces et index formant un losange. Coudes près du corps. Accentue le travail des triceps.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'arms', 'bodyweight'],
+  },
+  {
+    name: 'Pike pushups',
+    category: 'compound',
+    primaryMuscles: ['deltoïdes'],
+    secondaryMuscles: ['triceps', 'trapèzes'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right', 'wrist_left', 'wrist_right'],
+    alternatives: [],
+    instructions:
+      'Position en V inversé, hanches hautes, tête entre les bras. Descendre le front vers le sol en pliant les coudes. Remplace le développé militaire sans matériel.',
+    isRehab: false,
+    tags: ['push', 'upper_body', 'shoulders', 'bodyweight'],
+  },
+
+  // =========================================================================
+  // BODYWEIGHT EXERCISES - UPPER BODY PULL (1)
+  // =========================================================================
+  {
+    name: 'Rowing inversé',
+    category: 'compound',
+    primaryMuscles: ['dorsaux', 'rhomboïdes'],
+    secondaryMuscles: ['biceps', 'trapèzes'],
+    equipmentNeeded: [],
+    contraindications: ['shoulder_left', 'shoulder_right'],
+    alternatives: [],
+    instructions:
+      'Sous une barre basse ou une table solide. Corps en planche, tirer la poitrine vers la barre. Plus les pieds sont avancés, plus c\'est difficile. Alternative aux tractions sans barre de traction.',
+    isRehab: false,
+    tags: ['pull', 'upper_body', 'back', 'bodyweight'],
+  },
 ]

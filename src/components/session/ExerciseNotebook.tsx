@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNotebook } from '../../hooks/useNotebook'
 import { useRestTimer } from '../../hooks/useRestTimer'
+import { useExerciseNote } from '../../hooks/useExerciseNote'
 import { generateWarmupSets } from '../../engine/warmup'
 import type { BodyZone, NotebookEntry } from '../../db/types'
 import type { FillerSuggestion } from '../../engine/filler'
@@ -74,6 +75,7 @@ export default function ExerciseNotebook({
   )
 
   const timer = useRestTimer(target.restSeconds)
+  const exerciseNote = useExerciseNote(userId, exercise.exerciseId)
 
   const [showDescription, setShowDescription] = useState(false)
   const [showSkipModal, setShowSkipModal] = useState(false)
@@ -111,7 +113,7 @@ export default function ExerciseNotebook({
   const intensityInfo = INTENSITY_COLORS[target.intensity]
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-4rem)] bg-zinc-950 text-white">
+    <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] bg-zinc-950 text-white">
       {/* Skip modal */}
       {showSkipModal && (
         <SkipModal
@@ -198,6 +200,20 @@ export default function ExerciseNotebook({
           </div>
         )}
 
+        {/* Last session target to beat */}
+        {(() => {
+          const lastEntry = notebook.history.find(e => !e.skipped && e.sets.length > 0)
+          if (!lastEntry) return null
+          return (
+            <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+              <p className="text-zinc-400 text-xs uppercase tracking-wider mb-1">Dernière fois</p>
+              <p className="text-white text-sm">
+                {lastEntry.sets.map(s => `${s.weightKg}kg \u00d7 ${s.reps}`).join(' \u00b7 ')}
+              </p>
+            </div>
+          )
+        })()}
+
         {/* Set input */}
         <div className="bg-zinc-900 rounded-xl p-3 mb-4">
           <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Series</p>
@@ -218,7 +234,7 @@ export default function ExerciseNotebook({
           ))}
 
           {/* Input row for next set */}
-          {notebook.currentSets.length < target.sets + 2 && (
+          {notebook.currentSets.length < target.sets && (
             <div className="flex items-center gap-2 mt-3">
               <span className="text-zinc-500 w-6 text-sm">S{notebook.currentSets.length + 1}</span>
               <input
@@ -292,10 +308,23 @@ export default function ExerciseNotebook({
             ))}
           </div>
         )}
+
+        {/* Exercise note */}
+        <div className="bg-zinc-900 rounded-xl p-3 mb-4">
+          <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Note</p>
+          <textarea
+            value={exerciseNote.note}
+            onChange={e => exerciseNote.update(e.target.value)}
+            onBlur={() => { if (exerciseNote.isDirty) exerciseNote.save(exerciseNote.note) }}
+            placeholder="Ajouter une note..."
+            rows={2}
+            className="w-full bg-zinc-800 text-white text-sm rounded-lg px-3 py-2 resize-none placeholder-zinc-600"
+          />
+        </div>
       </div>
 
       {/* Bottom bar — fixed above BottomNav + safe area */}
-      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 bg-zinc-950 border-t border-zinc-800 px-4 py-3 flex gap-3">
+      <div className="fixed bottom-[var(--nav-h)] left-0 right-0 bg-zinc-950 border-t border-zinc-800 px-4 py-3 flex gap-3">
         <button
           onClick={() => setShowSkipModal(true)}
           className="bg-zinc-800 text-zinc-300 rounded-xl py-3 px-4 text-sm flex-shrink-0"

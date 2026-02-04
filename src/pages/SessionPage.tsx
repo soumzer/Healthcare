@@ -37,7 +37,7 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
+      <div className="flex items-center justify-center h-[calc(100dvh-var(--nav-h))]">
         <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -226,7 +226,7 @@ function SessionRunner({
 
   if (phase === 'warmup') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
         <div className="text-center mb-6">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Echauffement</p>
           <h2 className="text-xl font-bold">{programSession.name}</h2>
@@ -275,7 +275,7 @@ function SessionRunner({
 
   if (phase === 'exercises') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
         <div className="mb-4">
           <h2 className="text-xl font-bold">{programSession.name}</h2>
           <p className="text-zinc-400 text-sm">
@@ -384,7 +384,7 @@ function SessionRunner({
 
   if (phase === 'cooldown') {
     return (
-      <div className="flex flex-col min-h-[calc(100dvh-4rem)] p-4">
+      <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] p-4">
         <div className="text-center mb-6">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Cooldown</p>
           <h2 className="text-xl font-bold">Etirements</h2>
@@ -420,7 +420,7 @@ function SessionRunner({
     const duration = Math.round((Date.now() - sessionStartTime.getTime()) / 60000)
 
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] p-6 text-center">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-var(--nav-h))] p-6 text-center">
         <p className="text-3xl font-bold mb-2">Bravo !</p>
         <p className="text-zinc-400 mb-6">Seance enregistree.</p>
         <div className="bg-zinc-900 rounded-xl p-4 mb-8 w-full max-w-sm text-left space-y-1">

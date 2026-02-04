@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import BackupSection from '../components/settings/BackupSection'
 import HealthConditionsManager from '../components/settings/HealthConditionsManager'
+import EquipmentManager from '../components/settings/EquipmentManager'
 import { useRegenerateProgram } from '../hooks/useRegenerateProgram'
 
 
@@ -149,7 +150,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-20 space-y-6">
+    <div className="px-4 pt-6 pb-6 space-y-6">
       <h1 className="text-2xl font-bold">Profil</h1>
 
       {/* User info */}
@@ -178,6 +179,15 @@ export default function ProfilePage() {
       {/* Health conditions manager */}
       <div className="bg-zinc-900 rounded-xl p-4">
         <HealthConditionsManager
+          userId={user.id!}
+          onRegenerate={() => regenerate(user.id!)}
+          isRegenerating={isRegenerating}
+        />
+      </div>
+
+      {/* Equipment manager */}
+      <div className="bg-zinc-900 rounded-xl p-4">
+        <EquipmentManager
           userId={user.id!}
           onRegenerate={() => regenerate(user.id!)}
           isRegenerating={isRegenerating}

@@ -18,6 +18,10 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+:root {
+  --nav-h: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
 #root {
   height: 100dvh;
   overflow-y: auto;
