@@ -844,15 +844,10 @@ function buildUpperLowerSessions(
       && (e.category === 'isolation'),
   )
 
-  // Rear delt exercises: deltoïdes postérieurs (isolation or rehab band pull-apart, élévations latérales câble)
+  // Rear delt exercises: deltoïdes postérieurs (isolation, no rehab)
   const rearDeltExercises = nonRehab.filter(
     (e) => exercisesForMuscles([e], ['deltoïdes postérieurs']).length > 0
       && e.name.toLowerCase() !== 'face pull',
-  )
-
-  // Also consider rehab-category face pull and band pull-apart as rear delt fallbacks
-  const rehabRearDelts = available.filter(
-    (e) => e.isRehab && (e.name.toLowerCase().includes('band pull-apart') || e.name.toLowerCase().includes('face pull')),
   )
 
   // Lighter quad exercises for Lower 2 (e.g., pull-through, light press)
@@ -1067,8 +1062,8 @@ function buildUpperLowerSessions(
     },
     {
       label: 'Rear delt exercise',
-      candidates: () => [...rearDeltExercises, ...rehabRearDelts],
-      preferredName: 'band pull-apart',
+      candidates: () => rearDeltExercises,
+      preferredName: 'face pull',
       sets: 3,
       reps: 20,
       rest: 60,
@@ -1169,15 +1164,10 @@ function buildPushPullLegsSessions(
       && (e.category === 'isolation'),
   )
 
-  // Rear delt exercises
+  // Rear delt exercises (no rehab)
   const rearDeltExercises = nonRehab.filter(
     (e) => exercisesForMuscles([e], ['deltoïdes postérieurs']).length > 0
       && e.name.toLowerCase() !== 'face pull',
-  )
-
-  // Also consider rehab-category band pull-apart as rear delt fallback
-  const rehabRearDelts = available.filter(
-    (e) => e.isRehab && (e.name.toLowerCase().includes('band pull-apart') || e.name.toLowerCase().includes('face pull')),
   )
 
   // Shrug exercises
@@ -1389,8 +1379,8 @@ function buildPushPullLegsSessions(
     },
     {
       label: 'Rear delt',
-      candidates: () => [...rearDeltExercises, ...rehabRearDelts, ...lateralRaises],
-      preferredName: 'band pull-apart',
+      candidates: () => [...rearDeltExercises, ...lateralRaises],
+      preferredName: 'face pull',
       sets: 3,
       reps: 20,
       rest: 60,
