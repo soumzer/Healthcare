@@ -5,13 +5,6 @@ import BackupSection from '../components/settings/BackupSection'
 import HealthConditionsManager from '../components/settings/HealthConditionsManager'
 import { useRegenerateProgram } from '../hooks/useRegenerateProgram'
 
-const goalLabels: Record<string, string> = {
-  weight_loss: 'Perte de poids',
-  muscle_gain: 'Prise de masse',
-  rehab: 'Rééducation',
-  posture: 'Posture',
-  mobility: 'Mobilité',
-}
 
 const splitLabels: Record<string, string> = {
   upper_lower: 'Upper / Lower',
@@ -27,7 +20,6 @@ function TrainingSettings({
   programType,
   programSessionCount,
   sessionCount,
-  goals,
   onRegenerate,
   isRegenerating,
 }: {
@@ -37,7 +29,6 @@ function TrainingSettings({
   programType?: string
   programSessionCount?: number
   sessionCount: number
-  goals: string[]
   onRegenerate: () => Promise<{ success: boolean; error?: string }>
   isRegenerating: boolean
 }) {
@@ -129,13 +120,6 @@ function TrainingSettings({
         )}
         <p className="text-zinc-400">{sessionCount} séance{sessionCount > 1 ? 's' : ''} complétée{sessionCount > 1 ? 's' : ''}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {goals.map(g => (
-          <span key={g} className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded">
-            {goalLabels[g] ?? g}
-          </span>
-        ))}
-      </div>
     </div>
   )
 }
@@ -187,7 +171,6 @@ export default function ProfilePage() {
         programType={program?.type}
         programSessionCount={program?.sessions.length}
         sessionCount={sessionCount ?? 0}
-        goals={user.goals}
         onRegenerate={() => regenerate(user.id!)}
         isRegenerating={isRegenerating}
       />

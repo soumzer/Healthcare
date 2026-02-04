@@ -43,7 +43,7 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
     )
   }
 
-  const { program, user, allExercises, conditions } = data
+  const { program, user, allExercises } = data
   const programSession = program.sessions?.[sessionIndex]
 
   if (!programSession || !programSession.exercises?.length) {
@@ -63,7 +63,6 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
       userId={user.id!}
       programId={programId}
       allExercises={allExercises}
-      conditions={conditions}
     />
   )
 }
@@ -73,13 +72,11 @@ function SessionRunner({
   userId,
   programId,
   allExercises,
-  conditions,
 }: {
   programSession: ProgramSession
   userId: number
   programId: number
   allExercises: Exercise[]
-  conditions: { bodyZone: BodyZone }[]
 }) {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<SessionPhase>('warmup')
@@ -166,7 +163,7 @@ function SessionRunner({
         exercises: programSession.exercises.map((pe, i) => ({
           exerciseId: pe.exerciseId,
           exerciseName: exerciseMap.get(pe.exerciseId)?.name ?? '',
-          prescribedSets: pe.targetSets,
+          prescribedSets: pe.sets,
           prescribedReps: pe.targetReps,
           prescribedWeightKg: 0,
           sets: [],
@@ -272,7 +269,7 @@ function SessionRunner({
                     {catalog?.name ?? `Exercise #${pe.exerciseId}`}
                   </p>
                   <p className="text-zinc-500 text-xs">
-                    {pe.targetSets}x{pe.targetReps} — repos {pe.restSeconds}s
+                    {pe.sets}x{pe.targetReps} — repos {pe.restSeconds}s
                   </p>
                 </div>
 
@@ -328,7 +325,7 @@ function SessionRunner({
           isRehab: currentCatalogExercise.isRehab,
         }}
         target={{
-          sets: currentProgramExercise.targetSets,
+          sets: currentProgramExercise.sets,
           reps: currentProgramExercise.targetReps,
           restSeconds: currentProgramExercise.restSeconds,
           intensity,

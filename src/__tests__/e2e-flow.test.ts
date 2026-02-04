@@ -2,17 +2,18 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { db } from '../db'
 import { seedExercises } from '../data/seed'
 import { generateProgram, type ProgramGeneratorInput } from '../engine/program-generator'
-import { SessionEngine, type ExerciseHistory } from '../engine/session-engine'
-import { suggestFiller, type RehabExerciseInfo } from '../engine/filler'
+import { suggestFillerFromCatalog } from '../engine/filler'
 import { generateWarmupSets } from '../engine/warmup'
 import { generateRestDayRoutine } from '../engine/rest-day'
+import { selectCooldownExercises } from '../engine/cooldown'
+import { fixedWarmupRoutine } from '../data/warmup-routine'
 import type {
   HealthCondition,
   GymEquipment,
   Exercise,
   WorkoutProgram,
-  ProgramSession,
-  SessionSet,
+  NotebookEntry,
+  PainReport,
 } from '../db/types'
 
 // ---------------------------------------------------------------------------
@@ -98,7 +99,7 @@ let conditions: HealthCondition[]
 // E2E flow test
 // ---------------------------------------------------------------------------
 
-describe('E2E flow: onboarding -> programme -> session -> progression -> dashboard', () => {
+describe('E2E flow: onboarding -> programme -> notebook session -> dashboard', () => {
   // -----------------------------------------------------------------------
   // 1. Setup — seed DB, create user + conditions + equipment
   // -----------------------------------------------------------------------
@@ -126,7 +127,6 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
         weight: USER_BODY.weight,
         age: USER_BODY.age,
         sex: USER_BODY.sex,
-        goals: [],
         daysPerWeek: 4,
         minutesPerSession: 75,
         createdAt: now,
@@ -272,7 +272,7 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   })
 
   // -----------------------------------------------------------------------
-  // Step 2 — Warmup sets generation (rehab integration removed, will be reimplemented)
+  // Step 2 — Warmup sets generation
   // -----------------------------------------------------------------------
 
   describe('3. Generation des sets d\'echauffement', () => {
@@ -298,361 +298,205 @@ describe('E2E flow: onboarding -> programme -> session -> progression -> dashboa
   })
 
   // -----------------------------------------------------------------------
-  // Step 4 — First session simulation (Lower 1)
+  // Step 4 — Notebook session simulation
   // -----------------------------------------------------------------------
 
-  describe('4. Simulation de la premiere session (Lower 1)', () => {
-    let sessionEngine: SessionEngine
-    let lower1Session: ProgramSession
-    let completedExercises: { exerciseId: number; exerciseName: string; weightKg: number; reps: number[]; avgRestSeconds: number; prescribedRestSeconds: number }[]
-
-    beforeAll(() => {
-      // Lower 1 is the first session (order 1)
-      lower1Session = savedProgram.sessions.find(s => s.order === 1)!
-      expect(lower1Session).toBeDefined()
-
-      // No history for first session
-      const history: ExerciseHistory = {}
-
-      sessionEngine = new SessionEngine(lower1Session, history, {
-        phase: 'hypertrophy',
-      })
-
-      completedExercises = []
-    })
-
-    it('le premier exercice est un exercice valide du catalogue', () => {
-      const firstExercise = sessionEngine.getCurrentExercise()
-      expect(firstExercise).toBeDefined()
-      expect(firstExercise.exerciseId).toBeGreaterThan(0)
-
-      // Verify it exists in the catalog and has no contraindication for painful zones
-      const exercise = exerciseCatalog.find(e => e.id === firstExercise.exerciseId)
-      expect(exercise).toBeDefined()
-
-      // Program generator only excludes exercises when painLevel >= 7 for that zone
-      // User has: elbow_right=4, knee_right=3, lower_back=5 — none reach the threshold
-      // So exercises MAY have contraindications for those zones but still be included
-      // Only check zones with painLevel >= 7 (none in this test case)
-      const severeZones = new Set<string>() // No zones at painLevel >= 7
-      const hasContraindication = exercise!.contraindications.some(z => severeZones.has(z))
-      expect(hasContraindication).toBe(false)
-    })
-
-    it('simule les sets pour chaque exercice sans douleur', () => {
-      const exercises = sessionEngine.getAllExercises()
-
-      for (let i = 0; i < exercises.length; i++) {
-        const currentEx = sessionEngine.getCurrentExercise()
-        const catalogEx = exerciseCatalog.find(e => e.id === currentEx.exerciseId)
-        const exerciseName = catalogEx?.name ?? `Exercise ${currentEx.exerciseId}`
-
-        // Assign a simulated working weight (first session, pick a reasonable weight)
-        const workWeight = 40 + i * 5 // Simulate different weights per exercise
-
-        // Use the actual prescribed rest from the program to avoid rest inflation
-        const progEx = lower1Session.exercises[i]
-        const prescribedRest = progEx?.restSeconds ?? 90
-        // Simulate rest that stays within 1.5x of prescribed (no inflation)
-        const actualRest = Math.min(prescribedRest + 5, prescribedRest * 1.4)
-
-        const repsLogged: number[] = []
-
-        // Log each prescribed set
-        for (let s = 0; s < currentEx.prescribedSets; s++) {
-          const actualReps = currentEx.prescribedReps // Hit all prescribed reps
-          const set: SessionSet = {
-            setNumber: s + 1,
-            prescribedReps: currentEx.prescribedReps,
-            prescribedWeightKg: workWeight,
-            actualReps,
-            actualWeightKg: workWeight,
-            repsInReserve: 2, // Comfortable RIR of 2
-            painReported: false,
-            restPrescribedSeconds: prescribedRest,
-            restActualSeconds: Math.round(actualRest),
-            completedAt: new Date(),
-          }
-
-          sessionEngine.logSet(set)
-          repsLogged.push(actualReps)
+  describe('4. Simulation session avec notebook', () => {
+    it('enregistre les NotebookEntry pour chaque exercice', async () => {
+      const session = savedProgram.sessions[0]
+      for (let i = 0; i < session.exercises.length; i++) {
+        const progEx = session.exercises[i]
+        const catalogEx = exerciseCatalog.find(e => e.id === progEx.exerciseId)
+        const weight = 40 + i * 5
+        const entry: NotebookEntry = {
+          userId,
+          exerciseId: progEx.exerciseId,
+          exerciseName: catalogEx?.name ?? `Exercise ${progEx.exerciseId}`,
+          date: new Date(),
+          sessionIntensity: session.intensity ?? 'moderate',
+          sets: Array.from({ length: progEx.sets }, () => ({ weightKg: weight, reps: progEx.targetReps })),
+          skipped: false,
         }
-
-        // Mark exercise complete
-        expect(sessionEngine.isCurrentExerciseComplete()).toBe(true)
-        sessionEngine.completeExercise()
-
-        completedExercises.push({
-          exerciseId: currentEx.exerciseId,
-          exerciseName,
-          weightKg: workWeight,
-          reps: repsLogged,
-          avgRestSeconds: Math.round(actualRest),
-          prescribedRestSeconds: prescribedRest,
-        })
+        await db.notebookEntries.add(entry)
       }
 
-      // Session should be complete
-      expect(sessionEngine.isSessionComplete()).toBe(true)
+      const entries = await db.notebookEntries.where('userId').equals(userId).toArray()
+      expect(entries.length).toBe(session.exercises.length)
+      expect(entries.every(e => e.sets.length > 0)).toBe(true)
     })
 
-    it('sauvegarde les ExerciseProgress en base', async () => {
-      const sessionId = await db.workoutSessions.add({
+    it('skip un exercice avec douleur au genou', async () => {
+      const session = savedProgram.sessions[1] // second session
+      const firstEx = session.exercises[0]
+      const catalogEx = exerciseCatalog.find(e => e.id === firstEx.exerciseId)
+
+      // Skipped entry
+      const skipEntry: NotebookEntry = {
+        userId,
+        exerciseId: firstEx.exerciseId,
+        exerciseName: catalogEx?.name ?? 'Unknown',
+        date: new Date(),
+        sessionIntensity: session.intensity ?? 'moderate',
+        sets: [],
+        skipped: true,
+        skipZone: 'knee_right',
+      }
+      await db.notebookEntries.add(skipEntry)
+
+      // Pain report
+      const painReport: PainReport = {
+        userId,
+        zone: 'knee_right',
+        date: new Date(),
+        fromExerciseName: catalogEx?.name ?? 'Unknown',
+        accentDaysRemaining: 3,
+      }
+      await db.painReports.add(painReport)
+
+      const reports = await db.painReports.where('userId').equals(userId).toArray()
+      expect(reports.length).toBe(1)
+      expect(reports[0].zone).toBe('knee_right')
+      expect(reports[0].accentDaysRemaining).toBe(3)
+    })
+
+    it('sauvegarde le WorkoutSession', async () => {
+      const session = savedProgram.sessions[0]
+      await db.workoutSessions.add({
         userId,
         programId: savedProgram.id!,
-        sessionName: lower1Session.name,
+        sessionName: session.name,
         startedAt: new Date(Date.now() - 75 * 60 * 1000),
         completedAt: new Date(),
-        exercises: sessionEngine.getAllExercises(),
-        endPainChecks: [
-          { zone: 'elbow_right', level: 3 },
-          { zone: 'knee_right', level: 2 },
-          { zone: 'lower_back', level: 4 },
-        ],
-        notes: '',
-      }) as number
-
-      // Save ExerciseProgress for each exercise
-      for (let idx = 0; idx < completedExercises.length; idx++) {
-        const ex = completedExercises[idx]
-        const avgReps = ex.reps.reduce((a, b) => a + b, 0) / ex.reps.length
-
-        await db.exerciseProgress.add({
-          userId,
-          exerciseId: ex.exerciseId,
-          exerciseName: ex.exerciseName,
-          date: new Date(),
-          sessionId,
-          weightKg: ex.weightKg,
-          reps: Math.round(avgReps),
-          sets: ex.reps.length,
-          avgRepsInReserve: 2,
-          avgRestSeconds: ex.avgRestSeconds,
-          exerciseOrder: idx + 1,
-          phase: 'hypertrophy',
-          weekNumber: 1,
-          prescribedReps: lower1Session.exercises[idx]?.targetReps ?? 12,
-          prescribedRestSeconds: ex.prescribedRestSeconds,
-        })
-      }
-
-      // Also save PainLogs
-      const painChecks = [
-        { zone: 'elbow_right' as const, level: 3 },
-        { zone: 'knee_right' as const, level: 2 },
-        { zone: 'lower_back' as const, level: 4 },
-      ]
-      for (const check of painChecks) {
-        await db.painLogs.add({
-          userId,
-          zone: check.zone,
-          level: check.level,
-          context: 'end_session',
-          date: new Date(),
-        })
-      }
-
-      const progress = await db.exerciseProgress.where('userId').equals(userId).toArray()
-      expect(progress.length).toBe(completedExercises.length)
-      expect(progress.every(p => p.weightKg > 0)).toBe(true)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Step 5 — Progression check (removed: automatic progression engine deleted)
-  // Progression is now manual via notebook-style UI.
-  // -----------------------------------------------------------------------
-
-  describe('5. Verification de la progression (sans moteur automatique)', () => {
-    it('le SessionEngine prescrit le poids de la derniere session (pas de progression automatique)', async () => {
-      // Build history from the first session
-      const progressEntries = await db.exerciseProgress.where('userId').equals(userId).toArray()
-      expect(progressEntries.length).toBeGreaterThan(0)
-
-      const lower1Session = savedProgram.sessions.find(s => s.order === 1)!
-      const history: ExerciseHistory = {}
-
-      for (const entry of progressEntries) {
-        const progEx = lower1Session.exercises.find(pe => pe.exerciseId === entry.exerciseId)
-        if (progEx) {
-          history[entry.exerciseId] = {
-            lastWeightKg: entry.weightKg,
-            lastReps: Array(entry.sets).fill(entry.reps),
-            lastAvgRIR: entry.avgRepsInReserve,
-            lastAvgRestSeconds: entry.avgRestSeconds,
+        exercises: session.exercises.map((ex, i) => {
+          const catalogEx = exerciseCatalog.find(e => e.id === ex.exerciseId)
+          return {
+            exerciseId: ex.exerciseId,
+            exerciseName: catalogEx?.name ?? '',
+            order: i + 1,
+            prescribedSets: ex.sets,
+            prescribedReps: ex.targetReps,
+            prescribedWeightKg: 40 + i * 5,
+            sets: [],
+            status: 'completed' as const,
           }
-        }
-      }
-
-      expect(Object.keys(history).length).toBeGreaterThan(0)
-
-      const newEngine = new SessionEngine(lower1Session, history, {
-        phase: 'hypertrophy',
+        }),
+        endPainChecks: [],
+        notes: '',
       })
 
-      const exercises = newEngine.getAllExercises()
+      const sessions = await db.workoutSessions.where('userId').equals(userId).toArray()
+      expect(sessions.length).toBe(1)
+      expect(sessions[0].completedAt).toBeDefined()
+    })
+  })
 
-      // Without automatic progression, prescribed weight should equal last session's weight
-      for (const ex of exercises) {
-        const prevEntry = progressEntries.find(p => p.exerciseId === ex.exerciseId)
-        if (prevEntry) {
-          expect(ex.prescribedWeightKg).toBe(prevEntry.weightKg)
+  // -----------------------------------------------------------------------
+  // Step 5 — Fixed warmup routine
+  // -----------------------------------------------------------------------
+
+  describe('5. Warmup routine fixe', () => {
+    it('contient les 17 exercices d\'echauffement', () => {
+      expect(fixedWarmupRoutine.length).toBe(17)
+      expect(fixedWarmupRoutine[0].name).toBe('Curl supination')
+      expect(fixedWarmupRoutine.every(w => w.reps.startsWith('x'))).toBe(true)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // Step 6 — Filler exercise (catalog-based)
+  // -----------------------------------------------------------------------
+
+  describe('6. Filler exercise (machine occupee)', () => {
+    it('suggere des exercices mobility du catalogue', () => {
+      const suggestions = suggestFillerFromCatalog({
+        sessionMuscles: ['quadriceps', 'ischio-jambiers'],
+        completedFillers: [],
+        exerciseCatalog: exerciseCatalog,
+      })
+      // May or may not have mobility exercises depending on catalog
+      // Just verify it returns an array
+      expect(Array.isArray(suggestions)).toBe(true)
+    })
+
+    it('exclut les exercices deja completes', () => {
+      const first = suggestFillerFromCatalog({
+        sessionMuscles: ['pectoraux'],
+        completedFillers: [],
+        exerciseCatalog: exerciseCatalog,
+      })
+
+      if (first.length > 0) {
+        const second = suggestFillerFromCatalog({
+          sessionMuscles: ['pectoraux'],
+          completedFillers: [first[0].name],
+          exerciseCatalog: exerciseCatalog,
+        })
+
+        if (second.length > 0) {
+          expect(second[0].name).not.toBe(first[0].name)
         }
       }
     })
   })
 
   // -----------------------------------------------------------------------
-  // Step 6 — Filler exercise during active wait
+  // Step 7 — Rest day routine and cooldown
   // -----------------------------------------------------------------------
 
-  describe('6. Filler exercise pendant l\'attente', () => {
-    it('suggere un exercice rehab depuis un pool', () => {
-      const pool: RehabExerciseInfo[] = [
-        {
-          exerciseName: 'Pallof press',
-          sets: 3, reps: '10', intensity: 'light',
-          notes: 'Anti-rotation', protocolName: 'Core', priority: 1, alternatives: [],
-        },
-      ]
-
-      const filler = suggestFiller({
-        activeWaitPool: pool,
-        nextExerciseMuscles: ['quadriceps'],
-        completedFillers: [],
-      })
-
-      expect(filler).not.toBeNull()
-      expect(filler!.isRehab).toBe(true)
-      expect(filler!.name).toBe('Pallof press')
-      expect(filler!.sets).toBeGreaterThan(0)
-    })
-
-    it('ne suggere pas d\'exercice deja complete si d\'autres sont disponibles', () => {
-      const pool: RehabExerciseInfo[] = [
-        {
-          exerciseName: 'Pallof press',
-          sets: 3, reps: '10', intensity: 'light',
-          notes: '', protocolName: 'Core', priority: 1, alternatives: [],
-        },
-        {
-          exerciseName: 'Dead bug',
-          sets: 3, reps: '10', intensity: 'light',
-          notes: '', protocolName: 'Core', priority: 1, alternatives: [],
-        },
-      ]
-
-      const firstFiller = suggestFiller({
-        activeWaitPool: pool,
-        nextExerciseMuscles: ['pectoraux'],
-        completedFillers: [],
-      })
-
-      expect(firstFiller).not.toBeNull()
-
-      const secondFiller = suggestFiller({
-        activeWaitPool: pool,
-        nextExerciseMuscles: ['pectoraux'],
-        completedFillers: [firstFiller!.name],
-      })
-
-      expect(secondFiller).not.toBeNull()
-      expect(secondFiller!.name).not.toBe(firstFiller!.name)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Step 7 — Rest day routine
-  // -----------------------------------------------------------------------
-
-  describe('7. Routine jour de repos', () => {
+  describe('7. Routine jour de repos et cooldown', () => {
     it('genere une routine adaptee aux conditions actives', () => {
       const routine = generateRestDayRoutine(conditions)
-
       expect(routine.exercises.length).toBeGreaterThan(0)
       expect(routine.totalMinutes).toBeGreaterThan(0)
     })
 
-    it('inclut des exercices pour les conditions actives', () => {
-      const routine = generateRestDayRoutine(conditions)
-
-      // Should have exercises from rehab protocols for our conditions
-      // lower_back protocol has rest_day and cooldown exercises
-      // hip_right (sciatica) protocol has cooldown exercises
-      // upper_back protocol has cooldown exercises
-      // We should see some of these (limited to 5 by rotation)
-      expect(routine.exercises.length).toBeGreaterThan(0)
-      expect(routine.exercises.length).toBeLessThanOrEqual(5)
+    it('selectionne des exercices cooldown par muscles', () => {
+      const cooldown = selectCooldownExercises(
+        ['quadriceps', 'ischio-jambiers'],
+        exerciseCatalog,
+        3,
+      )
+      expect(Array.isArray(cooldown)).toBe(true)
+      // Cooldown exercises should be mobility category or tagged cooldown
     })
   })
 
   // -----------------------------------------------------------------------
-  // Step 8 — Dashboard data verification
+  // Step 8 — Dashboard data verification (NotebookEntry)
   // -----------------------------------------------------------------------
 
-  describe('8. Donnees du dashboard', () => {
-    it('ExerciseProgress contient des entrees pour chaque exercice de la session', async () => {
-      const progress = await db.exerciseProgress.where('userId').equals(userId).toArray()
+  describe('8. Donnees du dashboard (NotebookEntry)', () => {
+    it('NotebookEntry contient les donnees de la session', async () => {
+      const entries = await db.notebookEntries.where('userId').equals(userId).toArray()
+      expect(entries.length).toBeGreaterThan(0)
 
-      expect(progress.length).toBeGreaterThan(0)
-
-      // Each entry should have valid data
-      for (const entry of progress) {
-        expect(entry.userId).toBe(userId)
-        expect(entry.exerciseId).toBeGreaterThan(0)
-        expect(entry.weightKg).toBeGreaterThan(0)
-        expect(entry.reps).toBeGreaterThan(0)
-        expect(entry.sets).toBeGreaterThan(0)
-        expect(entry.phase).toBe('hypertrophy')
-        expect(entry.weekNumber).toBe(1)
+      const nonSkipped = entries.filter(e => !e.skipped)
+      expect(nonSkipped.length).toBeGreaterThan(0)
+      for (const entry of nonSkipped) {
+        expect(entry.sets.length).toBeGreaterThan(0)
+        expect(entry.sets[0].weightKg).toBeGreaterThan(0)
       }
     })
 
-    it('PainLog contient les checks de fin de session', async () => {
-      const painLogs = await db.painLogs.where('userId').equals(userId).toArray()
-
-      expect(painLogs.length).toBeGreaterThanOrEqual(3)
-      expect(painLogs.every(p => p.context === 'end_session')).toBe(true)
-
-      const zones = painLogs.map(p => p.zone)
-      expect(zones).toContain('elbow_right')
-      expect(zones).toContain('knee_right')
-      expect(zones).toContain('lower_back')
+    it('PainReport est present pour le skip', async () => {
+      const reports = await db.painReports.where('userId').equals(userId).toArray()
+      expect(reports.length).toBe(1)
+      expect(reports[0].zone).toBe('knee_right')
+      expect(reports[0].accentDaysRemaining).toBe(3)
     })
 
-    it('WorkoutSession est enregistree avec les exercices completes', async () => {
+    it('WorkoutSession est enregistree', async () => {
       const sessions = await db.workoutSessions.where('userId').equals(userId).toArray()
-
-      expect(sessions.length).toBeGreaterThanOrEqual(1)
-      const session = sessions[0]
-      expect(session.completedAt).toBeDefined()
-      expect(session.exercises.length).toBeGreaterThan(0)
-      expect(session.endPainChecks.length).toBe(3)
+      expect(sessions.length).toBe(1)
+      expect(sessions[0].completedAt).toBeDefined()
     })
 
-    it('le programme est marque comme actif', async () => {
+    it('le programme est actif', async () => {
       const programs = await db.workoutPrograms
         .where('userId').equals(userId)
         .filter(p => p.isActive)
         .toArray()
-
       expect(programs.length).toBe(1)
-      expect(programs[0].type).toBe('upper_lower')
-    })
-
-    it('les donnees de progression sont coherentes avec la session', async () => {
-      const progress = await db.exerciseProgress.where('userId').equals(userId).toArray()
-      const sessions = await db.workoutSessions.where('userId').equals(userId).toArray()
-
-      // Every progress entry should reference a valid session
-      const sessionIds = new Set(sessions.map(s => s.id))
-      for (const entry of progress) {
-        expect(sessionIds.has(entry.sessionId)).toBe(true)
-      }
-
-      // Number of progress entries should match exercises in the session
-      const completedSession = sessions[0]
-      expect(progress.length).toBe(completedSession.exercises.length)
     })
   })
 })

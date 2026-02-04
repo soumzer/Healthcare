@@ -117,7 +117,7 @@ export function useSession(params: UseSessionParams): UseSessionReturn {
     userConditions,
     availableExercises,
     exerciseNames,
-    healthConditions,
+    healthConditions: _healthConditions,
     availableWeights,
     phase: trainingPhase,
     userBodyweightKg,

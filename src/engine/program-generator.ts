@@ -1,9 +1,7 @@
 import type {
   Exercise,
-  Goal,
   HealthCondition,
   GymEquipment,
-  AvailableWeight,
   ProgramSession,
   ProgramExercise,
 } from '../db/types'
@@ -14,10 +12,10 @@ import type {
 
 export interface ProgramGeneratorInput {
   userId: number
-  goals: Goal[]
+  goals?: string[]
   conditions: HealthCondition[]
   equipment: GymEquipment[]
-  availableWeights: AvailableWeight[]
+  availableWeights?: { weightKg: number }[]
   daysPerWeek: number
   minutesPerSession: number
 }

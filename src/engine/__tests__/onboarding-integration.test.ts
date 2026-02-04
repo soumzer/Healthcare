@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '../../db'
 import { seedExercises } from '../../data/seed'
 import { generateProgram } from '../program-generator'
-import type { GymEquipment, HealthCondition, Goal } from '../../db/types'
+import type { GymEquipment, HealthCondition } from '../../db/types'
 
 // ---------------------------------------------------------------------------
 // Helpers — simulate the onboarding submit flow without React hooks
@@ -12,7 +12,7 @@ interface SimulatedOnboardingState {
   body: { name: string; height: number; weight: number; age: number; sex: 'male' | 'female' }
   conditions: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[]
   equipment: Omit<GymEquipment, 'id' | 'userId'>[]
-  goals: Goal[]
+  goals: string[]
   daysPerWeek: number
   minutesPerSession: number
 }
@@ -31,7 +31,6 @@ async function simulateOnboardingSubmit(state: SimulatedOnboardingState): Promis
     weight: state.body.weight,
     age: state.body.age,
     sex: state.body.sex,
-    goals: state.goals,
     daysPerWeek: state.daysPerWeek,
     minutesPerSession: state.minutesPerSession,
     createdAt: now,

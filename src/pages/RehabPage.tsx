@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import type { NotebookEntry, NotebookSet, BodyZone, PainReport } from '../db/types'
+import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
 import { generateRestDayRoutine, type RestDayVariant } from '../engine/rest-day'
 import { recordRehabExercisesDone } from '../utils/rehab-rotation'
 import { recordRehabCompletion, isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'

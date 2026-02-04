@@ -32,22 +32,15 @@ export function useRegenerateProgram() {
         .where('userId').equals(userId)
         .toArray()
 
-      // 4. Read available weights
-      const availableWeights = await db.availableWeights
-        .where('userId').equals(userId)
-        .toArray()
-
-      // 5. Read exercise catalog
+      // 4. Read exercise catalog
       const exerciseCatalog = await db.exercises.toArray()
 
-      // 6. Generate the new program
+      // 5. Generate the new program
       const generatedProgram = generateProgram(
         {
           userId,
-          goals: profile.goals,
           conditions,
           equipment,
-          availableWeights,
           daysPerWeek: profile.daysPerWeek,
           minutesPerSession: profile.minutesPerSession,
         },
