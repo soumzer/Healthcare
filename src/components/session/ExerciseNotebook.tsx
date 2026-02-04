@@ -294,8 +294,8 @@ export default function ExerciseNotebook({
         )}
       </div>
 
-      {/* Bottom bar — fixed */}
-      <div className="fixed bottom-16 left-0 right-0 bg-zinc-950 border-t border-zinc-800 px-4 py-3 flex gap-3">
+      {/* Bottom bar — fixed above BottomNav + safe area */}
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 bg-zinc-950 border-t border-zinc-800 px-4 py-3 flex gap-3">
         <button
           onClick={() => setShowSkipModal(true)}
           className="bg-zinc-800 text-zinc-300 rounded-xl py-3 px-4 text-sm flex-shrink-0"
