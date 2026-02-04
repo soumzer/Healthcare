@@ -1,62 +1,25 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 
-export interface ProgressionEntry {
-  date: string
-  weightKg: number
-  reps: number
-}
-
-export interface ProgressionData {
+export interface ProgressionItem {
   exerciseName: string
-  entries: ProgressionEntry[]
-}
-
-export interface PainEntry {
-  date: string
-  level: number
-}
-
-export interface PainData {
-  zone: string
-  entries: PainEntry[]
-}
-
-export interface RecentSessionExercise {
-  name: string
-  sets: { reps: number; weightKg: number; rir: number }[]
-}
-
-export interface RecentSession {
-  id: number
-  name: string
-  date: Date
-  exerciseCount: number
-  duration: number // minutes
-  exercises: RecentSessionExercise[]
-}
-
-export interface AttendanceData {
-  thisWeek: number
-  target: number
+  previousWeightKg: number  // best weight from 4+ entries ago
+  currentWeightKg: number   // best weight from most recent entry
+  trend: 'up' | 'same' | 'down'
 }
 
 export interface DashboardData {
-  progressionData: ProgressionData[]
-  painData: PainData[]
-  recentSessions: RecentSession[]
-  attendance: AttendanceData
-  exerciseNames: string[]
+  thisWeekSessions: number
+  streakDays: number
+  progressionItems: ProgressionItem[]
   hasData: boolean
   isLoading: boolean
 }
 
 const emptyData: DashboardData = {
-  progressionData: [],
-  painData: [],
-  recentSessions: [],
-  attendance: { thisWeek: 0, target: 4 },
-  exerciseNames: [],
+  thisWeekSessions: 0,
+  streakDays: 0,
+  progressionItems: [],
   hasData: false,
   isLoading: true,
 }
@@ -71,131 +34,119 @@ function getStartOfWeek(date: Date): Date {
   return d
 }
 
+function toDateString(d: Date): string {
+  // Use local date components to avoid UTC timezone shifts
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function useDashboardData(userId: number | undefined): DashboardData {
   const data = useLiveQuery(async (): Promise<DashboardData> => {
     if (!userId) return { ...emptyData, isLoading: false }
 
-    // Fetch user profile for target
-    const profile = await db.userProfiles.get(userId)
-    const target = profile?.daysPerWeek ?? 4
-
-    // Fetch exercise progress for progression charts
-    const progressEntries = await db.exerciseProgress
+    const allEntries = await db.notebookEntries
       .where('userId')
       .equals(userId)
       .toArray()
 
-    // Group by exercise name
-    const progressByExercise = new Map<string, ProgressionEntry[]>()
-    for (const entry of progressEntries) {
-      const name = entry.exerciseName
-      if (!progressByExercise.has(name)) {
-        progressByExercise.set(name, [])
-      }
-      progressByExercise.get(name)!.push({
-        date: entry.date instanceof Date
-          ? entry.date.toISOString().slice(0, 10)
-          : new Date(entry.date).toISOString().slice(0, 10),
-        weightKg: entry.weightKg,
-        reps: entry.reps,
-      })
+    if (allEntries.length === 0) {
+      return { ...emptyData, isLoading: false }
     }
 
-    // Sort entries by date within each exercise
-    const progressionData: ProgressionData[] = []
-    const exerciseNames: string[] = []
-    for (const [exerciseName, entries] of progressByExercise) {
-      entries.sort((a, b) => a.date.localeCompare(b.date))
-      progressionData.push({ exerciseName, entries })
-      exerciseNames.push(exerciseName)
-    }
-    exerciseNames.sort()
-
-    // Fetch pain logs for pain chart
-    const painEntries = await db.painLogs
-      .where('userId')
-      .equals(userId)
-      .toArray()
-
-    const painByZone = new Map<string, PainEntry[]>()
-    for (const entry of painEntries) {
-      const zone = entry.zone
-      if (!painByZone.has(zone)) {
-        painByZone.set(zone, [])
-      }
-      painByZone.get(zone)!.push({
-        date: entry.date instanceof Date
-          ? entry.date.toISOString().slice(0, 10)
-          : new Date(entry.date).toISOString().slice(0, 10),
-        level: entry.level,
-      })
-    }
-
-    const painData: PainData[] = []
-    for (const [zone, entries] of painByZone) {
-      entries.sort((a, b) => a.date.localeCompare(b.date))
-      painData.push({ zone, entries })
-    }
-
-    // Fetch recent sessions
-    const sessions = await db.workoutSessions
-      .where('userId')
-      .equals(userId)
-      .toArray()
-
-    // Sort by startedAt descending, take last 20
-    const sortedSessions = sessions
-      .filter((s) => s.completedAt)
-      .sort((a, b) => {
-        const dateA = a.startedAt instanceof Date ? a.startedAt : new Date(a.startedAt)
-        const dateB = b.startedAt instanceof Date ? b.startedAt : new Date(b.startedAt)
-        return dateB.getTime() - dateA.getTime()
-      })
-      .slice(0, 20)
-
-    const recentSessions: RecentSession[] = sortedSessions.map((s) => {
-      const startedAt = s.startedAt instanceof Date ? s.startedAt : new Date(s.startedAt)
-      const completedAt = s.completedAt instanceof Date ? s.completedAt : new Date(s.completedAt!)
-      const durationMs = completedAt.getTime() - startedAt.getTime()
-      return {
-        id: s.id!,
-        name: s.sessionName,
-        date: startedAt,
-        exerciseCount: s.exercises.length,
-        duration: Math.round(durationMs / (1000 * 60)),
-        exercises: s.exercises
-          .filter((ex) => ex.status === 'completed' && ex.sets.length > 0)
-          .map((ex) => ({
-            name: ex.exerciseName,
-            sets: ex.sets.map((set) => ({
-              reps: set.actualReps ?? 0,
-              weightKg: set.actualWeightKg ?? 0,
-              rir: set.repsInReserve ?? 0,
-            })),
-          })),
-      }
-    })
-
-    // Attendance: count sessions this week (Monday-Sunday)
+    // --- thisWeekSessions ---
+    // Count distinct dates from non-rehab entries within current week (Monday-Sunday)
     const now = new Date()
     const weekStart = getStartOfWeek(now)
-    const thisWeek = sessions.filter((s) => {
-      if (!s.completedAt) return false
-      const completedAt = s.completedAt instanceof Date ? s.completedAt : new Date(s.completedAt)
-      return completedAt >= weekStart
-    }).length
+    const thisWeekDates = new Set<string>()
+    for (const entry of allEntries) {
+      if (entry.sessionIntensity === 'rehab') continue
+      const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date)
+      if (entryDate >= weekStart) {
+        thisWeekDates.add(toDateString(entryDate))
+      }
+    }
+    const thisWeekSessions = thisWeekDates.size
 
-    const hasData =
-      progressionData.length > 0 ||
-      painData.length > 0 ||
-      recentSessions.length > 0
+    // --- streakDays ---
+    // Count consecutive days backwards from today where there's at least one entry (any type)
+    const allDates = new Set<string>()
+    for (const entry of allEntries) {
+      const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date)
+      allDates.add(toDateString(entryDate))
+    }
+    let streakDays = 0
+    const checkDate = new Date()
+    checkDate.setHours(0, 0, 0, 0)
+    while (allDates.has(toDateString(checkDate))) {
+      streakDays++
+      checkDate.setDate(checkDate.getDate() - 1)
+    }
+
+    // --- progressionItems ---
+    // Get non-rehab, non-skipped entries grouped by exercise
+    const nonRehabEntries = allEntries.filter(
+      (e) => e.sessionIntensity !== 'rehab' && !e.skipped && e.sets.length > 0
+    )
+
+    // Group by exerciseName, sorted by date ascending
+    const byExercise = new Map<string, typeof nonRehabEntries>()
+    for (const entry of nonRehabEntries) {
+      const name = entry.exerciseName
+      if (!byExercise.has(name)) {
+        byExercise.set(name, [])
+      }
+      byExercise.get(name)!.push(entry)
+    }
+
+    const progressionItems: ProgressionItem[] = []
+    for (const [exerciseName, entries] of byExercise) {
+      // Sort by date ascending
+      entries.sort((a, b) => {
+        const dateA = a.date instanceof Date ? a.date : new Date(a.date)
+        const dateB = b.date instanceof Date ? b.date : new Date(b.date)
+        return dateA.getTime() - dateB.getTime()
+      })
+
+      // Need at least 2 entries to show progression (one current, one previous from 4+ ago)
+      if (entries.length < 2) continue
+
+      // Best weight from the most recent entry
+      const lastEntry = entries[entries.length - 1]
+      const currentWeightKg = Math.max(...lastEntry.sets.map((s) => s.weightKg))
+
+      // Best weight from the entry 4+ entries ago (or the first entry if fewer than 5 entries)
+      const previousIndex = Math.max(0, entries.length - 5)
+      const previousEntry = entries[previousIndex]
+      const previousWeightKg = Math.max(...previousEntry.sets.map((s) => s.weightKg))
+
+      let trend: 'up' | 'same' | 'down'
+      if (currentWeightKg > previousWeightKg) {
+        trend = 'up'
+      } else if (currentWeightKg < previousWeightKg) {
+        trend = 'down'
+      } else {
+        trend = 'same'
+      }
+
+      progressionItems.push({
+        exerciseName,
+        previousWeightKg,
+        currentWeightKg,
+        trend,
+      })
+    }
+
+    // Sort progression items alphabetically
+    progressionItems.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName))
+
+    const hasData = allEntries.length > 0
 
     return {
-      progressionData,
-      painData,
-      recentSessions,
-      attendance: { thisWeek, target },
-      exerciseNames,
+      thisWeekSessions,
+      streakDays,
+      progressionItems,
       hasData,
       isLoading: false,
     }

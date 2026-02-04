@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useDashboardData } from './useDashboardData'
 import { db } from '../db'
-import type { WorkoutSession, ExerciseProgress, PainLog, UserProfile } from '../db/types'
+import type { UserProfile, NotebookEntry } from '../db/types'
 
 async function createUser(): Promise<number> {
   return await db.userProfiles.add({
@@ -11,7 +11,6 @@ async function createUser(): Promise<number> {
     weight: 80,
     age: 30,
     sex: 'male',
-    goals: ['muscle_gain'],
     daysPerWeek: 4,
     minutesPerSession: 60,
     createdAt: new Date(),
@@ -22,7 +21,27 @@ async function createUser(): Promise<number> {
 function daysAgo(days: number): Date {
   const d = new Date()
   d.setDate(d.getDate() - days)
+  d.setHours(12, 0, 0, 0) // noon to avoid timezone issues
   return d
+}
+
+function makeEntry(
+  userId: number,
+  exerciseName: string,
+  date: Date,
+  sets: { weightKg: number; reps: number }[],
+  intensity: 'heavy' | 'volume' | 'moderate' | 'rehab' = 'heavy',
+  skipped = false,
+): Omit<NotebookEntry, 'id'> {
+  return {
+    userId,
+    exerciseId: exerciseName.length, // deterministic fake id
+    exerciseName,
+    date,
+    sessionIntensity: intensity,
+    sets,
+    skipped,
+  }
 }
 
 describe('useDashboardData', () => {
@@ -31,7 +50,7 @@ describe('useDashboardData', () => {
     await db.open()
   })
 
-  it('returns empty data when no sessions exist', async () => {
+  it('returns empty data when no entries exist', async () => {
     const userId = await createUser()
     const { result } = renderHook(() => useDashboardData(userId))
 
@@ -39,33 +58,27 @@ describe('useDashboardData', () => {
       expect(result.current).toBeDefined()
       expect(result.current.isLoading).toBe(false)
       expect(result.current.hasData).toBe(false)
-      expect(result.current.progressionData).toEqual([])
-      expect(result.current.painData).toEqual([])
-      expect(result.current.recentSessions).toEqual([])
-      expect(result.current.attendance.thisWeek).toBe(0)
-      expect(result.current.attendance.target).toBe(4)
-      expect(result.current.exerciseNames).toEqual([])
+      expect(result.current.thisWeekSessions).toBe(0)
+      expect(result.current.streakDays).toBe(0)
+      expect(result.current.progressionItems).toEqual([])
     })
   })
 
-  it('returns hasData=true when progression data exists', async () => {
+  it('returns isLoading=false with no data when userId is undefined', async () => {
+    const { result } = renderHook(() => useDashboardData(undefined))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.hasData).toBe(false)
+    })
+  })
+
+  it('returns hasData=true when entries exist', async () => {
     const userId = await createUser()
 
-    await db.exerciseProgress.add({
-      userId,
-      exerciseId: 1,
-      exerciseName: 'Bench Press',
-      date: new Date(),
-      sessionId: 1,
-      weightKg: 60,
-      reps: 24,
-      sets: 3,
-      avgRepsInReserve: 2,
-      avgRestSeconds: 120,
-      exerciseOrder: 1,
-      phase: 'hypertrophy',
-      weekNumber: 1,
-    } as ExerciseProgress)
+    await db.notebookEntries.add(
+      makeEntry(userId, 'Bench Press', new Date(), [{ weightKg: 60, reps: 8 }])
+    )
 
     const { result } = renderHook(() => useDashboardData(userId))
 
@@ -75,269 +88,223 @@ describe('useDashboardData', () => {
     })
   })
 
-  it('returns isLoading=true initially then resolves', async () => {
-    const { result } = renderHook(() => useDashboardData(undefined))
+  it('counts distinct session dates this week (excluding rehab)', async () => {
+    const userId = await createUser()
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
 
-    // When userId is undefined, should immediately return not loading with no data
+    // Two entries on the same day should count as 1 session
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bench Press', today, [{ weightKg: 60, reps: 8 }]),
+      makeEntry(userId, 'Squat', today, [{ weightKg: 100, reps: 5 }]),
+    ])
+
+    // Rehab entry today should not count
+    await db.notebookEntries.add(
+      makeEntry(userId, 'Bird Dog', today, [{ weightKg: 0, reps: 10 }], 'rehab')
+    )
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
-      expect(result.current.hasData).toBe(false)
+      expect(result.current.thisWeekSessions).toBe(1)
     })
   })
 
-  it('aggregates progression data per exercise', async () => {
+  it('calculates streak days correctly', async () => {
     const userId = await createUser()
 
-    const date1 = daysAgo(7)
-    const date2 = daysAgo(3)
-
-    await db.exerciseProgress.bulkAdd([
-      {
-        userId,
-        exerciseId: 1,
-        exerciseName: 'Bench Press',
-        date: date1,
-        sessionId: 1,
-        weightKg: 60,
-        reps: 24,
-        sets: 3,
-        avgRepsInReserve: 2,
-        avgRestSeconds: 120,
-        exerciseOrder: 1,
-        phase: 'hypertrophy',
-        weekNumber: 1,
-      } as ExerciseProgress,
-      {
-        userId,
-        exerciseId: 1,
-        exerciseName: 'Bench Press',
-        date: date2,
-        sessionId: 2,
-        weightKg: 65,
-        reps: 24,
-        sets: 3,
-        avgRepsInReserve: 1,
-        avgRestSeconds: 120,
-        exerciseOrder: 1,
-        phase: 'hypertrophy',
-        weekNumber: 2,
-      } as ExerciseProgress,
-      {
-        userId,
-        exerciseId: 2,
-        exerciseName: 'Squat',
-        date: date1,
-        sessionId: 1,
-        weightKg: 80,
-        reps: 20,
-        sets: 4,
-        avgRepsInReserve: 2,
-        avgRestSeconds: 150,
-        exerciseOrder: 2,
-        phase: 'hypertrophy',
-        weekNumber: 1,
-      } as ExerciseProgress,
+    // Entries for today, yesterday, and 2 days ago (streak of 3)
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bench Press', daysAgo(0), [{ weightKg: 60, reps: 8 }]),
+      makeEntry(userId, 'Squat', daysAgo(1), [{ weightKg: 100, reps: 5 }]),
+      makeEntry(userId, 'Bird Dog', daysAgo(2), [{ weightKg: 0, reps: 10 }], 'rehab'),
+      // Gap on day 3 -- so entry on day 4 should not extend streak
+      makeEntry(userId, 'Bench Press', daysAgo(4), [{ weightKg: 55, reps: 8 }]),
     ])
 
     const { result } = renderHook(() => useDashboardData(userId))
 
     await waitFor(() => {
-      expect(result.current.progressionData.length).toBe(2)
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.streakDays).toBe(3)
     })
-
-    const benchData = result.current.progressionData.find(
-      (p) => p.exerciseName === 'Bench Press'
-    )
-    expect(benchData).toBeDefined()
-    expect(benchData!.entries).toHaveLength(2)
-    expect(benchData!.entries[0].weightKg).toBe(60)
-    expect(benchData!.entries[1].weightKg).toBe(65)
-
-    const squatData = result.current.progressionData.find(
-      (p) => p.exerciseName === 'Squat'
-    )
-    expect(squatData).toBeDefined()
-    expect(squatData!.entries).toHaveLength(1)
-    expect(squatData!.entries[0].weightKg).toBe(80)
-
-    expect(result.current.exerciseNames).toEqual(['Bench Press', 'Squat'])
-    expect(result.current.hasData).toBe(true)
   })
 
-  it('aggregates pain data per zone', async () => {
+  it('returns streak=0 if no entry today', async () => {
     const userId = await createUser()
 
-    await db.painLogs.bulkAdd([
-      {
-        userId,
-        zone: 'knee_left',
-        level: 5,
-        context: 'end_session',
-        date: daysAgo(7),
-      } as PainLog,
-      {
-        userId,
-        zone: 'knee_left',
-        level: 3,
-        context: 'end_session',
-        date: daysAgo(3),
-      } as PainLog,
-      {
-        userId,
-        zone: 'lower_back',
-        level: 4,
-        context: 'during_set',
-        exerciseName: 'Squat',
-        date: daysAgo(5),
-      } as PainLog,
+    // Entry only yesterday, not today
+    await db.notebookEntries.add(
+      makeEntry(userId, 'Bench Press', daysAgo(1), [{ weightKg: 60, reps: 8 }])
+    )
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.streakDays).toBe(0)
+    })
+  })
+
+  it('computes progression items comparing most recent vs 4+ entries ago', async () => {
+    const userId = await createUser()
+
+    // 5 entries for Bench Press spread over 5 days
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bench Press', daysAgo(10), [{ weightKg: 60, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(8), [{ weightKg: 62, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(6), [{ weightKg: 65, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(4), [{ weightKg: 67, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(2), [{ weightKg: 70, reps: 8 }]),
     ])
 
     const { result } = renderHook(() => useDashboardData(userId))
 
     await waitFor(() => {
-      expect(result.current.painData.length).toBe(2)
+      expect(result.current.progressionItems.length).toBe(1)
     })
 
-    const kneeData = result.current.painData.find((p) => p.zone === 'knee_left')
-    expect(kneeData).toBeDefined()
-    expect(kneeData!.entries).toHaveLength(2)
-    // Should be sorted chronologically
-    expect(kneeData!.entries[0].level).toBe(5)
-    expect(kneeData!.entries[1].level).toBe(3)
-
-    const backData = result.current.painData.find((p) => p.zone === 'lower_back')
-    expect(backData).toBeDefined()
-    expect(backData!.entries).toHaveLength(1)
+    const bench = result.current.progressionItems[0]
+    expect(bench.exerciseName).toBe('Bench Press')
+    // index 0 (entries.length - 5 = 0) = 60kg, last = 70kg
+    expect(bench.previousWeightKg).toBe(60)
+    expect(bench.currentWeightKg).toBe(70)
+    expect(bench.trend).toBe('up')
   })
 
-  it('calculates attendance for current week', async () => {
+  it('uses first entry as previous when fewer than 5 entries', async () => {
     const userId = await createUser()
 
-    // Create sessions this week (today and yesterday)
-    const today = new Date()
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    // Use same week boundary logic as the hook (Monday = start of week)
-    const getStartOfWeek = (date: Date): Date => {
-      const d = new Date(date)
-      const day = d.getDay()
-      const diff = day === 0 ? 6 : day - 1
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - diff)
-      return d
-    }
-    const weekStart = getStartOfWeek(today)
-    const sessionsThisWeek = [today, yesterday].filter((d) => d >= weekStart)
-
-    for (const date of sessionsThisWeek) {
-      const startedAt = new Date(date)
-      startedAt.setHours(10, 0, 0, 0)
-      const completedAt = new Date(date)
-      completedAt.setHours(11, 0, 0, 0)
-
-      await db.workoutSessions.add({
-        userId,
-        programId: 1,
-        sessionName: 'Push A',
-        startedAt,
-        completedAt,
-        exercises: [],
-        endPainChecks: [],
-        notes: '',
-      } as WorkoutSession)
-    }
-
-    // Add a session from last week (should not count)
-    const lastWeek = new Date()
-    lastWeek.setDate(lastWeek.getDate() - 10)
-    const lwStart = new Date(lastWeek)
-    lwStart.setHours(10, 0, 0, 0)
-    const lwEnd = new Date(lastWeek)
-    lwEnd.setHours(11, 0, 0, 0)
-    await db.workoutSessions.add({
-      userId,
-      programId: 1,
-      sessionName: 'Push A',
-      startedAt: lwStart,
-      completedAt: lwEnd,
-      exercises: [],
-      endPainChecks: [],
-      notes: '',
-    } as WorkoutSession)
+    // Only 2 entries for Squat
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Squat', daysAgo(5), [{ weightKg: 100, reps: 5 }]),
+      makeEntry(userId, 'Squat', daysAgo(1), [{ weightKg: 100, reps: 5 }]),
+    ])
 
     const { result } = renderHook(() => useDashboardData(userId))
 
     await waitFor(() => {
-      expect(result.current.attendance.thisWeek).toBe(sessionsThisWeek.length)
+      expect(result.current.progressionItems.length).toBe(1)
     })
 
-    expect(result.current.attendance.target).toBe(4)
+    const squat = result.current.progressionItems[0]
+    expect(squat.previousWeightKg).toBe(100)
+    expect(squat.currentWeightKg).toBe(100)
+    expect(squat.trend).toBe('same')
   })
 
-  it('returns recent sessions sorted by date', async () => {
+  it('correctly identifies down trend', async () => {
     const userId = await createUser()
 
-    // Add sessions in non-chronological order
-    await db.workoutSessions.add({
-      userId,
-      programId: 1,
-      sessionName: 'Push A',
-      startedAt: daysAgo(5),
-      completedAt: new Date(daysAgo(5).getTime() + 60 * 60 * 1000),
-      exercises: [
-        { exerciseId: 1, exerciseName: 'Bench', order: 1, prescribedSets: 3, prescribedReps: 8, prescribedWeightKg: 60, sets: [], status: 'completed' },
-        { exerciseId: 2, exerciseName: 'OHP', order: 2, prescribedSets: 3, prescribedReps: 10, prescribedWeightKg: 40, sets: [], status: 'completed' },
-      ],
-      endPainChecks: [],
-      notes: '',
-    } as WorkoutSession)
-
-    await db.workoutSessions.add({
-      userId,
-      programId: 1,
-      sessionName: 'Pull A',
-      startedAt: daysAgo(1),
-      completedAt: new Date(daysAgo(1).getTime() + 45 * 60 * 1000),
-      exercises: [
-        { exerciseId: 3, exerciseName: 'Rows', order: 1, prescribedSets: 4, prescribedReps: 8, prescribedWeightKg: 70, sets: [], status: 'completed' },
-      ],
-      endPainChecks: [],
-      notes: '',
-    } as WorkoutSession)
-
-    await db.workoutSessions.add({
-      userId,
-      programId: 1,
-      sessionName: 'Legs',
-      startedAt: daysAgo(3),
-      completedAt: new Date(daysAgo(3).getTime() + 90 * 60 * 1000),
-      exercises: [
-        { exerciseId: 4, exerciseName: 'Squat', order: 1, prescribedSets: 4, prescribedReps: 6, prescribedWeightKg: 100, sets: [], status: 'completed' },
-        { exerciseId: 5, exerciseName: 'Leg Press', order: 2, prescribedSets: 3, prescribedReps: 12, prescribedWeightKg: 120, sets: [], status: 'completed' },
-        { exerciseId: 6, exerciseName: 'Leg Curl', order: 3, prescribedSets: 3, prescribedReps: 12, prescribedWeightKg: 40, sets: [], status: 'completed' },
-      ],
-      endPainChecks: [],
-      notes: '',
-    } as WorkoutSession)
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Leg Press', daysAgo(5), [{ weightKg: 200, reps: 10 }]),
+      makeEntry(userId, 'Leg Press', daysAgo(1), [{ weightKg: 190, reps: 10 }]),
+    ])
 
     const { result } = renderHook(() => useDashboardData(userId))
 
     await waitFor(() => {
-      expect(result.current.recentSessions.length).toBe(3)
+      expect(result.current.progressionItems.length).toBe(1)
     })
 
-    // Most recent first
-    expect(result.current.recentSessions[0].name).toBe('Pull A')
-    expect(result.current.recentSessions[0].exerciseCount).toBe(1)
-    expect(result.current.recentSessions[0].duration).toBe(45)
+    const legPress = result.current.progressionItems[0]
+    expect(legPress.trend).toBe('down')
+    expect(legPress.previousWeightKg).toBe(200)
+    expect(legPress.currentWeightKg).toBe(190)
+  })
 
-    expect(result.current.recentSessions[1].name).toBe('Legs')
-    expect(result.current.recentSessions[1].exerciseCount).toBe(3)
-    expect(result.current.recentSessions[1].duration).toBe(90)
+  it('uses max weight across sets for progression', async () => {
+    const userId = await createUser()
 
-    expect(result.current.recentSessions[2].name).toBe('Push A')
-    expect(result.current.recentSessions[2].exerciseCount).toBe(2)
-    expect(result.current.recentSessions[2].duration).toBe(60)
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bench Press', daysAgo(5), [
+        { weightKg: 60, reps: 8 },
+        { weightKg: 65, reps: 6 },
+        { weightKg: 60, reps: 8 },
+      ]),
+      makeEntry(userId, 'Bench Press', daysAgo(1), [
+        { weightKg: 65, reps: 8 },
+        { weightKg: 70, reps: 6 },
+        { weightKg: 65, reps: 8 },
+      ]),
+    ])
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.progressionItems.length).toBe(1)
+    })
+
+    const bench = result.current.progressionItems[0]
+    expect(bench.previousWeightKg).toBe(65) // max of [60, 65, 60]
+    expect(bench.currentWeightKg).toBe(70)  // max of [65, 70, 65]
+    expect(bench.trend).toBe('up')
+  })
+
+  it('excludes rehab and skipped entries from progression', async () => {
+    const userId = await createUser()
+
+    // Only rehab entries for Bird Dog
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bird Dog', daysAgo(5), [{ weightKg: 0, reps: 10 }], 'rehab'),
+      makeEntry(userId, 'Bird Dog', daysAgo(1), [{ weightKg: 0, reps: 10 }], 'rehab'),
+    ])
+
+    // Skipped entry for Bench
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Bench Press', daysAgo(5), [{ weightKg: 60, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(1), [], 'heavy', true),
+    ])
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.hasData).toBe(true)
+    })
+
+    // Bird Dog: all rehab, excluded. Bench: only 1 non-skipped entry (need 2+), excluded.
+    expect(result.current.progressionItems).toEqual([])
+  })
+
+  it('does not show progression for exercises with only 1 entry', async () => {
+    const userId = await createUser()
+
+    await db.notebookEntries.add(
+      makeEntry(userId, 'Bench Press', daysAgo(1), [{ weightKg: 60, reps: 8 }])
+    )
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.progressionItems).toEqual([])
+  })
+
+  it('sorts progression items alphabetically', async () => {
+    const userId = await createUser()
+
+    await db.notebookEntries.bulkAdd([
+      makeEntry(userId, 'Squat', daysAgo(5), [{ weightKg: 100, reps: 5 }]),
+      makeEntry(userId, 'Squat', daysAgo(1), [{ weightKg: 110, reps: 5 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(5), [{ weightKg: 60, reps: 8 }]),
+      makeEntry(userId, 'Bench Press', daysAgo(1), [{ weightKg: 65, reps: 8 }]),
+      makeEntry(userId, 'Deadlift', daysAgo(5), [{ weightKg: 140, reps: 3 }]),
+      makeEntry(userId, 'Deadlift', daysAgo(1), [{ weightKg: 145, reps: 3 }]),
+    ])
+
+    const { result } = renderHook(() => useDashboardData(userId))
+
+    await waitFor(() => {
+      expect(result.current.progressionItems.length).toBe(3)
+    })
+
+    expect(result.current.progressionItems[0].exerciseName).toBe('Bench Press')
+    expect(result.current.progressionItems[1].exerciseName).toBe('Deadlift')
+    expect(result.current.progressionItems[2].exerciseName).toBe('Squat')
   })
 })
