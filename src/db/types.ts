@@ -6,14 +6,11 @@ export interface UserProfile {
   weight: number // kg
   age: number
   sex: 'male' | 'female'
-  goals: Goal[]
   daysPerWeek: number
   minutesPerSession: number
   createdAt: Date
   updatedAt: Date
 }
-
-export type Goal = 'weight_loss' | 'muscle_gain' | 'rehab' | 'posture' | 'mobility'
 
 // Health conditions (per user)
 export interface HealthCondition {
@@ -47,15 +44,6 @@ export interface GymEquipment {
   type: 'machine' | 'free_weight' | 'cable' | 'bodyweight' | 'band' | 'other'
   isAvailable: boolean
   notes: string
-}
-
-// Available weights at the gym
-export interface AvailableWeight {
-  id?: number
-  userId: number
-  equipmentType: 'dumbbell' | 'barbell_plate' | 'machine_stack' | 'cable_stack'
-  weightKg: number
-  isAvailable: boolean
 }
 
 // Exercise definition (knowledge base)
@@ -199,4 +187,35 @@ export interface ExerciseNote {
   note: string
   createdAt: Date
   updatedAt: Date
+}
+
+// --- Notebook (bloc-note) ---
+
+export interface NotebookEntry {
+  id?: number
+  userId: number
+  exerciseId: number
+  exerciseName: string
+  date: Date
+  sessionIntensity: 'heavy' | 'volume' | 'moderate' | 'rehab'
+  /** Donn\u00e9es saisies manuellement : chaque \u00e9l\u00e9ment = une s\u00e9rie { weightKg, reps } */
+  sets: NotebookSet[]
+  skipped: boolean
+  skipZone?: BodyZone
+}
+
+export interface NotebookSet {
+  weightKg: number
+  reps: number
+}
+
+export interface PainReport {
+  id?: number
+  userId: number
+  zone: BodyZone
+  date: Date
+  /** D\u00e9duit de l'exercice skipp\u00e9 */
+  fromExerciseName: string
+  /** Nombre de jours restants d'accentuation rehab */
+  accentDaysRemaining: number
 }
