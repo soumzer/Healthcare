@@ -6,7 +6,6 @@ export interface NextSessionExercisePreview {
   name: string
   sets: number
   targetReps: number
-  estimatedWeightKg: number  // From last session's progression, or 0 if first time
   isRehab: boolean
 }
 
@@ -30,12 +29,8 @@ export interface NextSessionInfo {
   canStart: boolean
   restRecommendation: string | null
   program: WorkoutProgram | null
-  // Task 9: Session preview with exercise names and weights
+  // Task 9: Session preview with exercise names
   preview: NextSessionPreview | null
-  // Task 11: Deload and phase tracking
-  isDeload: boolean
-  currentPhase: 'hypertrophy' | 'transition' | 'strength' | 'deload'
-  weeksSinceLastDeload: number
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
@@ -48,9 +43,6 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: null,
       preview: null,
-      isDeload: false,
-      currentPhase: 'hypertrophy' as const,
-      weeksSinceLastDeload: 0,
     }
 
     // Find active program for this user
@@ -69,9 +61,6 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         restRecommendation: null,
         program: null,
         preview: null,
-        isDeload: false,
-        currentPhase: 'hypertrophy' as const,
-        weeksSinceLastDeload: 0,
       }
     }
 
@@ -114,7 +103,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
 
     const minimumRestHours = 24
 
-    // Build session preview with exercise names and estimated weights
+    // Build session preview with exercise names
     const exerciseIds = nextProgramSession.exercises.map((e) => e.exerciseId)
 
     // Resolve exercise names from the exercises table
@@ -124,71 +113,14 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       .toArray()
     const exerciseNameMap = new Map(exerciseRecords.map((e) => [e.id!, e.name]))
 
-    // Get latest exercise progress for each exercise to determine estimated weight
-    const progressRecords = await db.exerciseProgress
-      .where('exerciseId')
-      .anyOf(exerciseIds)
-      .and((p) => p.userId === userId)
-      .toArray()
-
-    // Group by exerciseId and find the latest entry (by date) for each
-    const progressByExercise = new Map<number, typeof progressRecords>()
-    for (const p of progressRecords) {
-      const list = progressByExercise.get(p.exerciseId) || []
-      list.push(p)
-      progressByExercise.set(p.exerciseId, list)
-    }
-    const weightMap = new Map<number, number>()
-    for (const [exId, entries] of progressByExercise) {
-      entries.sort((a, b) => b.date.getTime() - a.date.getTime())
-      weightMap.set(exId, entries[0].weightKg)
-    }
-
-    // Deload detection: check TrainingPhase records for weeks since last deload
-    const phaseRecords = await db.trainingPhases
-      .where('userId')
-      .equals(userId)
-      .toArray()
-    const sortedPhases = phaseRecords.sort(
-      (a, b) => b.startedAt.getTime() - a.startedAt.getTime()
-    )
-    const currentPhaseRecord = sortedPhases.find((p) => !p.endedAt)
-    const currentPhase = currentPhaseRecord?.phase ?? 'hypertrophy'
-
-    // Calculate weeks since last deload
-    const lastDeloadPhase = sortedPhases.find((p) => p.phase === 'deload')
-    let weeksSinceLastDeload = 0
-    if (lastDeloadPhase) {
-      const deloadEnd = lastDeloadPhase.endedAt ?? lastDeloadPhase.startedAt
-      weeksSinceLastDeload = Math.floor(
-        (Date.now() - deloadEnd.getTime()) / (7 * 24 * 60 * 60 * 1000)
-      )
-    } else if (completedSessions.length > 0) {
-      // No deload ever — count weeks from first session
-      const firstSessionDate = completedSessions[completedSessions.length - 1].completedAt
-      if (firstSessionDate) {
-        weeksSinceLastDeload = Math.floor(
-          (Date.now() - firstSessionDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
-        )
-      }
-    }
-
-    // Automatic deload detection removed with progression engine.
-    // Deload is now only active when explicitly set as the current phase.
-    const isDeload = currentPhase === 'deload'
-
     const preview: NextSessionPreview = {
       sessionName: nextProgramSession.name,
-      exercises: nextProgramSession.exercises.map((pe) => {
-        const baseWeight = weightMap.get(pe.exerciseId) ?? 0
-        return {
-          name: exerciseNameMap.get(pe.exerciseId) ?? `Exercice #${pe.exerciseId}`,
-          sets: pe.sets,
-          targetReps: pe.targetReps,
-          estimatedWeightKg: isDeload ? Math.round(baseWeight * 0.6 * 2) / 2 : baseWeight,
-          isRehab: pe.isRehab,
-        }
-      }),
+      exercises: nextProgramSession.exercises.map((pe) => ({
+        name: exerciseNameMap.get(pe.exerciseId) ?? `Exercice #${pe.exerciseId}`,
+        sets: pe.sets,
+        targetReps: pe.targetReps,
+        isRehab: pe.isRehab,
+      })),
     }
 
     // Calculate hours since last session
@@ -214,9 +146,6 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           restRecommendation: `Repos recommandé : encore ${remainingHours}h avant la prochaine séance`,
           program: activeProgram,
           preview,
-          isDeload,
-          currentPhase,
-          weeksSinceLastDeload,
         }
       }
     }
@@ -238,9 +167,6 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: activeProgram,
       preview,
-      isDeload,
-      currentPhase,
-      weeksSinceLastDeload,
     }
   }, [userId])
 }

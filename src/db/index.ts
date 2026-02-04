@@ -1,8 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
   UserProfile, HealthCondition, GymEquipment,
-  Exercise, WorkoutProgram, WorkoutSession, ExerciseProgress,
-  PainLog, TrainingPhase, ExerciseNote,
+  Exercise, WorkoutProgram, WorkoutSession,
+  ExerciseNote,
   NotebookEntry, PainReport,
 } from './types'
 
@@ -13,9 +13,6 @@ class HealthCoachDB extends Dexie {
   exercises!: EntityTable<Exercise, 'id'>
   workoutPrograms!: EntityTable<WorkoutProgram, 'id'>
   workoutSessions!: EntityTable<WorkoutSession, 'id'>
-  exerciseProgress!: EntityTable<ExerciseProgress, 'id'>
-  painLogs!: EntityTable<PainLog, 'id'>
-  trainingPhases!: EntityTable<TrainingPhase, 'id'>
   exerciseNotes!: EntityTable<ExerciseNote, 'id'>
   notebookEntries!: EntityTable<NotebookEntry, 'id'>
   painReports!: EntityTable<PainReport, 'id'>
@@ -58,6 +55,13 @@ class HealthCoachDB extends Dexie {
       painReports: '++id, userId, zone, date, [userId+zone]',
       // Remove
       availableWeights: null,
+    })
+
+    // Version 4: Remove zombie tables
+    this.version(4).stores({
+      exerciseProgress: null,
+      painLogs: null,
+      trainingPhases: null,
     })
   }
 }

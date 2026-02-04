@@ -137,48 +137,6 @@ export interface PainCheck {
   level: number
 }
 
-// Progression tracking per exercise
-export interface ExerciseProgress {
-  id?: number
-  userId: number
-  exerciseId: number
-  exerciseName: string
-  date: Date
-  sessionId: number
-  weightKg: number
-  reps: number // average reps per set
-  repsPerSet?: number[] // actual reps per set (for accurate progression)
-  sets: number
-  avgRepsInReserve: number // -1 if pain was reported
-  avgRestSeconds: number
-  exerciseOrder: number
-  phase: 'hypertrophy' | 'transition' | 'strength' | 'deload'
-  weekNumber: number
-  prescribedReps?: number
-  prescribedRestSeconds?: number
-}
-
-// Pain history
-export interface PainLog {
-  id?: number
-  userId: number
-  zone: BodyZone
-  level: number
-  context: 'during_set' | 'end_session' | 'rest_day' | 'onboarding'
-  exerciseName?: string
-  date: Date
-}
-
-// User training phase tracking
-export interface TrainingPhase {
-  id?: number
-  userId: number
-  phase: 'hypertrophy' | 'transition' | 'strength' | 'deload'
-  startedAt: Date
-  endedAt?: Date
-  weekCount: number
-}
-
 // Persistent notes per exercise (sticky reminders)
 export interface ExerciseNote {
   id?: number

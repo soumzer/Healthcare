@@ -1,6 +1,6 @@
 import { db } from '../db'
-import { BACKUP_CONFIG } from '../constants/config'
-import type { UserProfile, HealthCondition, GymEquipment, WorkoutProgram, WorkoutSession, ExerciseProgress, PainLog, TrainingPhase } from '../db/types'
+import type { UserProfile, HealthCondition, GymEquipment, WorkoutProgram, WorkoutSession, NotebookEntry, PainReport } from '../db/types'
+import type { BodyZone, NotebookSet } from '../db/types'
 
 // Validation helpers
 function isValidBackupStructure(data: unknown): data is {
@@ -8,12 +8,10 @@ function isValidBackupStructure(data: unknown): data is {
   profile: Record<string, unknown>
   conditions?: unknown[]
   equipment?: unknown[]
-  weights?: unknown[]
   programs?: unknown[]
   sessions?: unknown[]
-  progress?: unknown[]
-  painLogs?: unknown[]
-  phases?: unknown[]
+  notebookEntries?: unknown[]
+  painReports?: unknown[]
 } {
   if (typeof data !== 'object' || data === null) return false
   const obj = data as Record<string, unknown>
@@ -72,45 +70,26 @@ function sanitizeSession(s: Record<string, unknown>, userId: number): Omit<Worko
   }
 }
 
-function sanitizeProgress(p: Record<string, unknown>, userId: number): Omit<ExerciseProgress, 'id'> {
+function sanitizeNotebookEntry(e: Record<string, unknown>, userId: number): Omit<NotebookEntry, 'id'> {
   return {
     userId,
-    exerciseId: Number(p.exerciseId ?? 0),
-    exerciseName: String(p.exerciseName ?? ''),
-    date: p.date ? new Date(String(p.date)) : new Date(),
-    sessionId: Number(p.sessionId ?? 0),
-    weightKg: Number(p.weightKg ?? 0),
-    reps: Number(p.reps ?? 0),
-    repsPerSet: Array.isArray(p.repsPerSet) ? p.repsPerSet.map(Number) : undefined,
-    sets: Number(p.sets ?? 0),
-    avgRepsInReserve: Number(p.avgRepsInReserve ?? 0),
-    avgRestSeconds: Number(p.avgRestSeconds ?? 0),
-    exerciseOrder: Number(p.exerciseOrder ?? 0),
-    phase: String(p.phase ?? 'hypertrophy') as ExerciseProgress['phase'],
-    weekNumber: Number(p.weekNumber ?? 0),
-    prescribedReps: p.prescribedReps !== undefined ? Number(p.prescribedReps) : undefined,
-    prescribedRestSeconds: p.prescribedRestSeconds !== undefined ? Number(p.prescribedRestSeconds) : undefined,
+    exerciseId: Number(e.exerciseId ?? 0),
+    exerciseName: String(e.exerciseName ?? ''),
+    date: e.date ? new Date(String(e.date)) : new Date(),
+    sessionIntensity: String(e.sessionIntensity ?? 'moderate') as NotebookEntry['sessionIntensity'],
+    sets: Array.isArray(e.sets) ? (e.sets as NotebookSet[]) : [],
+    skipped: Boolean(e.skipped ?? false),
+    skipZone: e.skipZone ? String(e.skipZone) as BodyZone : undefined,
   }
 }
 
-function sanitizePainLog(l: Record<string, unknown>, userId: number): Omit<PainLog, 'id'> {
+function sanitizePainReport(r: Record<string, unknown>, userId: number): Omit<PainReport, 'id'> {
   return {
     userId,
-    zone: String(l.zone ?? '') as PainLog['zone'],
-    level: Number(l.level ?? 0),
-    context: String(l.context ?? 'rest_day') as PainLog['context'],
-    exerciseName: l.exerciseName ? String(l.exerciseName) : undefined,
-    date: l.date ? new Date(String(l.date)) : new Date(),
-  }
-}
-
-function sanitizePhase(p: Record<string, unknown>, userId: number): Omit<TrainingPhase, 'id'> {
-  return {
-    userId,
-    phase: String(p.phase ?? 'hypertrophy') as TrainingPhase['phase'],
-    startedAt: p.startedAt ? new Date(String(p.startedAt)) : new Date(),
-    endedAt: p.endedAt ? new Date(String(p.endedAt)) : undefined,
-    weekCount: Number(p.weekCount ?? 0),
+    zone: String(r.zone ?? '') as BodyZone,
+    date: r.date ? new Date(String(r.date)) : new Date(),
+    fromExerciseName: String(r.fromExerciseName ?? ''),
+    accentDaysRemaining: Number(r.accentDaysRemaining ?? 0),
   }
 }
 
@@ -122,26 +101,24 @@ export async function exportData(userId: number): Promise<string> {
   const equipment = await db.gymEquipment.where('userId').equals(userId).toArray()
   const programs = await db.workoutPrograms.where('userId').equals(userId).toArray()
   const sessions = await db.workoutSessions.where('userId').equals(userId).toArray()
-  const progress = await db.exerciseProgress.where('userId').equals(userId).toArray()
-  const painLogs = await db.painLogs.where('userId').equals(userId).toArray()
-  const phases = await db.trainingPhases.where('userId').equals(userId).toArray()
+  const notebookEntries = await db.notebookEntries.where('userId').equals(userId).toArray()
+  const painReports = await db.painReports.where('userId').equals(userId).toArray()
 
   return JSON.stringify({
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     profile,
     conditions,
     equipment,
     programs,
     sessions,
-    progress,
-    painLogs,
-    phases,
+    notebookEntries,
+    painReports,
   }, null, 2)
 }
 
 export async function importData(json: string): Promise<number> {
-  if (json.length > BACKUP_CONFIG.MAX_SIZE_BYTES) {
+  if (json.length > 10 * 1024 * 1024) {
     throw new Error('Fichier de backup trop volumineux (max 10MB)')
   }
 
@@ -156,11 +133,11 @@ export async function importData(json: string): Promise<number> {
     throw new Error('Structure de backup invalide')
   }
 
-  if (data.version !== 1) {
+  if (data.version !== 1 && data.version !== 2) {
     throw new Error('Version de backup non supportée')
   }
 
-  const arrays = ['conditions', 'equipment', 'programs', 'sessions', 'progress', 'painLogs', 'phases'] as const
+  const arrays = ['conditions', 'equipment', 'programs', 'sessions', 'notebookEntries', 'painReports'] as const
   for (const key of arrays) {
     if (data[key] !== undefined && !Array.isArray(data[key])) {
       throw new Error(`Format invalide pour ${key}`)
@@ -170,7 +147,7 @@ export async function importData(json: string): Promise<number> {
   return await db.transaction('rw',
     [db.userProfiles, db.healthConditions, db.gymEquipment,
      db.workoutPrograms, db.workoutSessions,
-     db.exerciseProgress, db.painLogs, db.trainingPhases],
+     db.notebookEntries, db.painReports],
     async () => {
       await Promise.all([
         db.userProfiles.clear(),
@@ -178,9 +155,8 @@ export async function importData(json: string): Promise<number> {
         db.gymEquipment.clear(),
         db.workoutPrograms.clear(),
         db.workoutSessions.clear(),
-        db.exerciseProgress.clear(),
-        db.painLogs.clear(),
-        db.trainingPhases.clear(),
+        db.notebookEntries.clear(),
+        db.painReports.clear(),
       ])
 
       const profile = data.profile as Record<string, unknown>
@@ -217,19 +193,14 @@ export async function importData(json: string): Promise<number> {
           (data.sessions as Record<string, unknown>[]).map(s => sanitizeSession(s, userId))
         )
       }
-      if (data.progress?.length) {
-        await db.exerciseProgress.bulkAdd(
-          (data.progress as Record<string, unknown>[]).map(p => sanitizeProgress(p, userId))
+      if (data.notebookEntries?.length) {
+        await db.notebookEntries.bulkAdd(
+          (data.notebookEntries as Record<string, unknown>[]).map(e => sanitizeNotebookEntry(e, userId))
         )
       }
-      if (data.painLogs?.length) {
-        await db.painLogs.bulkAdd(
-          (data.painLogs as Record<string, unknown>[]).map(l => sanitizePainLog(l, userId))
-        )
-      }
-      if (data.phases?.length) {
-        await db.trainingPhases.bulkAdd(
-          (data.phases as Record<string, unknown>[]).map(p => sanitizePhase(p, userId))
+      if (data.painReports?.length) {
+        await db.painReports.bulkAdd(
+          (data.painReports as Record<string, unknown>[]).map(r => sanitizePainReport(r, userId))
         )
       }
 

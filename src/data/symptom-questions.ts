@@ -548,7 +548,7 @@ export const symptomQuestions: SymptomQuestion[] = [
 // MAPPINGS CONDITIONS -> PROTOCOLES
 // =============================================================================
 
-export const conditionMappings: ConditionMapping[] = [
+const conditionMappings: ConditionMapping[] = [
   // =========================================================================
   // PIED
   // =========================================================================
@@ -1004,14 +1004,3 @@ export function matchConditions(
   return results
 }
 
-/**
- * Retourne le meilleur match ou null si aucun match.
- */
-export function getBestMatch(
-  zone: BodyZone,
-  collectedIndicators: string[]
-): { condition: ConditionMapping; confidence: 'high' | 'medium' | 'low' } | null {
-  const matches = matchConditions(zone, collectedIndicators)
-  if (matches.length === 0) return null
-  return { condition: matches[0].condition, confidence: matches[0].confidence }
-}

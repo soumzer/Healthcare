@@ -10,7 +10,6 @@ export interface OnboardingState {
   equipment: Omit<GymEquipment, 'id' | 'userId'>[]
   daysPerWeek: number
   minutesPerSession: number
-  programText: string
 }
 
 const initialState: OnboardingState = {
@@ -20,7 +19,6 @@ const initialState: OnboardingState = {
   equipment: [],
   daysPerWeek: 3,
   minutesPerSession: 75,
-  programText: '',
 }
 
 export function useOnboarding() {
@@ -34,8 +32,6 @@ export function useOnboarding() {
   const updateEquipment = (equipment: OnboardingState['equipment']) => setState(s => ({ ...s, equipment }))
   const updateSchedule = (daysPerWeek: number, minutesPerSession: number) =>
     setState(s => ({ ...s, daysPerWeek, minutesPerSession }))
-  const updateProgramText = (programText: string) => setState(s => ({ ...s, programText }))
-
   const submit = async () => {
     const now = new Date()
     const userId = await db.userProfiles.add({
@@ -110,7 +106,7 @@ export function useOnboarding() {
     state, totalSteps,
     nextStep, prevStep,
     updateBody, updateConditions, updateEquipment,
-    updateSchedule, updateProgramText,
+    updateSchedule,
     submit,
   }
 }

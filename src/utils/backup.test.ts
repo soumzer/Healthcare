@@ -38,19 +38,21 @@ describe('backup', () => {
       isAvailable: true,
       notes: '',
     })
-    await db.painLogs.add({
+    await db.notebookEntries.add({
       userId,
-      zone: 'elbow_right',
-      level: 4,
-      context: 'during_set',
+      exerciseId: 1,
       exerciseName: 'Bench Press',
       date: new Date(),
+      sessionIntensity: 'heavy',
+      sets: [{ weightKg: 80, reps: 6 }, { weightKg: 80, reps: 5 }],
+      skipped: false,
     })
-    await db.trainingPhases.add({
+    await db.painReports.add({
       userId,
-      phase: 'hypertrophy',
-      startedAt: new Date(),
-      weekCount: 4,
+      zone: 'elbow_right',
+      date: new Date(),
+      fromExerciseName: 'Curl biceps',
+      accentDaysRemaining: 3,
     })
     return userId
   }
@@ -60,20 +62,20 @@ describe('backup', () => {
     const json = await exportData(userId)
     const data = JSON.parse(json)
 
-    expect(data.version).toBe(1)
+    expect(data.version).toBe(2)
     expect(data.exportedAt).toBeDefined()
     expect(data.profile.name).toBe('Yassine')
     expect(data.conditions).toHaveLength(1)
     expect(data.conditions[0].label).toBe('Golf elbow')
     expect(data.equipment).toHaveLength(1)
     expect(data.equipment[0].name).toBe('Banc plat')
-    expect(data.painLogs).toHaveLength(1)
-    expect(data.painLogs[0].zone).toBe('elbow_right')
-    expect(data.phases).toHaveLength(1)
-    expect(data.phases[0].phase).toBe('hypertrophy')
+    expect(data.notebookEntries).toHaveLength(1)
+    expect(data.notebookEntries[0].exerciseName).toBe('Bench Press')
+    expect(data.notebookEntries[0].sets).toHaveLength(2)
+    expect(data.painReports).toHaveLength(1)
+    expect(data.painReports[0].zone).toBe('elbow_right')
     expect(data.programs).toHaveLength(0)
     expect(data.sessions).toHaveLength(0)
-    expect(data.progress).toHaveLength(0)
   })
 
   it('throws when exporting non-existent user', async () => {
@@ -102,11 +104,14 @@ describe('backup', () => {
     const equipment = await db.gymEquipment.where('userId').equals(newUserId).toArray()
     expect(equipment).toHaveLength(1)
 
-    const painLogs = await db.painLogs.where('userId').equals(newUserId).toArray()
-    expect(painLogs).toHaveLength(1)
+    const entries = await db.notebookEntries.where('userId').equals(newUserId).toArray()
+    expect(entries).toHaveLength(1)
+    expect(entries[0].exerciseName).toBe('Bench Press')
+    expect(entries[0].sets).toHaveLength(2)
 
-    const phases = await db.trainingPhases.where('userId').equals(newUserId).toArray()
-    expect(phases).toHaveLength(1)
+    const reports = await db.painReports.where('userId').equals(newUserId).toArray()
+    expect(reports).toHaveLength(1)
+    expect(reports[0].zone).toBe('elbow_right')
   })
 
   it('import clears existing data', async () => {

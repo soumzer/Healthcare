@@ -175,24 +175,6 @@ export function selectRehabExercises(
 }
 
 /**
- * Helper to enrich exercises with metadata for selection
- * Takes raw exercises from a protocol and adds priority + history
- */
-export function enrichExercisesWithMeta(
-  exercises: RehabExercise[],
-  protocolName: string
-): RehabExerciseWithMeta[] {
-  const history = getRehabExerciseHistory()
-
-  return exercises.map(exercise => ({
-    exercise,
-    protocolName,
-    priority: assignPriority(exercise),
-    lastDoneAt: history[exercise.exerciseName] ?? null,
-  }))
-}
-
-/**
  * Main entry point for rest day routine
  * Takes all exercises from matched protocols and selects the best subset
  */
