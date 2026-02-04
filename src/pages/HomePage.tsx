@@ -4,10 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import { useNextSession } from '../hooks/useNextSession'
 import { isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
-import type { Goal } from '../db/types'
-
-// Goals that benefit from rest day mobility/rehab routine
-const REST_DAY_ROUTINE_GOALS: Goal[] = ['mobility', 'posture', 'rehab']
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
@@ -65,10 +61,9 @@ export default function HomePage() {
   if (info.status === 'rest_recommended') {
     const hoursAgo = Math.round(info.hoursSinceLastSession ?? 0)
 
-    // Show rest day routine only if user has active conditions OR relevant goals
+    // Show rest day routine if user has active health conditions
     const hasActiveConditions = (conditions?.length ?? 0) > 0
-    const hasRelevantGoals = user?.goals?.some(g => REST_DAY_ROUTINE_GOALS.includes(g)) ?? false
-    const showRestDayRoutine = hasActiveConditions || hasRelevantGoals
+    const showRestDayRoutine = hasActiveConditions
 
     return (
       <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden px-6 pt-12">
