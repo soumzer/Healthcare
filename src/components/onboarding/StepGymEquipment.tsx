@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { GymEquipment } from '../../db/types'
 
@@ -90,12 +89,6 @@ const ALL_EQUIPMENT: EquipmentItem[] = categories.flatMap(cat =>
 export default function StepGymEquipment({ state, updateEquipment, nextStep, prevStep }: Props) {
   const selectedTags = new Set(state.equipment.map(e => e.name))
 
-  // Dumbbell weight range state
-  const hasDumbbells = selectedTags.has('dumbbell')
-  const [dbMin, setDbMin] = useState(2)
-  const [dbMax, setDbMax] = useState(30)
-  const [dbStep, setDbStep] = useState(2)
-
   const toggleItem = (opt: EquipmentOption) => {
     const tags = tagsForOption(opt)
     if (selectedTags.has(opt.tag)) {
@@ -111,19 +104,6 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
       }))
       updateEquipment([...state.equipment, ...newItems])
     }
-  }
-
-  const handleNext = () => {
-    // If dumbbells selected, store the weight range in the first dumbbell equipment's notes
-    if (hasDumbbells) {
-      const updated = state.equipment.map(e =>
-        e.name === 'dumbbell'
-          ? { ...e, notes: JSON.stringify({ min: dbMin, max: dbMax, step: dbStep }) }
-          : e
-      )
-      updateEquipment(updated)
-    }
-    nextStep()
   }
 
   return (
@@ -186,51 +166,6 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
         </div>
       ))}
 
-      {/* Dumbbell weight range */}
-      {hasDumbbells && (
-        <div className="bg-zinc-900 rounded-lg p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-zinc-300">Haltères disponibles</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-zinc-400 block mb-1">De (kg)</label>
-              <input
-                type="number"
-                min={1}
-                value={dbMin}
-                onChange={e => setDbMin(Number(e.target.value) || 1)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-400 block mb-1">À (kg)</label>
-              <input
-                type="number"
-                min={dbMin}
-                value={dbMax}
-                onChange={e => setDbMax(Number(e.target.value) || dbMin)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-400 block mb-1">Pas (kg)</label>
-              <input
-                type="number"
-                min={0.5}
-                step={0.5}
-                value={dbStep}
-                onChange={e => setDbStep(Number(e.target.value) || 1)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm text-center"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-zinc-400">
-            {Array.from({ length: Math.floor((dbMax - dbMin) / dbStep) + 1 }, (_, i) => dbMin + i * dbStep)
-              .filter(w => w <= dbMax)
-              .join(', ')} kg
-          </p>
-        </div>
-      )}
-
       <div className="flex gap-3 mt-4">
         <button
           type="button"
@@ -241,7 +176,7 @@ export default function StepGymEquipment({ state, updateEquipment, nextStep, pre
         </button>
         <button
           type="button"
-          onClick={handleNext}
+          onClick={nextStep}
           className="flex-1 bg-white text-black font-semibold py-3 rounded-lg"
         >
           Suivant
