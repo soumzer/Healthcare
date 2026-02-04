@@ -307,16 +307,18 @@ function buildStructuredSession(
     }
     if (picked) {
       // Adjust reps and rest based on session intensity
+      // Isolation exercises are ALWAYS volume (high reps, moderate rest)
       let reps = slot.reps
       let rest = slot.rest
       let sets = slot.sets
-      if (intensity === 'heavy' && !picked.isRehab) {
-        // Heavy: fewer reps, more rest, +1 set for compounds
-        reps = Math.min(slot.reps, picked.category === 'compound' ? 6 : 8)
+      const isIsolation = picked.category === 'isolation'
+      if (intensity === 'heavy' && !picked.isRehab && !isIsolation) {
+        // Heavy compounds: fewer reps, more rest, +1 set
+        reps = Math.min(slot.reps, 6)
         rest = Math.max(slot.rest, 150)
-        if (picked.category === 'compound') sets = Math.max(slot.sets, 4)
-      } else if (intensity === 'volume' && !picked.isRehab) {
-        // Volume: more reps, less rest
+        sets = Math.max(slot.sets, 4)
+      } else if ((intensity === 'volume' || isIsolation) && !picked.isRehab) {
+        // Volume (or isolation in any session): more reps, less rest
         reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
         rest = Math.min(slot.rest, 90)
       }
