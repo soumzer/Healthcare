@@ -88,7 +88,7 @@ export default function HomePage() {
         <div className="mt-auto space-y-3 pb-8">
           {showRestDayRoutine && (
             <button
-              onClick={() => rehabAvailable && navigate('/rest-day')}
+              onClick={() => rehabAvailable && navigate('/rehab')}
               disabled={!rehabAvailable}
               className={`font-semibold rounded-xl py-4 w-full text-lg ${
                 rehabAvailable

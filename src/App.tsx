@@ -7,7 +7,7 @@ import OnboardingPage from './pages/OnboardingPage'
 import SessionPage from './pages/SessionPage'
 import DashboardPage from './pages/DashboardPage'
 import ProfilePage from './pages/ProfilePage'
-import RestDayPage from './pages/RestDayPage'
+import RehabPage from './pages/RehabPage'
 
 function App() {
   const user = useLiveQuery(async () => (await db.userProfiles.toCollection().first()) ?? null)
@@ -25,7 +25,7 @@ function App() {
         <Route path="/session" element={<SessionPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/rest-day" element={<RestDayPage />} />
+        <Route path="/rehab" element={<RehabPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <BottomNav />
