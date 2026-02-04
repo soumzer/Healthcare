@@ -2408,11 +2408,11 @@ describe('trimSlotsToTimeBudget', () => {
     makeSlot({ label: 'Accessory 4', sets: 3, rest: 60 }),
   ]
 
-  it('estimates heavy slots at ~69 min', () => {
-    expect(estimateSlotMinutes(heavySlots)).toBe(69)
+  it('estimates heavy slots at ~65 min', () => {
+    expect(estimateSlotMinutes(heavySlots)).toBe(65)
   })
 
-  it('trims slots from 69min to fit within 45min budget', () => {
+  it('trims slots from 65min to fit within 45min budget', () => {
     const trimmed = trimSlotsToTimeBudget(heavySlots, 45)
     const estimated = estimateSlotMinutes(trimmed)
     expect(estimated).toBeLessThanOrEqual(45)

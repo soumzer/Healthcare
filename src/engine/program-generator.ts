@@ -8,6 +8,13 @@ import type {
 } from '../db/types'
 
 // ---------------------------------------------------------------------------
+// Timing constants
+// ---------------------------------------------------------------------------
+
+/** Estimated working time per set in seconds (execution + transition). */
+const WORK_SECONDS_PER_SET = 35
+
+// ---------------------------------------------------------------------------
 // Input / Output interfaces
 // ---------------------------------------------------------------------------
 
@@ -185,12 +192,12 @@ export interface ExerciseSlot {
 /**
  * Estimate session duration in minutes from exercise slots.
  * Formula matches useNextSession.ts:108-114:
- *   Per exercise: sets × (45s work + restSeconds)
+ *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds)
  *   Total = sum / 60 + 5 (warmup overhead)
  */
 export function estimateSlotMinutes(slots: ExerciseSlot[]): number {
   let totalSec = 0
-  for (const s of slots) totalSec += s.sets * (45 + s.rest)
+  for (const s of slots) totalSec += s.sets * (WORK_SECONDS_PER_SET + s.rest)
   return Math.round(totalSec / 60) + 5
 }
 
@@ -234,12 +241,12 @@ export function trimSlotsToTimeBudget(
 /**
  * Estimate session duration in minutes from ProgramExercise[].
  * Formula matches useNextSession.ts:108-114:
- *   Per exercise: sets × (45s work + restSeconds)
+ *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds)
  *   Total = sum / 60 + 5 (warmup overhead)
  */
 export function estimateSessionMinutes(exercises: ProgramExercise[]): number {
   let totalSec = 0
-  for (const ex of exercises) totalSec += ex.sets * (45 + ex.restSeconds)
+  for (const ex of exercises) totalSec += ex.sets * (WORK_SECONDS_PER_SET + ex.restSeconds)
   return Math.round(totalSec / 60) + 5
 }
 

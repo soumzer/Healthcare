@@ -96,7 +96,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
     // Estimate time from actual sets and rest per exercise
     let totalSeconds = 0
     for (const ex of nextProgramSession.exercises) {
-      const setDuration = 45 // ~45 sec per working set
+      const setDuration = 35 // ~35 sec per working set
       totalSeconds += ex.sets * (setDuration + ex.restSeconds)
     }
     const estimatedMinutes = Math.round(totalSeconds / 60) + 5 // +5 min for transitions/warmup
