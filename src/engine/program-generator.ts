@@ -263,8 +263,8 @@ export function adjustSessionToTimeBudget(
 ): ProgramExercise[] {
   let adjusted = [...exercises]
 
-  // === SCALE UP if significantly under budget (more than 10 min under) ===
-  const scaleUpThreshold = minutesPerSession - 10
+  // === SCALE UP if under budget (more than 5 min under) ===
+  const scaleUpThreshold = minutesPerSession - 5
 
   // Phase U1: Add sets to compounds (first 3 exercises, max 5 sets)
   while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
