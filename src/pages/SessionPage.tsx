@@ -352,7 +352,7 @@ function SessionRunner({
                     {catalog?.name ?? `Exercise #${pe.exerciseId}`}
                   </p>
                   <p className="text-zinc-500 text-xs">
-                    {pe.sets}x{pe.targetReps} — repos {pe.restSeconds}s
+                    {pe.sets}x{pe.isTimeBased ? `${pe.targetReps}s` : pe.targetReps} — repos {pe.restSeconds}s
                   </p>
                 </div>
 
@@ -412,6 +412,7 @@ function SessionRunner({
           reps: currentProgramExercise.targetReps,
           restSeconds: currentProgramExercise.restSeconds,
           intensity,
+          isTimeBased: currentProgramExercise.isTimeBased,
         }}
         exerciseIndex={currentExerciseIdx}
         totalExercises={programSession.exercises.length}

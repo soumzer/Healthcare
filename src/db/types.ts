@@ -89,6 +89,7 @@ export interface ProgramExercise {
   targetReps: number
   restSeconds: number
   isRehab: boolean
+  isTimeBased?: boolean // true for isometric exercises (plank, etc.) - targetReps = seconds
 }
 
 // Actual workout session (logged)

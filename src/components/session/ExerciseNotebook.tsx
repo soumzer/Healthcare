@@ -25,6 +25,7 @@ export interface ExerciseNotebookProps {
     reps: number
     restSeconds: number
     intensity: 'heavy' | 'volume' | 'moderate'
+    isTimeBased?: boolean
   }
   exerciseIndex: number
   totalExercises: number
@@ -136,7 +137,7 @@ export default function ExerciseNotebook({
           <h1 className="text-lg font-bold uppercase">{exercise.exerciseName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-zinc-400 text-sm">
-              {target.sets} x {target.reps} reps — repos {formatRestLabel(target.restSeconds)}
+              {target.sets} x {target.isTimeBased ? `${target.reps}s` : `${target.reps} reps`} — repos {formatRestLabel(target.restSeconds)}
             </span>
             {exercise.isRehab ? (
               <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/40 text-emerald-400">

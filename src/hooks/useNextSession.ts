@@ -7,6 +7,7 @@ export interface NextSessionExercisePreview {
   sets: number
   targetReps: number
   isRehab: boolean
+  isTimeBased?: boolean
 }
 
 export interface NextSessionPreview {
@@ -136,6 +137,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         sets: pe.sets,
         targetReps: pe.targetReps,
         isRehab: pe.isRehab,
+        isTimeBased: pe.isTimeBased,
       })),
     }
 

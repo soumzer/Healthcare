@@ -407,6 +407,15 @@ function buildStructuredSession(
           rest = Math.min(slot.rest, 90)
         }
       }
+
+      // Isometric exercises (plank, side plank) use time instead of reps
+      const isIsometric = picked.tags.includes('isometric')
+      if (isIsometric) {
+        reps = 30 // 30 seconds per set
+        sets = 3
+        rest = 60
+      }
+
       programExercises.push({
         exerciseId: picked.id ?? 0,
         order: exerciseOrder++,
@@ -414,6 +423,7 @@ function buildStructuredSession(
         targetReps: reps,
         restSeconds: rest,
         isRehab: picked.isRehab,
+        isTimeBased: isIsometric,
       })
     }
   }
