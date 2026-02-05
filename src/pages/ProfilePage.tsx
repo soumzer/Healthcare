@@ -126,7 +126,7 @@ function TrainingSettings({
 }
 
 export default function ProfilePage() {
-  const { regenerate, refresh, isRegenerating } = useRegenerateProgram()
+  const { regenerate, isRegenerating } = useRegenerateProgram()
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
   const program = useLiveQuery(
     () => user?.id
@@ -176,17 +176,6 @@ export default function ProfilePage() {
         onRegenerate={() => regenerate(user.id!)}
         isRegenerating={isRegenerating}
       />
-
-      {/* Refresh program */}
-      {program && (
-        <button
-          onClick={() => refresh(user.id!)}
-          disabled={isRegenerating}
-          className="w-full py-3 bg-zinc-800 text-white font-medium rounded-xl disabled:opacity-50"
-        >
-          {isRegenerating ? 'Rafraichissement...' : 'Rafraichir le programme'}
-        </button>
-      )}
 
       {/* Health conditions manager */}
       <div className="bg-zinc-900 rounded-xl p-4">
