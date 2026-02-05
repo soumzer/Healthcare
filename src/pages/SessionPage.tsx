@@ -224,16 +224,27 @@ function SessionRunner({
     setPhase('done')
   }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap])
 
-  // Swap: resolve alternatives for the current exercise
+  // Swap: find alternatives with same primary muscles and category (dynamic)
   const swapOptions: SwapOption[] = useMemo(() => {
-    if (!currentCatalogExercise?.alternatives) return []
-    return currentCatalogExercise.alternatives
-      .map((altName) => {
-        const match = allExercises.find((e) => e.name === altName)
-        return match?.id ? { exerciseId: match.id, name: match.name } : null
+    if (!currentCatalogExercise) return []
+    const currentId = currentCatalogExercise.id
+    const currentMuscles = currentCatalogExercise.primaryMuscles
+    const currentCategory = currentCatalogExercise.category
+    // Collect IDs already used in this session
+    const usedIds = new Set(programSession.exercises.map((e) => e.exerciseId))
+    // Find exercises with overlapping primary muscles and same category
+    return allExercises
+      .filter((e) => {
+        if (e.id === currentId || e.id === undefined) return false
+        if (usedIds.has(e.id)) return false
+        if (e.isRehab) return false
+        if (e.category !== currentCategory) return false
+        // At least one overlapping primary muscle
+        return e.primaryMuscles.some((m) => currentMuscles.includes(m))
       })
-      .filter((x): x is SwapOption => x !== null)
-  }, [currentCatalogExercise, allExercises])
+      .slice(0, 8) // Limit to 8 alternatives
+      .map((e) => ({ exerciseId: e.id!, name: e.name }))
+  }, [currentCatalogExercise, allExercises, programSession.exercises])
 
   const handleSwapExercise = useCallback(async (newExerciseId: number) => {
     const program = await db.workoutPrograms.get(programId)

@@ -67,25 +67,27 @@ export default function HomePage() {
 
     return (
       <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
-        <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
-        <p className="text-zinc-400 mb-4">
-          {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
-        </p>
+        <div className="flex-1">
+          <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
+          <p className="text-zinc-400 mb-4">
+            {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
+          </p>
 
-        {info.restRecommendation && (
-          <p className="text-zinc-400 text-sm mb-4">{info.restRecommendation}</p>
-        )}
+          {info.restRecommendation && (
+            <p className="text-zinc-400 text-sm mb-4">{info.restRecommendation}</p>
+          )}
 
-        {showRestDayRoutine && (
-          <div className="mb-4">
-            <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
-            <div className="space-y-1 text-zinc-400 text-sm">
-              <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
+          {showRestDayRoutine && (
+            <div className="mb-4">
+              <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
+              <div className="space-y-1 text-zinc-400 text-sm">
+                <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="space-y-3">
+        <div className="flex-shrink-0 pb-4 space-y-3">
           {showRestDayRoutine && (
             <button
               onClick={() => rehabAvailable && navigate('/rehab')}
@@ -117,34 +119,38 @@ export default function HomePage() {
   // Ready — start session
   return (
     <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
-      {info.deloadReminder && (
-        <p className="text-amber-400 text-sm mb-2">{info.deloadReminder}</p>
-      )}
-      <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
-      <p className="text-3xl font-bold mb-4">{info.nextSessionName}</p>
+      <div className="flex-1 overflow-y-auto">
+        {info.deloadReminder && (
+          <p className="text-amber-400 text-sm mb-2">{info.deloadReminder}</p>
+        )}
+        <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
+        <p className="text-3xl font-bold mb-4">{info.nextSessionName}</p>
 
-      {info.preview && info.preview.exercises.length > 0 && (
-        <ul className="text-sm text-zinc-400 mb-4 space-y-0.5">
-          {info.preview.exercises.map((ex, idx) => (
-            <li key={idx}>{"\u2022 "}{ex.name}</li>
-          ))}
-        </ul>
-      )}
+        {info.preview && info.preview.exercises.length > 0 && (
+          <ul className="text-sm text-zinc-400 mb-4 space-y-0.5">
+            {info.preview.exercises.map((ex, idx) => (
+              <li key={idx}>{"\u2022 "}{ex.name}</li>
+            ))}
+          </ul>
+        )}
 
-      <p className="text-zinc-400 mb-6">
-        {"~ "}{info.estimatedMinutes}{" min"}
-      </p>
+        <p className="text-zinc-400">
+          {"~ "}{info.estimatedMinutes}{" min"}
+        </p>
+      </div>
 
-      <button
-        onClick={() =>
-          navigate(
-            `/session?programId=${info.programId}&sessionIndex=${info.nextSessionIndex}`
-          )
-        }
-        className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
-      >
-        {"Commencer la s\u00E9ance"}
-      </button>
+      <div className="flex-shrink-0 pb-4">
+        <button
+          onClick={() =>
+            navigate(
+              `/session?programId=${info.programId}&sessionIndex=${info.nextSessionIndex}`
+            )
+          }
+          className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
+        >
+          {"Commencer la s\u00E9ance"}
+        </button>
+      </div>
     </div>
   )
 }

@@ -321,7 +321,7 @@ export default function RehabPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-var(--nav-h))] overflow-auto">
+    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden">
       {/* External video suggestion */}
       <div className="px-4 pt-4 pb-2">
         <button
@@ -350,9 +350,9 @@ export default function RehabPage() {
 
       {/* Notebook-style rehab exercises */}
       {routine && (
-        <div className="flex flex-col flex-1 p-4">
+        <div className="flex flex-col flex-1 overflow-hidden">
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="flex-shrink-0 text-center px-4 pt-4 pb-2">
             <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">
               Jour de repos
             </p>
@@ -365,7 +365,7 @@ export default function RehabPage() {
           </div>
 
           {/* Exercise list */}
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 space-y-3">
             {routine.exercises.map((exercise, index) => {
               const log = getLog(index)
               const timeBased = isTimeBased(exercise.reps)
@@ -552,7 +552,7 @@ export default function RehabPage() {
           </div>
 
           {/* Save button */}
-          <div className="pt-6 pb-4">
+          <div className="flex-shrink-0 px-4 pt-3 pb-4">
             <button
               onClick={handleSave}
               disabled={!canSave || isSaving}

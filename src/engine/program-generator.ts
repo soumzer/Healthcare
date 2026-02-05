@@ -257,6 +257,8 @@ export function estimateSessionMinutes(exercises: ProgramExercise[]): number {
  * Phase 1: Remove exercises from the end (keep minimum 3).
  * Phase 2: Reduce sets on all exercises (minimum 2).
  * Phase 3: Reduce rest on isolation exercises (index >= 3, minimum 45s).
+ * Phase 4: Reduce rest on ALL exercises (minimum 60s for compounds, 45s for rest).
+ * Phase 5: Remove one more exercise if still over budget (keep minimum 3).
  */
 export function trimSessionToTimeBudget(
   exercises: ProgramExercise[],
@@ -264,8 +266,8 @@ export function trimSessionToTimeBudget(
 ): ProgramExercise[] {
   let trimmed = [...exercises]
 
-  // Phase 1: Remove exercises from the end, keep minimum 3
-  while (estimateSessionMinutes(trimmed) > minutesPerSession && trimmed.length > 3) {
+  // Phase 1: Remove exercises from the end, keep minimum 4
+  while (estimateSessionMinutes(trimmed) > minutesPerSession && trimmed.length > 4) {
     trimmed.pop()
   }
 
@@ -277,12 +279,25 @@ export function trimSessionToTimeBudget(
     }))
   }
 
-  // Phase 3: Reduce rest for exercises at index >= 3 by 30s (minimum 45s)
+  // Phase 3: Reduce rest on isolation/accessory exercises (index >= 3) by 30s (minimum 45s)
   if (estimateSessionMinutes(trimmed) > minutesPerSession) {
     trimmed = trimmed.map((ex, i) => ({
       ...ex,
       restSeconds: i >= 3 ? Math.max(45, ex.restSeconds - 30) : ex.restSeconds,
     }))
+  }
+
+  // Phase 4: Reduce rest on ALL exercises — compounds get 90s max, others 60s max
+  if (estimateSessionMinutes(trimmed) > minutesPerSession) {
+    trimmed = trimmed.map((ex, i) => ({
+      ...ex,
+      restSeconds: i < 3 ? Math.min(90, ex.restSeconds) : Math.min(60, ex.restSeconds),
+    }))
+  }
+
+  // Phase 5: Remove one more exercise if still over (keep minimum 3)
+  while (estimateSessionMinutes(trimmed) > minutesPerSession && trimmed.length > 3) {
+    trimmed.pop()
   }
 
   // Renumber the order field after trimming

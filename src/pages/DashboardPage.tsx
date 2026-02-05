@@ -80,27 +80,31 @@ export default function DashboardPage() {
   const data = useDashboardData(userId)
 
   return (
-    <div className="p-4 space-y-3 pb-6">
-      <h1 className="text-xl font-bold">Historique</h1>
+    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden">
+      <div className="flex-shrink-0 px-4 pt-4 pb-2">
+        <h1 className="text-xl font-bold">Historique</h1>
+      </div>
 
-      {data.isLoading ? (
-        <p className="text-zinc-400">Chargement...</p>
-      ) : !data.hasData ? (
-        <div className="bg-zinc-900 rounded-xl p-6 text-center">
-          <p className="text-zinc-400 text-base mb-2">
-            Aucune donn{'\u00e9'}e pour l{"'"}instant.
-          </p>
-          <p className="text-zinc-400 text-sm">
-            Compl{'\u00e9'}tez votre premi{'\u00e8'}re s{'\u00e9'}ance pour voir l{"'"}historique.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {data.exercises.map((ex) => (
-            <ExerciseRow key={ex.exerciseId} exercise={ex} />
-          ))}
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto px-4 pb-6">
+        {data.isLoading ? (
+          <p className="text-zinc-400">Chargement...</p>
+        ) : !data.hasData ? (
+          <div className="bg-zinc-900 rounded-xl p-6 text-center">
+            <p className="text-zinc-400 text-base mb-2">
+              Aucune donn{'\u00e9'}e pour l{"'"}instant.
+            </p>
+            <p className="text-zinc-400 text-sm">
+              Compl{'\u00e9'}tez votre premi{'\u00e8'}re s{'\u00e9'}ance pour voir l{"'"}historique.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {data.exercises.map((ex) => (
+              <ExerciseRow key={ex.exerciseId} exercise={ex} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
