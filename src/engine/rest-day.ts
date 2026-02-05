@@ -37,12 +37,69 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
 
 const MAX_REHAB_EXERCISES = 5
 
+// Core foundation exercises — always included if user has lower_back or knee conditions
+const CORE_FOUNDATION: RestDayExercise[] = [
+  {
+    name: 'Dead bug',
+    sets: 3,
+    reps: '8 par côté',
+    duration: '1 min',
+    intensity: 'light',
+    notes: 'Dos plaqué au sol. Stabilisation du core profond.',
+    isExternal: false,
+  },
+  {
+    name: 'Pallof press',
+    sets: 3,
+    reps: '10 par côté',
+    duration: '1 min',
+    intensity: 'light',
+    notes: 'Anti-rotation. Résister à la traction de la bande/câble.',
+    isExternal: false,
+  },
+]
+
+// Posture foundation exercises — always included if user has upper_back condition
+const POSTURE_FOUNDATION: RestDayExercise[] = [
+  {
+    name: 'Chin tucks',
+    sets: 3,
+    reps: '10',
+    duration: '1 min',
+    intensity: 'very_light',
+    notes: 'Rentrer le menton (double menton). Tenir 5s. Corrige la tête en avant.',
+    isExternal: false,
+  },
+  {
+    name: 'Band pull-apart',
+    sets: 3,
+    reps: '15',
+    duration: '1 min',
+    intensity: 'light',
+    notes: 'Écarter la bande en serrant les omoplates. Renforce le haut du dos.',
+    isExternal: false,
+  },
+]
+
+// Zones that trigger core foundation
+const CORE_TRIGGER_ZONES: ReadonlySet<BodyZone> = new Set([
+  'lower_back', 'knee_left', 'knee_right', 'hip_left', 'hip_right',
+])
+
+// Zones that trigger posture foundation
+const POSTURE_TRIGGER_ZONES: ReadonlySet<BodyZone> = new Set([
+  'upper_back', 'neck', 'shoulder_left', 'shoulder_right',
+])
+
 /**
  * Generate a rest day routine based on active health conditions.
- * Selects up to MAX_REHAB_EXERCISES from matching rehab protocols using rotation.
  *
- * When accentZones are provided (from active PainReports), exercises targeting
- * those zones are prioritised — at least 2 accent-zone exercises are guaranteed.
+ * Foundation blocks (always included, not rotated):
+ * - Core block (dead bug, pallof) if user has lower_back, knee, or hip conditions
+ * - Posture block (chin tucks, band pull-apart) if user has upper_back, neck, or shoulder conditions
+ *
+ * Then selects up to MAX_REHAB_EXERCISES from matching rehab protocols using rotation.
+ * When accentZones are provided (from active PainReports), those zones are prioritised.
  */
 export function generateRestDayRoutine(
   conditions: HealthCondition[],
@@ -59,7 +116,30 @@ export function generateRestDayRoutine(
   const exercises: RestDayExercise[] = []
   const seenNames = new Set<string>()
 
-  if (activeConditions.length > 0) {
+  // Check if user needs core and/or posture foundation
+  const allZones = activeConditions.map(c => c.bodyZone)
+  const needsCore = allZones.some(z => CORE_TRIGGER_ZONES.has(z))
+  const needsPosture = allZones.some(z => POSTURE_TRIGGER_ZONES.has(z))
+
+  // Add foundation blocks first (always present, not rotated)
+  if (needsCore && (variant === 'all' || variant === 'lower')) {
+    for (const ex of CORE_FOUNDATION) {
+      exercises.push(ex)
+      seenNames.add(ex.name)
+    }
+  }
+
+  if (needsPosture && (variant === 'all' || variant === 'upper')) {
+    for (const ex of POSTURE_FOUNDATION) {
+      exercises.push(ex)
+      seenNames.add(ex.name)
+    }
+  }
+
+  // Calculate remaining slots for condition-specific exercises
+  const remainingSlots = Math.max(0, MAX_REHAB_EXERCISES - exercises.length)
+
+  if (activeConditions.length > 0 && remainingSlots > 0) {
     const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone: BodyZone }> = []
 
     for (const condition of activeConditions) {
@@ -78,8 +158,8 @@ export function generateRestDayRoutine(
     }
 
     const selectedExercises = accentZones.length > 0
-      ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, MAX_REHAB_EXERCISES)
-      : selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+      ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, remainingSlots)
+      : selectRotatedExercises(allExercisesWithProtocol, remainingSlots)
 
     for (const ex of selectedExercises) {
       exercises.push({

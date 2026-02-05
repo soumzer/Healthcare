@@ -42,25 +42,7 @@ const INTENSITY_COLORS: Record<string, { bg: string; text: string; label: string
   moderate: { bg: 'bg-amber-900/40', text: 'text-amber-400', label: 'Modere' },
 }
 
-const BODY_ZONES: { zone: BodyZone; label: string }[] = [
-  { zone: 'neck', label: 'Cou' },
-  { zone: 'shoulder_left', label: 'Epaule G' },
-  { zone: 'shoulder_right', label: 'Epaule D' },
-  { zone: 'elbow_left', label: 'Coude G' },
-  { zone: 'elbow_right', label: 'Coude D' },
-  { zone: 'wrist_left', label: 'Poignet G' },
-  { zone: 'wrist_right', label: 'Poignet D' },
-  { zone: 'upper_back', label: 'Haut du dos' },
-  { zone: 'lower_back', label: 'Bas du dos' },
-  { zone: 'hip_left', label: 'Hanche G' },
-  { zone: 'hip_right', label: 'Hanche D' },
-  { zone: 'knee_left', label: 'Genou G' },
-  { zone: 'knee_right', label: 'Genou D' },
-  { zone: 'ankle_left', label: 'Cheville G' },
-  { zone: 'ankle_right', label: 'Cheville D' },
-  { zone: 'foot_left', label: 'Pied G' },
-  { zone: 'foot_right', label: 'Pied D' },
-]
+import { bodyZones as BODY_ZONES } from '../../constants/body-zones'
 
 export default function ExerciseNotebook({
   exercise,
