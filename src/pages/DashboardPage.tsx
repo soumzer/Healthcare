@@ -80,7 +80,7 @@ export default function DashboardPage() {
   const data = useDashboardData(userId)
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden">
+    <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
       <div className="flex-shrink-0 px-4 pt-4 pb-2">
         <h1 className="text-xl font-bold">Historique</h1>
       </div>

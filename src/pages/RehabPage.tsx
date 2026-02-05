@@ -270,7 +270,7 @@ export default function RehabPage() {
 
   if (!user || conditions === undefined) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-var(--nav-h))] overflow-hidden">
+      <div className="flex items-center justify-center h-[var(--content-h)] overflow-hidden">
         <p className="text-zinc-400">Chargement...</p>
       </div>
     )
@@ -278,7 +278,7 @@ export default function RehabPage() {
 
   if (conditions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-var(--nav-h))] px-6 text-center overflow-hidden">
+      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
         <p className="text-2xl font-bold mb-2">Rehab</p>
         <p className="text-zinc-400 mb-4">
           Aucune condition de sante active.
@@ -292,7 +292,7 @@ export default function RehabPage() {
 
   if (!available) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-var(--nav-h))] px-6 text-center overflow-hidden">
+      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
         <p className="text-2xl font-bold mb-2">Rehab</p>
         <p className="text-zinc-400 mb-4">
           {cooldownText ?? 'Disponible bientot'}
@@ -306,7 +306,7 @@ export default function RehabPage() {
 
   if (saved) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-var(--nav-h))] px-6 text-center overflow-hidden">
+      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
         <div className="w-16 h-16 rounded-full bg-emerald-600/20 flex items-center justify-center mb-4">
           <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -321,7 +321,7 @@ export default function RehabPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden">
+    <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
       {/* External video suggestion */}
       <div className="px-4 pt-4 pb-2">
         <button

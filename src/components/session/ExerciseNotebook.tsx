@@ -105,7 +105,7 @@ export default function ExerciseNotebook({
   const intensityInfo = INTENSITY_COLORS[target.intensity]
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden bg-zinc-950 text-white">
+    <div className="flex flex-col h-[var(--content-h)] overflow-hidden bg-zinc-950 text-white">
       {/* Skip modal */}
       {showSkipModal && (
         <SkipModal

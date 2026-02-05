@@ -33,7 +33,7 @@ export default function HomePage() {
   // Loading
   if (!user || info === undefined) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-var(--nav-h))] overflow-hidden">
+      <div className="flex items-center justify-center h-[var(--content-h)] overflow-hidden">
         <p className="text-zinc-400">Chargement...</p>
       </div>
     )
@@ -42,7 +42,7 @@ export default function HomePage() {
   // No program — user hasn't completed onboarding
   if (info.status === 'no_program') {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100dvh-var(--nav-h))] px-6 text-center overflow-hidden">
+      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
         <p className="text-2xl font-bold mb-2">Aucun programme</p>
         <p className="text-zinc-400 mb-8">
           {"Allez dans le profil pour g\u00E9n\u00E9rer un programme."}
@@ -66,7 +66,7 @@ export default function HomePage() {
     const showRestDayRoutine = hasActiveConditions
 
     return (
-      <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
+      <div className="flex flex-col h-[var(--content-h)] overflow-hidden px-6 pt-6">
         <div className="flex-1">
           <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
           <p className="text-zinc-400 mb-4">
@@ -118,7 +118,7 @@ export default function HomePage() {
 
   // Ready — start session
   return (
-    <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
+    <div className="flex flex-col h-[var(--content-h)] overflow-hidden px-6 pt-6">
       <div className="flex-1 overflow-y-auto">
         {info.deloadReminder && (
           <p className="text-amber-400 text-sm mb-2">{info.deloadReminder}</p>
