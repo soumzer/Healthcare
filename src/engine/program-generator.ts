@@ -395,13 +395,13 @@ function buildStructuredSession(
         reps = 12
         rest = 60
       } else {
-        const isIsolation = picked.category === 'isolation'
-        if (intensity === 'heavy' && !picked.isRehab && !isIsolation) {
+        const isIsolationOrCore = picked.category === 'isolation' || picked.category === 'core'
+        if (intensity === 'heavy' && !picked.isRehab && !isIsolationOrCore) {
           // Heavy compounds: fewer reps, more rest, +1 set
           reps = Math.min(slot.reps, 6)
           rest = Math.max(slot.rest, 150)
           sets = Math.max(slot.sets, 4)
-        } else if ((intensity === 'volume' || isIsolation) && !picked.isRehab) {
+        } else if ((intensity === 'volume' || isIsolationOrCore) && !picked.isRehab) {
           // Volume (or isolation in any session): more reps, less rest
           reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
           rest = Math.min(slot.rest, 90)
