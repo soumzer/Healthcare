@@ -10,6 +10,8 @@ export interface RestDayExercise {
   intensity: string
   notes: string
   isExternal: boolean // true = "programme externe" (user's own stretching videos)
+  targetZone?: BodyZone // zone ciblée par cet exercice
+  conditionName?: string // nom de la condition/protocole ciblé
 }
 
 export interface RestDayRoutine {
@@ -138,7 +140,7 @@ export function generateRestDayRoutine(
       ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, MAX_REHAB_EXERCISES)
       : selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
 
-    for (const ex of selectedExercises) {
+    for (const { exercise: ex, protocolName, targetZone } of selectedExercises) {
       exercises.push({
         name: ex.exerciseName,
         sets: ex.sets,
@@ -147,6 +149,8 @@ export function generateRestDayRoutine(
         intensity: ex.intensity,
         notes: ex.notes,
         isExternal: false,
+        targetZone,
+        conditionName: protocolName,
       })
     }
   }

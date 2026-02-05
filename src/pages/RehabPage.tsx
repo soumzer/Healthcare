@@ -399,6 +399,11 @@ export default function RehabPage() {
                       <p className={`font-medium ${hasData ? 'text-zinc-400' : 'text-white'}`}>
                         {exercise.name}
                       </p>
+                      {exercise.conditionName && (
+                        <p className="text-zinc-500 text-xs mt-0.5 truncate">
+                          {exercise.conditionName}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-zinc-400 text-xs">
                           {exercise.sets}&times;{exercise.reps}

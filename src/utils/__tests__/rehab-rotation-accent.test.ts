@@ -51,7 +51,7 @@ describe('selectRotatedExercisesWithAccent', () => {
     expect(result).toHaveLength(5)
 
     const kneeExercises = result.filter(e =>
-      e.exerciseName.startsWith('Knee')
+      e.exercise.exerciseName.startsWith('Knee')
     )
     expect(kneeExercises.length).toBeGreaterThanOrEqual(2)
   })
@@ -60,7 +60,7 @@ describe('selectRotatedExercisesWithAccent', () => {
     const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 5)
     expect(result).toHaveLength(5)
 
-    const nonKnee = result.filter(e => !e.exerciseName.startsWith('Knee'))
+    const nonKnee = result.filter(e => !e.exercise.exerciseName.startsWith('Knee'))
     expect(nonKnee.length).toBeGreaterThan(0)
   })
 
@@ -78,7 +78,7 @@ describe('selectRotatedExercisesWithAccent', () => {
     expect(result).toHaveLength(5)
 
     // Only 1 knee exercise available, should still include it
-    const kneeExercises = result.filter(e => e.exerciseName.startsWith('Knee'))
+    const kneeExercises = result.filter(e => e.exercise.exerciseName.startsWith('Knee'))
     expect(kneeExercises.length).toBeGreaterThanOrEqual(1)
   })
 
@@ -103,7 +103,7 @@ describe('selectRotatedExercisesWithAccent', () => {
 
     // Should have exercises from both accent zones
     const accentExercises = result.filter(e =>
-      e.exerciseName.startsWith('Knee') || e.exerciseName.startsWith('Elbow')
+      e.exercise.exerciseName.startsWith('Knee') || e.exercise.exerciseName.startsWith('Elbow')
     )
     expect(accentExercises.length).toBeGreaterThanOrEqual(2)
   })

@@ -19,8 +19,16 @@ import type { BodyZone } from '../db/types'
 export interface RehabExerciseWithMeta {
   exercise: RehabExercise
   protocolName: string
+  targetZone?: BodyZone
   priority: number // 1 = high (warmup, nerve flossing), 2 = medium (stretches, strengthening), 3 = low (foam rolling, massage)
   lastDoneAt: number | null // timestamp
+}
+
+/** Result of rotation selection with metadata preserved */
+export interface SelectedRehabExercise {
+  exercise: RehabExercise
+  protocolName: string
+  targetZone?: BodyZone
 }
 
 // ---------------------------------------------------------------------------
@@ -136,10 +144,10 @@ export function assignPriority(exercise: RehabExercise): number {
 export function selectRehabExercises(
   allExercises: RehabExerciseWithMeta[],
   maxCount: number = DEFAULT_MAX_COUNT
-): RehabExercise[] {
+): SelectedRehabExercise[] {
   if (allExercises.length === 0) return []
   if (allExercises.length <= maxCount) {
-    return allExercises.map(e => e.exercise)
+    return allExercises.map(e => ({ exercise: e.exercise, protocolName: e.protocolName, targetZone: e.targetZone }))
   }
 
   // Sort by: lastDoneAt ASC (null first), then priority ASC
@@ -171,7 +179,7 @@ export function selectRehabExercises(
     }
   }
 
-  return selected.map(e => e.exercise)
+  return selected.map(e => ({ exercise: e.exercise, protocolName: e.protocolName, targetZone: e.targetZone }))
 }
 
 /**
@@ -179,14 +187,15 @@ export function selectRehabExercises(
  * Takes all exercises from matched protocols and selects the best subset
  */
 export function selectRotatedExercises(
-  allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string }>,
+  allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone?: BodyZone }>,
   maxCount: number = DEFAULT_MAX_COUNT
-): RehabExercise[] {
+): SelectedRehabExercise[] {
   const history = getRehabExerciseHistory()
 
-  const enriched: RehabExerciseWithMeta[] = allExercisesWithProtocol.map(({ exercise, protocolName }) => ({
+  const enriched: RehabExerciseWithMeta[] = allExercisesWithProtocol.map(({ exercise, protocolName, targetZone }) => ({
     exercise,
     protocolName,
+    targetZone,
     priority: assignPriority(exercise),
     lastDoneAt: history[exercise.exerciseName] ?? null,
   }))
@@ -213,7 +222,7 @@ export function selectRotatedExercisesWithAccent(
   allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone?: BodyZone }>,
   accentZones: BodyZone[],
   maxCount: number = DEFAULT_MAX_COUNT
-): RehabExercise[] {
+): SelectedRehabExercise[] {
   // If no accent zones, fall back to normal rotation
   if (accentZones.length === 0) {
     return selectRotatedExercises(allExercisesWithProtocol, maxCount)
@@ -230,6 +239,7 @@ export function selectRotatedExercisesWithAccent(
     const meta: RehabExerciseWithMeta = {
       exercise,
       protocolName,
+      targetZone,
       priority: assignPriority(exercise),
       lastDoneAt: history[exercise.exerciseName] ?? null,
     }
@@ -244,7 +254,7 @@ export function selectRotatedExercisesWithAccent(
   // If total exercises fit within maxCount, return all
   const totalCount = accentPool.length + normalPool.length
   if (totalCount <= maxCount) {
-    return [...accentPool, ...normalPool].map(e => e.exercise)
+    return [...accentPool, ...normalPool].map(e => ({ exercise: e.exercise, protocolName: e.protocolName, targetZone: e.targetZone }))
   }
 
   // 2. Select guaranteed accent exercises (up to ACCENT_GUARANTEED_SLOTS)
@@ -259,7 +269,7 @@ export function selectRotatedExercisesWithAccent(
   const combined = [...accentSelected, ...normalSelected]
   if (combined.length < maxCount) {
     // Get additional normal exercises not already selected
-    const selectedNames = new Set(combined.map(e => e.exerciseName))
+    const selectedNames = new Set(combined.map(e => e.exercise.exerciseName))
     const remaining = normalPool.filter(e => !selectedNames.has(e.exercise.exerciseName))
     const backfill = selectRehabExercises(remaining, maxCount - combined.length)
     combined.push(...backfill)
