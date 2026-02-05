@@ -1001,6 +1001,14 @@ export function matchConditions(
     .filter((r): r is NonNullable<typeof r> => r !== null)
     .sort((a, b) => b.score - a.score)
 
-  return results
+  // Deduplicate by conditionName, keeping highest score
+  const seen = new Set<string>()
+  const deduplicated = results.filter(r => {
+    if (seen.has(r.condition.conditionName)) return false
+    seen.add(r.condition.conditionName)
+    return true
+  })
+
+  return deduplicated
 }
 
