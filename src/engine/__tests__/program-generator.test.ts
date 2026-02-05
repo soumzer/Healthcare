@@ -2557,7 +2557,6 @@ describe('generateProgram — minutesPerSession', () => {
 
       for (const session of result.sessions) {
         const estimated = estimateSessionMinutes(session)
-        // Sessions must now respect the exact 60min budget (was previously 83min for heavy sessions)
         expect(estimated).toBeLessThanOrEqual(60)
       }
     }

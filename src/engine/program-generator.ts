@@ -251,58 +251,89 @@ export function estimateSessionMinutes(exercises: ProgramExercise[]): number {
 }
 
 /**
- * Trim the final ProgramExercise[] to fit within a time budget (minutesPerSession).
+ * Adjust session to fit within a time budget (minutesPerSession).
  * This is called AFTER buildStructuredSession() so intensity adjustments are already applied.
  *
- * Phase 1: Remove exercises from the end (keep minimum 3).
- * Phase 2: Reduce sets on all exercises (minimum 2).
- * Phase 3: Reduce rest on isolation exercises (index >= 3, minimum 45s).
- * Phase 4: Reduce rest on ALL exercises (minimum 60s for compounds, 45s for rest).
- * Phase 5: Remove one more exercise if still over budget (keep minimum 3).
+ * If UNDER budget: scale UP (add sets to compounds, then isolation)
+ * If OVER budget: scale DOWN (remove exercises, reduce sets, reduce rest)
  */
-export function trimSessionToTimeBudget(
+export function adjustSessionToTimeBudget(
   exercises: ProgramExercise[],
   minutesPerSession: number,
 ): ProgramExercise[] {
-  let trimmed = [...exercises]
+  let adjusted = [...exercises]
 
-  // Phase 1: Remove exercises from the end, keep minimum 4
-  while (estimateSessionMinutes(trimmed) > minutesPerSession && trimmed.length > 4) {
-    trimmed.pop()
+  // === SCALE UP if significantly under budget (more than 10 min under) ===
+  const scaleUpThreshold = minutesPerSession - 10
+
+  // Phase U1: Add sets to compounds (first 3 exercises, max 5 sets)
+  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
+    const compoundIdx = adjusted.findIndex((ex, i) => i < 3 && ex.sets < 5)
+    if (compoundIdx === -1) break
+    adjusted = adjusted.map((ex, i) =>
+      i === compoundIdx ? { ...ex, sets: ex.sets + 1 } : ex
+    )
   }
 
-  // Phase 2: Reduce sets by 1 per exercise (minimum 2 sets)
-  if (estimateSessionMinutes(trimmed) > minutesPerSession) {
-    trimmed = trimmed.map((ex) => ({
+  // Phase U2: Add sets to isolation exercises (max 4 sets)
+  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
+    const isoIdx = adjusted.findIndex((ex, i) => i >= 3 && ex.sets < 4)
+    if (isoIdx === -1) break
+    adjusted = adjusted.map((ex, i) =>
+      i === isoIdx ? { ...ex, sets: ex.sets + 1 } : ex
+    )
+  }
+
+  // Phase U3: Increase rest on compounds (max 180s for heavy feel)
+  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
+    const compoundIdx = adjusted.findIndex((ex, i) => i < 3 && ex.restSeconds < 180)
+    if (compoundIdx === -1) break
+    adjusted = adjusted.map((ex, i) =>
+      i === compoundIdx ? { ...ex, restSeconds: ex.restSeconds + 30 } : ex
+    )
+  }
+
+  // === SCALE DOWN if over budget ===
+  // Phase D1: Remove exercises from the end (keep minimum 4)
+  while (estimateSessionMinutes(adjusted) > minutesPerSession && adjusted.length > 4) {
+    adjusted.pop()
+  }
+
+  // Phase D2: Reduce sets by 1 per exercise (minimum 2 sets)
+  if (estimateSessionMinutes(adjusted) > minutesPerSession) {
+    adjusted = adjusted.map((ex) => ({
       ...ex,
       sets: Math.max(2, ex.sets - 1),
     }))
   }
 
-  // Phase 3: Reduce rest on isolation/accessory exercises (index >= 3) by 30s (minimum 45s)
-  if (estimateSessionMinutes(trimmed) > minutesPerSession) {
-    trimmed = trimmed.map((ex, i) => ({
+  // Phase D3: Reduce rest on isolation (index >= 3) by 30s (minimum 45s)
+  if (estimateSessionMinutes(adjusted) > minutesPerSession) {
+    adjusted = adjusted.map((ex, i) => ({
       ...ex,
       restSeconds: i >= 3 ? Math.max(45, ex.restSeconds - 30) : ex.restSeconds,
     }))
   }
 
-  // Phase 4: Reduce rest on ALL exercises — compounds get 90s max, others 60s max
-  if (estimateSessionMinutes(trimmed) > minutesPerSession) {
-    trimmed = trimmed.map((ex, i) => ({
+  // Phase D4: Reduce rest on compounds too if still over (minimum 90s)
+  if (estimateSessionMinutes(adjusted) > minutesPerSession) {
+    adjusted = adjusted.map((ex, i) => ({
       ...ex,
-      restSeconds: i < 3 ? Math.min(90, ex.restSeconds) : Math.min(60, ex.restSeconds),
+      restSeconds: i < 3 ? Math.max(90, ex.restSeconds - 30) : ex.restSeconds,
     }))
   }
 
-  // Phase 5: Remove one more exercise if still over (keep minimum 3)
-  while (estimateSessionMinutes(trimmed) > minutesPerSession && trimmed.length > 3) {
-    trimmed.pop()
+  // Phase D5: Remove one more exercise if still over (keep minimum 3)
+  while (estimateSessionMinutes(adjusted) > minutesPerSession && adjusted.length > 3) {
+    adjusted.pop()
   }
 
-  // Renumber the order field after trimming
-  return trimmed.map((ex, i) => ({ ...ex, order: i + 1 }))
+  // Renumber the order field
+  return adjusted.map((ex, i) => ({ ...ex, order: i + 1 }))
 }
+
+// Keep old name as alias for compatibility
+export const trimSessionToTimeBudget = adjustSessionToTimeBudget
 
 function buildStructuredSession(
   name: string,
