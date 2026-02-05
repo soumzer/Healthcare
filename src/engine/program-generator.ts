@@ -24,6 +24,8 @@ export interface ProgramGeneratorInput {
   equipment: GymEquipment[]
   daysPerWeek: number
   minutesPerSession: number
+  /** Exercise IDs to exclude from selection (used by refresh to get new variations) */
+  excludeExerciseIds?: number[]
 }
 
 export interface GeneratedProgram {
@@ -1586,14 +1588,14 @@ export function generateProgram(
     input.equipment,
   )
 
-  // Step 2 — exclude cardio exercises from strength training pool
+  // Step 2 — exclude cardio exercises and optionally excluded IDs (for refresh)
   // Cardio exercises (bike, treadmill, elliptique) have primaryMuscles like
   // 'quadriceps' which causes them to be picked for strength slots.
-  // They remain available for warmup/cooldown but not for the main program.
   // NOTE: Contraindication filtering is now done per-slot in buildStructuredSession
   // so that contraindicated slots get rehab substitution instead of alternative exercises.
+  const excludeSet = new Set(input.excludeExerciseIds ?? [])
   const eligible = afterEquipment.filter(
-    (e) => !e.tags.includes('cardio'),
+    (e) => !e.tags.includes('cardio') && !excludeSet.has(e.id ?? 0),
   )
 
   // Step 5 — determine split

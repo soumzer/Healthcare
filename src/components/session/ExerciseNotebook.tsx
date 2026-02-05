@@ -6,6 +6,11 @@ import { generateWarmupSets } from '../../engine/warmup'
 import type { BodyZone } from '../../db/types'
 import type { FillerSuggestion } from '../../engine/filler'
 
+export interface SwapOption {
+  exerciseId: number
+  name: string
+}
+
 export interface ExerciseNotebookProps {
   exercise: {
     exerciseId: number
@@ -25,8 +30,10 @@ export interface ExerciseNotebookProps {
   totalExercises: number
   userId: number
   fillerSuggestions: FillerSuggestion[]
+  swapOptions: SwapOption[]
   onNext: () => void
   onSkip: (zone: BodyZone) => void
+  onSwap: (newExerciseId: number) => void
 }
 
 const INTENSITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -62,8 +69,10 @@ export default function ExerciseNotebook({
   totalExercises,
   userId,
   fillerSuggestions,
+  swapOptions,
   onNext,
   onSkip,
+  onSwap,
 }: ExerciseNotebookProps) {
   const notebook = useNotebook(
     userId,
@@ -80,6 +89,7 @@ export default function ExerciseNotebook({
   const [showDescription, setShowDescription] = useState(exercise.isRehab)
   const [showSkipModal, setShowSkipModal] = useState(false)
   const [showOccupied, setShowOccupied] = useState(false)
+  const [showSwap, setShowSwap] = useState(false)
   const [workingWeight, setWorkingWeight] = useState<string>('')
 
   // Warmup sets for compounds
@@ -163,14 +173,40 @@ export default function ExerciseNotebook({
           )}
         </div>
 
-        {/* Description toggle */}
-        {exercise.instructions && (
-          <button
-            onClick={() => setShowDescription(d => !d)}
-            className="text-zinc-400 text-xs underline mb-2"
-          >
-            {showDescription ? 'Masquer description' : 'Voir description'}
-          </button>
+        {/* Description toggle + swap button */}
+        <div className="flex items-center gap-3 mb-2">
+          {exercise.instructions && (
+            <button
+              onClick={() => setShowDescription(d => !d)}
+              className="text-zinc-400 text-xs underline"
+            >
+              {showDescription ? 'Masquer description' : 'Voir description'}
+            </button>
+          )}
+          {swapOptions.length > 0 && (
+            <button
+              onClick={() => setShowSwap(s => !s)}
+              className="text-zinc-400 text-xs underline"
+            >
+              {showSwap ? 'Fermer' : 'Changer'}
+            </button>
+          )}
+        </div>
+
+        {/* Swap panel */}
+        {showSwap && swapOptions.length > 0 && (
+          <div className="bg-zinc-900 rounded-lg p-3 mb-2 space-y-1">
+            <p className="text-zinc-400 text-xs uppercase tracking-wider mb-2">Alternatives</p>
+            {swapOptions.map((alt) => (
+              <button
+                key={alt.exerciseId}
+                onClick={() => { onSwap(alt.exerciseId); setShowSwap(false) }}
+                className="w-full text-left text-sm text-white bg-zinc-800 rounded-lg px-3 py-2 hover:bg-zinc-700 transition-colors"
+              >
+                {alt.name}
+              </button>
+            ))}
+          </div>
         )}
         {showDescription && exercise.instructions && (
           <p className="text-zinc-400 text-sm bg-zinc-900 rounded-lg p-3 mb-2">

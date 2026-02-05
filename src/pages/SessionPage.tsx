@@ -7,6 +7,7 @@ import { fixedWarmupRoutine } from '../data/warmup-routine'
 import { selectCooldownExercises } from '../engine/cooldown'
 import { suggestFillerFromCatalog } from '../engine/filler'
 import type { BodyZone, Exercise, ProgramSession } from '../db/types'
+import type { SwapOption } from '../components/session/ExerciseNotebook'
 
 type SessionPhase = 'warmup' | 'exercises' | 'notebook' | 'cooldown' | 'done'
 
@@ -355,6 +356,35 @@ function SessionRunner({
     )
   }
 
+  // Swap: resolve alternatives for the current exercise
+  const swapOptions: SwapOption[] = useMemo(() => {
+    if (!currentCatalogExercise?.alternatives) return []
+    return currentCatalogExercise.alternatives
+      .map((altName) => {
+        const match = allExercises.find((e) => e.name === altName)
+        return match?.id ? { exerciseId: match.id, name: match.name } : null
+      })
+      .filter((x): x is SwapOption => x !== null)
+  }, [currentCatalogExercise, allExercises])
+
+  const handleSwapExercise = useCallback(async (newExerciseId: number) => {
+    // Update the program in DB: replace exerciseId at current index
+    const program = await db.workoutPrograms.get(programId)
+    if (!program?.sessions) return
+    const updatedSessions = program.sessions.map((s, sIdx) => {
+      if (s.name !== programSession.name) return s
+      return {
+        ...s,
+        exercises: s.exercises.map((e, eIdx) =>
+          eIdx === currentExerciseIdx ? { ...e, exerciseId: newExerciseId } : e,
+        ),
+      }
+    })
+    await db.workoutPrograms.update(programId, { sessions: updatedSessions })
+    // Re-open the same exercise index (will pick up the new exercise from the live query)
+    setPhase('exercises')
+  }, [programId, programSession.name, currentExerciseIdx])
+
   if (phase === 'notebook' && currentProgramExercise && currentCatalogExercise) {
     const intensity = (programSession.intensity ?? 'volume') as 'heavy' | 'volume' | 'moderate'
     return (
@@ -377,8 +407,10 @@ function SessionRunner({
         totalExercises={programSession.exercises.length}
         userId={userId}
         fillerSuggestions={fillerSuggestions}
+        swapOptions={swapOptions}
         onNext={handleNextExercise}
         onSkip={handleSkipExercise}
+        onSwap={handleSwapExercise}
       />
     )
   }

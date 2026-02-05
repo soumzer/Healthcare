@@ -117,6 +117,9 @@ export default function HomePage() {
   // Ready — start session
   return (
     <div className="flex flex-col h-[calc(100dvh-var(--nav-h))] overflow-hidden px-6 pt-6">
+      {info.deloadReminder && (
+        <p className="text-amber-400 text-sm mb-2">{info.deloadReminder}</p>
+      )}
       <p className="text-zinc-400 mb-1">{"Prochaine s\u00E9ance"}</p>
       <p className="text-3xl font-bold mb-4">{info.nextSessionName}</p>
 

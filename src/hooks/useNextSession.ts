@@ -24,13 +24,12 @@ export interface NextSessionInfo {
   lastSessionDate?: Date
   hoursSinceLastSession?: number
   minimumRestHours: number
-  // New fields for Task 6 integration
   nextSession: ProgramSession | null
   canStart: boolean
   restRecommendation: string | null
   program: WorkoutProgram | null
-  // Task 9: Session preview with exercise names
   preview: NextSessionPreview | null
+  deloadReminder: string | null
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
@@ -43,6 +42,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: null,
       preview: null,
+      deloadReminder: null,
     }
 
     // Find active program for this user
@@ -61,6 +61,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
         restRecommendation: null,
         program: null,
         preview: null,
+        deloadReminder: null,
       }
     }
 
@@ -92,6 +93,15 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
 
     const nextProgramSession = activeProgram.sessions[nextSessionIndex]
     const exerciseCount = nextProgramSession.exercises.length
+
+    // Deload reminder: count how many times this specific session has been completed
+    const DELOAD_THRESHOLD = 5
+    const sessionCompletionCount = completedSessions.filter(
+      (s) => s.sessionName === nextProgramSession.name,
+    ).length
+    const deloadReminder = sessionCompletionCount >= DELOAD_THRESHOLD
+      ? `Semaine ${sessionCompletionCount + 1} — pense au deload`
+      : null
 
     // Estimate time from actual sets and rest per exercise
     let totalSeconds = 0
@@ -146,6 +156,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
           restRecommendation: `Repos recommandé : encore ${remainingHours}h avant la prochaine séance`,
           program: activeProgram,
           preview,
+          deloadReminder,
         }
       }
     }
@@ -167,6 +178,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       restRecommendation: null,
       program: activeProgram,
       preview,
+      deloadReminder,
     }
   }, [userId])
 }
