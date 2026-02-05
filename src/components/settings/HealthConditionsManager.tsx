@@ -33,11 +33,9 @@ const formFromCondition = (c: HealthCondition): ConditionForm => ({
 
 interface Props {
   userId: number
-  onRegenerate?: () => Promise<{ success: boolean; error?: string }>
-  isRegenerating?: boolean
 }
 
-export default function HealthConditionsManager({ userId, onRegenerate, isRegenerating }: Props) {
+export default function HealthConditionsManager({ userId }: Props) {
   const conditions = useLiveQuery(
     () => db.healthConditions.where('userId').equals(userId).toArray(),
     [userId]
@@ -47,8 +45,6 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
   const [addingNew, setAddingNew] = useState(false)
   const [expandedZone, setExpandedZone] = useState<BodyZone | null>(null)
   const [form, setForm] = useState<ConditionForm | null>(null)
-  const [conditionsChanged, setConditionsChanged] = useState(false)
-  const [regenerateResult, setRegenerateResult] = useState<{ success: boolean; error?: string } | null>(null)
 
   if (conditions === undefined) return null
 
@@ -101,7 +97,6 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
     })
     setEditingId(null)
     setForm(null)
-    setConditionsChanged(true)
   }
 
   const handleSaveNew = async () => {
@@ -136,14 +131,12 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
     setAddingNew(false)
     setExpandedZone(null)
     setForm(null)
-    setConditionsChanged(true)
   }
 
   const handleDeactivate = async (id: number) => {
     await db.healthConditions.update(id, { isActive: false })
     setEditingId(null)
     setForm(null)
-    setConditionsChanged(true)
   }
 
   const handleCancel = () => {
@@ -326,40 +319,6 @@ export default function HealthConditionsManager({ userId, onRegenerate, isRegene
         </button>
       )}
 
-      {/* Regeneration banner */}
-      {conditionsChanged && !regenerateResult?.success && (
-        <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-2">
-          <p className="text-sm text-white">
-            Tes conditions ont changé. Veux-tu régénérer ton programme ?
-          </p>
-          {regenerateResult?.error && (
-            <p className="text-sm text-red-400">{regenerateResult.error}</p>
-          )}
-          <button
-            type="button"
-            disabled={isRegenerating}
-            onClick={async () => {
-              if (!onRegenerate) return
-              setRegenerateResult(null)
-              const result = await onRegenerate()
-              setRegenerateResult(result)
-              if (result.success) {
-                setConditionsChanged(false)
-              }
-            }}
-            className="w-full py-2 bg-white text-black font-semibold rounded-lg text-sm disabled:opacity-50"
-          >
-            {isRegenerating ? 'Régénération en cours...' : 'Régénérer le programme'}
-          </button>
-        </div>
-      )}
-
-      {/* Success feedback */}
-      {regenerateResult?.success && (
-        <div className="bg-emerald-900 border border-emerald-700 rounded-xl p-4">
-          <p className="text-sm text-emerald-200">Programme régénéré avec succès !</p>
-        </div>
-      )}
     </div>
   )
 }

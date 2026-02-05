@@ -179,11 +179,7 @@ export default function ProfilePage() {
 
       {/* Health conditions manager */}
       <div className="bg-zinc-900 rounded-xl p-4">
-        <HealthConditionsManager
-          userId={user.id!}
-          onRegenerate={() => regenerate(user.id!)}
-          isRegenerating={isRegenerating}
-        />
+        <HealthConditionsManager userId={user.id!} />
       </div>
 
       {/* Equipment manager */}
