@@ -40,8 +40,8 @@ export default function StepBody({ state, updateBody, nextStep }: Props) {
   const canProceed = body.name.trim() && body.height > 0 && body.weight > 0 && body.age > 0
 
   return (
-    <div className="flex flex-col">
-      <div className="space-y-4">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 space-y-4">
         <h2 className="text-xl font-bold">Votre profil</h2>
 
         <div>
@@ -120,7 +120,7 @@ export default function StepBody({ state, updateBody, nextStep }: Props) {
         </div>
       </div>
 
-      <div className="pt-6 pb-2">
+      <div className="flex-shrink-0 pt-4 pb-2">
         <button
           type="button"
           onClick={nextStep}

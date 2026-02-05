@@ -113,8 +113,9 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">Zones douloureuses</h2>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-2">
+        <h2 className="text-xl font-bold">Zones douloureuses</h2>
       <p className="text-sm text-zinc-400">
         Touchez les zones où vous avez mal ou un problème. Pas besoin de connaître le nom médical.
       </p>
@@ -231,50 +232,53 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
         </div>
       )}
 
-      {state.conditions.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm text-zinc-400">{state.conditions.length} condition{state.conditions.length > 1 ? 's' : ''} ajoutée{state.conditions.length > 1 ? 's' : ''}</h3>
-          {state.conditions.map((c, index) => (
-            <button
-              key={`${c.bodyZone}-${index}`}
-              type="button"
-              onClick={() => handleEditCondition(index)}
-              className="w-full flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2"
-            >
-              <div className="text-left">
-                <span className="text-sm">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
-                <span className="text-xs text-zinc-500 ml-2">({bodyZones.find(z => z.zone === c.bodyZone)?.label})</span>
-              </div>
-              <span className="text-xs text-zinc-400 shrink-0 ml-2">{c.painLevel}/10</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex gap-3 mt-4">
-        <button
-          type="button"
-          onClick={prevStep}
-          className="flex-1 bg-zinc-800 text-white font-semibold py-3 rounded-lg"
-        >
-          Retour
-        </button>
-        <button
-          type="button"
-          onClick={nextStep}
-          className="flex-1 bg-white text-black font-semibold py-3 rounded-lg"
-        >
-          Suivant
-        </button>
+        {state.conditions.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm text-zinc-400">{state.conditions.length} condition{state.conditions.length > 1 ? 's' : ''} ajoutée{state.conditions.length > 1 ? 's' : ''}</h3>
+            {state.conditions.map((c, index) => (
+              <button
+                key={`${c.bodyZone}-${index}`}
+                type="button"
+                onClick={() => handleEditCondition(index)}
+                className="w-full flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2"
+              >
+                <div className="text-left">
+                  <span className="text-sm">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
+                  <span className="text-xs text-zinc-500 ml-2">({bodyZones.find(z => z.zone === c.bodyZone)?.label})</span>
+                </div>
+                <span className="text-xs text-zinc-400 shrink-0 ml-2">{c.painLevel}/10</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={handleSkip}
-        className="w-full text-center text-sm text-zinc-400 py-2"
-      >
-        Pas de problème de santé
-      </button>
+      <div className="flex-shrink-0 pt-2 pb-2 space-y-2">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={prevStep}
+            className="flex-1 bg-zinc-800 text-white font-semibold py-3 rounded-lg"
+          >
+            Retour
+          </button>
+          <button
+            type="button"
+            onClick={nextStep}
+            className="flex-1 bg-white text-black font-semibold py-3 rounded-lg"
+          >
+            Suivant
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="w-full text-center text-sm text-zinc-400 py-2"
+        >
+          Pas de problème de santé
+        </button>
+      </div>
     </div>
   )
 }

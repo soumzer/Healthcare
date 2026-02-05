@@ -50,34 +50,38 @@ function FinalStep({ prevStep, submit }: ReturnType<typeof useOnboarding>) {
   }
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-bold">Tout est prêt !</h2>
-      <p className="text-sm text-zinc-400">
-        Votre programme sera généré automatiquement en fonction de vos réponses.
-      </p>
-
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={prevStep}
-          disabled={submitting}
-          className="flex-1 bg-zinc-800 text-white font-semibold py-3 rounded-lg disabled:opacity-40"
-        >
-          Retour
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="flex-1 bg-white text-black font-semibold py-3 rounded-lg disabled:opacity-40"
-        >
-          {submitting ? 'Enregistrement...' : 'Terminer'}
-        </button>
+    <div className="flex flex-col h-full">
+      <div className="flex-1">
+        <h2 className="text-xl font-bold mb-4">Tout est prêt !</h2>
+        <p className="text-sm text-zinc-400">
+          Votre programme sera généré automatiquement en fonction de vos réponses.
+        </p>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-400 text-center">{error}</p>
-      )}
+      <div className="flex-shrink-0 pb-2">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={prevStep}
+            disabled={submitting}
+            className="flex-1 bg-zinc-800 text-white font-semibold py-3 rounded-lg disabled:opacity-40"
+          >
+            Retour
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 bg-white text-black font-semibold py-3 rounded-lg disabled:opacity-40"
+          >
+            {submitting ? 'Enregistrement...' : 'Terminer'}
+          </button>
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-400 text-center mt-3">{error}</p>
+        )}
+      </div>
     </div>
   )
 }

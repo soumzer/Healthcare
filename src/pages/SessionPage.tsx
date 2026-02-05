@@ -521,7 +521,7 @@ export default function SessionPage() {
   const sessionIndex = parseIntSafe(searchParams.get('sessionIndex'), 0, 0, 100)
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="h-[calc(100dvh-var(--nav-h))] overflow-hidden bg-zinc-950 text-white">
       <SessionErrorBoundary>
         <SessionContent programId={programId} sessionIndex={sessionIndex} />
       </SessionErrorBoundary>
