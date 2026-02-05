@@ -130,8 +130,8 @@ describe('useNextSession', () => {
     expect(result.current!.nextSessionName).toBe('Push A')
     expect(result.current!.nextSessionIndex).toBe(0)
     expect(result.current!.exerciseCount).toBe(4)
-    // 4 exercises: 3×(35+120) + 3×(35+90) + 3×(35+90) + 3×(35+60) = 1500s = 25min + 5 = 30
-    expect(result.current!.estimatedMinutes).toBe(30)
+    // 4 exercises: 1500s work + 4×90s transitions = 1860s = 31min + 10 warmup/cooldown = 41
+    expect(result.current!.estimatedMinutes).toBe(41)
   })
 
   it('returns session B after session A was completed', async () => {

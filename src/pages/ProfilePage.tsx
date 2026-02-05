@@ -150,7 +150,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-6 space-y-6">
+    <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
+      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-6 space-y-6">
       <h1 className="text-2xl font-bold">Profil</h1>
 
       {/* User info */}
@@ -231,6 +232,7 @@ export default function ProfilePage() {
       <p className="text-center text-xs text-zinc-600 pt-4">
         Health Coach · Données 100% locales
       </p>
+      </div>
     </div>
   )
 }

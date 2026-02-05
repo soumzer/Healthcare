@@ -104,12 +104,18 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
       : null
 
     // Estimate time from actual sets and rest per exercise
+    // Formula:
+    // - Per exercise: sets × (35s work + rest) + 90s transition
+    // - Total + 10 min (5 min warmup + 5 min cooldown)
     let totalSeconds = 0
     for (const ex of nextProgramSession.exercises) {
       const setDuration = 35 // ~35 sec per working set
-      totalSeconds += ex.sets * (setDuration + ex.restSeconds)
+      const exerciseTime = ex.sets * (setDuration + ex.restSeconds)
+      const transitionTime = 90 // ~1.5 min per exercise for setup/transition
+      totalSeconds += exerciseTime + transitionTime
     }
-    const estimatedMinutes = Math.round(totalSeconds / 60) + 5 // +5 min for transitions/warmup
+    const warmupCooldown = 10 * 60 // 5 min warmup + 5 min cooldown
+    const estimatedMinutes = Math.round((totalSeconds + warmupCooldown) / 60)
 
     const minimumRestHours = 24
 

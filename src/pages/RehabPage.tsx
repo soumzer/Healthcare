@@ -276,16 +276,57 @@ export default function RehabPage() {
     )
   }
 
+  // No conditions: show only external video option
   if (conditions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
-        <p className="text-2xl font-bold mb-2">Rehab</p>
-        <p className="text-zinc-400 mb-4">
-          Aucune condition de sante active.
-        </p>
-        <p className="text-zinc-500 text-sm">
-          Ajoutez des conditions dans votre profil pour obtenir une routine de rehab personnalisee.
-        </p>
+      <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
+        <div className="flex-1 px-4 pt-6">
+          <p className="text-2xl font-bold mb-2">Rehab</p>
+          <p className="text-zinc-400 mb-6">
+            Aucune condition de sante active. Routine externe disponible :
+          </p>
+
+          <button
+            onClick={() => setVideoDone(d => !d)}
+            className="w-full bg-zinc-900 rounded-xl px-4 py-3 flex items-center gap-3 text-left"
+          >
+            <div
+              className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                videoDone ? 'bg-emerald-600 border-emerald-600' : 'border-zinc-600 bg-transparent'
+              }`}
+            >
+              {videoDone && (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className={`font-medium ${videoDone ? 'text-zinc-400 line-through' : 'text-white'}`}>
+                {video.label}
+              </p>
+              <p className="text-zinc-500 text-xs mt-0.5">{video.duration}</p>
+            </div>
+          </button>
+        </div>
+
+        <div className="flex-shrink-0 px-4 pb-4">
+          <button
+            onClick={async () => {
+              localStorage.setItem('rehab_video_idx', String(videoIdx))
+              recordRehabCompletion()
+              setSaved(true)
+            }}
+            disabled={!videoDone || isSaving}
+            className={`w-full font-semibold rounded-xl py-4 text-lg transition-colors ${
+              videoDone && !isSaving
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+            }`}
+          >
+            Enregistrer
+          </button>
+        </div>
       </div>
     )
   }

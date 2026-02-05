@@ -1809,12 +1809,12 @@ describe('Full Body structured sessions', () => {
   describe('2 days/week', () => {
     const fbInput2 = {
       userId: 1,
-  
+
       conditions: [],
       equipment: fbEquipment,
-  
+
       daysPerWeek: 2,
-      minutesPerSession: 60,
+      minutesPerSession: 75, // 75 min to fit all exercises with realistic time estimates
     }
 
     const result2 = generateProgram(fbInput2, fbCatalog)
@@ -1875,12 +1875,12 @@ describe('Full Body structured sessions', () => {
   describe('3 days/week', () => {
     const fbInput3 = {
       userId: 1,
-  
+
       conditions: [],
       equipment: fbEquipment,
-  
+
       daysPerWeek: 3,
-      minutesPerSession: 60,
+      minutesPerSession: 75, // 75 min to fit all exercises with realistic time estimates
     }
 
     const result3 = generateProgram(fbInput3, fbCatalog)
@@ -2408,8 +2408,9 @@ describe('trimSlotsToTimeBudget', () => {
     makeSlot({ label: 'Accessory 4', sets: 3, rest: 60 }),
   ]
 
-  it('estimates heavy slots at ~65 min', () => {
-    expect(estimateSlotMinutes(heavySlots)).toBe(65)
+  it('estimates heavy slots at ~81 min (with transitions + warmup/cooldown)', () => {
+    // 7 slots × 90s transition + 10 min warmup/cooldown = ~81 min
+    expect(estimateSlotMinutes(heavySlots)).toBe(81)
   })
 
   it('trims slots from 65min to fit within 45min budget', () => {

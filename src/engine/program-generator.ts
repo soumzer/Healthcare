@@ -137,9 +137,21 @@ function findByName(exercises: Exercise[], nameFragment: string): Exercise | und
   )
 }
 
-/** Pick the first exercise from a source that is not already used, add it to usedIds */
+/** Shuffle array in place using Fisher-Yates algorithm */
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+/** Pick a random exercise from a source that is not already used, add it to usedIds */
 function pickOne(source: Exercise[], usedIds: Set<number>): Exercise | undefined {
-  for (const ex of source) {
+  // Shuffle to get variety on each generation
+  const shuffled = shuffleArray(source)
+  for (const ex of shuffled) {
     if (ex.id === undefined) continue
     if (usedIds.has(ex.id)) continue
     usedIds.add(ex.id)
@@ -191,14 +203,18 @@ export interface ExerciseSlot {
 
 /**
  * Estimate session duration in minutes from exercise slots.
- * Formula matches useNextSession.ts:108-114:
- *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds)
- *   Total = sum / 60 + 5 (warmup overhead)
+ * Formula:
+ *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds) + 90s transition
+ *   Total = sum / 60 + 10 (5 min warmup + 5 min cooldown)
  */
 export function estimateSlotMinutes(slots: ExerciseSlot[]): number {
   let totalSec = 0
-  for (const s of slots) totalSec += s.sets * (WORK_SECONDS_PER_SET + s.rest)
-  return Math.round(totalSec / 60) + 5
+  for (const s of slots) {
+    const exerciseTime = s.sets * (WORK_SECONDS_PER_SET + s.rest)
+    const transitionTime = 90 // ~1.5 min per exercise for setup/transition
+    totalSec += exerciseTime + transitionTime
+  }
+  return Math.round(totalSec / 60) + 10 // +10 min for warmup + cooldown
 }
 
 /**
@@ -240,22 +256,27 @@ export function trimSlotsToTimeBudget(
 
 /**
  * Estimate session duration in minutes from ProgramExercise[].
- * Formula matches useNextSession.ts:108-114:
- *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds)
- *   Total = sum / 60 + 5 (warmup overhead)
+ * Formula:
+ *   Per exercise: sets × (WORK_SECONDS_PER_SET + restSeconds) + 90s transition
+ *   Total = sum / 60 + 10 (5 min warmup + 5 min cooldown)
  */
 export function estimateSessionMinutes(exercises: ProgramExercise[]): number {
   let totalSec = 0
-  for (const ex of exercises) totalSec += ex.sets * (WORK_SECONDS_PER_SET + ex.restSeconds)
-  return Math.round(totalSec / 60) + 5
+  for (const ex of exercises) {
+    const exerciseTime = ex.sets * (WORK_SECONDS_PER_SET + ex.restSeconds)
+    const transitionTime = 90 // ~1.5 min per exercise for setup/transition
+    totalSec += exerciseTime + transitionTime
+  }
+  return Math.round(totalSec / 60) + 10 // +10 min for warmup + cooldown
 }
 
 /**
  * Adjust session to fit within a time budget (minutesPerSession).
  * This is called AFTER buildStructuredSession() so intensity adjustments are already applied.
  *
- * If UNDER budget: scale UP (add sets to compounds, then isolation)
- * If OVER budget: scale DOWN (remove exercises, reduce sets, reduce rest)
+ * Only scales DOWN if over budget (removes exercises from the end).
+ * Does NOT scale up - we keep fixed optimal sets/rest values.
+ * If under budget, the session is simply shorter than requested.
  */
 export function adjustSessionToTimeBudget(
   exercises: ProgramExercise[],
@@ -263,43 +284,13 @@ export function adjustSessionToTimeBudget(
 ): ProgramExercise[] {
   let adjusted = [...exercises]
 
-  // === SCALE UP if under budget (more than 5 min under) ===
-  const scaleUpThreshold = minutesPerSession - 5
-
-  // Phase U1: Add sets to compounds (first 3 exercises, max 5 sets)
-  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
-    const compoundIdx = adjusted.findIndex((ex, i) => i < 3 && ex.sets < 5)
-    if (compoundIdx === -1) break
-    adjusted = adjusted.map((ex, i) =>
-      i === compoundIdx ? { ...ex, sets: ex.sets + 1 } : ex
-    )
-  }
-
-  // Phase U2: Add sets to isolation exercises (max 4 sets)
-  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
-    const isoIdx = adjusted.findIndex((ex, i) => i >= 3 && ex.sets < 4)
-    if (isoIdx === -1) break
-    adjusted = adjusted.map((ex, i) =>
-      i === isoIdx ? { ...ex, sets: ex.sets + 1 } : ex
-    )
-  }
-
-  // Phase U3: Increase rest on compounds (max 180s for heavy feel)
-  while (estimateSessionMinutes(adjusted) < scaleUpThreshold) {
-    const compoundIdx = adjusted.findIndex((ex, i) => i < 3 && ex.restSeconds < 180)
-    if (compoundIdx === -1) break
-    adjusted = adjusted.map((ex, i) =>
-      i === compoundIdx ? { ...ex, restSeconds: ex.restSeconds + 30 } : ex
-    )
-  }
-
   // === SCALE DOWN if over budget ===
-  // Phase D1: Remove exercises from the end (keep minimum 4)
+  // Remove exercises from the end (keep minimum 4)
   while (estimateSessionMinutes(adjusted) > minutesPerSession && adjusted.length > 4) {
     adjusted.pop()
   }
 
-  // Phase D2: Reduce sets by 1 per exercise (minimum 2 sets)
+  // If still over budget, reduce sets by 1 per exercise (minimum 2 sets)
   if (estimateSessionMinutes(adjusted) > minutesPerSession) {
     adjusted = adjusted.map((ex) => ({
       ...ex,
@@ -307,7 +298,7 @@ export function adjustSessionToTimeBudget(
     }))
   }
 
-  // Phase D3: Reduce rest on isolation (index >= 3) by 30s (minimum 45s)
+  // If still over, reduce rest on isolation (index >= 3) by 30s (minimum 45s)
   if (estimateSessionMinutes(adjusted) > minutesPerSession) {
     adjusted = adjusted.map((ex, i) => ({
       ...ex,
