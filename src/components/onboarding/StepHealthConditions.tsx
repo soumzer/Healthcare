@@ -13,15 +13,17 @@ interface ConditionForm {
   painLevel: number
   since: string
   notes: string
+  editIndex?: number // Index of condition being edited (undefined = new)
 }
 
-const emptyForm = (zone: BodyZone): ConditionForm => ({
+const emptyForm = (zone: BodyZone, editIndex?: number): ConditionForm => ({
   bodyZone: zone,
   label: '',
   diagnosis: '',
   painLevel: 3,
   since: '',
   notes: '',
+  editIndex,
 })
 
 export default function StepHealthConditions({ state, updateConditions, nextStep, prevStep }: Props) {
@@ -29,34 +31,31 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
   const [form, setForm] = useState<ConditionForm | null>(null)
   const [showQuestionnaire, setShowQuestionnaire] = useState<BodyZone | null>(null)
 
-  const existingZones = new Set(state.conditions.map(c => c.bodyZone))
+  const zonesWithConditions = new Set(state.conditions.map(c => c.bodyZone))
 
+  // Clicking zone button always starts questionnaire to add new condition
   const handleZoneTap = (zone: BodyZone) => {
-    if (expandedZone === zone) {
-      setExpandedZone(null)
-      setForm(null)
-    } else {
-      const existing = state.conditions.find(c => c.bodyZone === zone)
-      if (existing) {
-        // Editing existing condition - go directly to form
-        setExpandedZone(zone)
-        setForm({
-          bodyZone: existing.bodyZone,
-          label: existing.label,
-          diagnosis: existing.diagnosis,
-          painLevel: existing.painLevel,
-          since: existing.since,
-          notes: existing.notes,
-        })
-      } else {
-        // New condition - launch questionnaire first
-        setShowQuestionnaire(zone)
-      }
-    }
+    setShowQuestionnaire(zone)
+  }
+
+  // Clicking existing condition opens it for editing
+  const handleEditCondition = (index: number) => {
+    const existing = state.conditions[index]
+    if (!existing) return
+    setExpandedZone(existing.bodyZone)
+    setForm({
+      bodyZone: existing.bodyZone,
+      label: existing.label,
+      diagnosis: existing.diagnosis,
+      painLevel: existing.painLevel,
+      since: existing.since,
+      notes: existing.notes,
+      editIndex: index,
+    })
   }
 
   const handleQuestionnaireComplete = (result: QuestionnaireResult) => {
-    // Pre-fill form with questionnaire result
+    // Pre-fill form with questionnaire result (new condition, no editIndex)
     setExpandedZone(result.zone)
     setForm({
       ...emptyForm(result.zone),
@@ -75,15 +74,26 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
     // Auto-generate label from zone name if user left it empty
     const zoneName = bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''
     const label = form.label.trim() || `Douleur ${zoneName}`
-    const updated = state.conditions.filter(c => c.bodyZone !== form.bodyZone)
-    updated.push({ ...form, label, isActive: true })
-    updateConditions(updated)
+    const { editIndex, ...conditionData } = form
+    const newCondition = { ...conditionData, label, isActive: true }
+
+    if (editIndex !== undefined) {
+      // Update existing condition
+      const updated = [...state.conditions]
+      updated[editIndex] = newCondition
+      updateConditions(updated)
+    } else {
+      // Add new condition
+      updateConditions([...state.conditions, newCondition])
+    }
     setExpandedZone(null)
     setForm(null)
   }
 
-  const handleRemoveCondition = (zone: BodyZone) => {
-    updateConditions(state.conditions.filter(c => c.bodyZone !== zone))
+  const handleRemoveCondition = (index: number) => {
+    updateConditions(state.conditions.filter((_, i) => i !== index))
+    setExpandedZone(null)
+    setForm(null)
   }
 
   const handleSkip = () => {
@@ -116,14 +126,17 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
             type="button"
             onClick={() => handleZoneTap(zone)}
             className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-              existingZones.has(zone)
+              zonesWithConditions.has(zone)
                 ? 'bg-white text-black'
-                : expandedZone === zone
-                  ? 'bg-zinc-700 text-white'
-                  : 'bg-zinc-800 text-white'
+                : 'bg-zinc-800 text-white hover:bg-zinc-700'
             }`}
           >
             {label}
+            {zonesWithConditions.has(zone) && (
+              <span className="ml-1 text-xs">
+                ({state.conditions.filter(c => c.bodyZone === zone).length})
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -196,32 +209,42 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
               onClick={handleSaveCondition}
               className="flex-1 bg-white text-black font-semibold py-2 rounded-lg text-sm"
             >
-              Ajouter
+              {form.editIndex !== undefined ? 'Modifier' : 'Ajouter'}
             </button>
-            {existingZones.has(expandedZone) && (
+            {form.editIndex !== undefined && (
               <button
                 type="button"
-                onClick={() => { handleRemoveCondition(expandedZone); setExpandedZone(null); setForm(null) }}
+                onClick={() => handleRemoveCondition(form.editIndex!)}
                 className="px-4 py-2 bg-red-900 text-red-200 rounded-lg text-sm"
               >
                 Supprimer
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => { setExpandedZone(null); setForm(null) }}
+              className="px-4 py-2 bg-zinc-800 text-white rounded-lg text-sm"
+            >
+              Annuler
+            </button>
           </div>
         </div>
       )}
 
       {state.conditions.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm text-zinc-400">{state.conditions.length} zone{state.conditions.length > 1 ? 's' : ''} ajoutée{state.conditions.length > 1 ? 's' : ''}</h3>
-          {state.conditions.map(c => (
+          <h3 className="text-sm text-zinc-400">{state.conditions.length} condition{state.conditions.length > 1 ? 's' : ''} ajoutée{state.conditions.length > 1 ? 's' : ''}</h3>
+          {state.conditions.map((c, index) => (
             <button
-              key={c.bodyZone}
+              key={`${c.bodyZone}-${index}`}
               type="button"
-              onClick={() => handleZoneTap(c.bodyZone)}
+              onClick={() => handleEditCondition(index)}
               className="w-full flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-2"
             >
-              <span className="text-sm text-left">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
+              <div className="text-left">
+                <span className="text-sm">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
+                <span className="text-xs text-zinc-500 ml-2">({bodyZones.find(z => z.zone === c.bodyZone)?.label})</span>
+              </div>
               <span className="text-xs text-zinc-400 shrink-0 ml-2">{c.painLevel}/10</span>
             </button>
           ))}

@@ -62,7 +62,11 @@ export function generateRestDayRoutine(
     const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone: BodyZone }> = []
 
     for (const condition of activeConditions) {
-      const protocol = rehabProtocols.find(p => p.targetZone === condition.bodyZone)
+      // Match by protocolConditionName (stored in diagnosis) if available, else fallback to zone
+      const protocol = condition.diagnosis
+        ? rehabProtocols.find(p => p.targetZone === condition.bodyZone && p.conditionName === condition.diagnosis)
+          ?? rehabProtocols.find(p => p.targetZone === condition.bodyZone)
+        : rehabProtocols.find(p => p.targetZone === condition.bodyZone)
       if (!protocol) continue
 
       for (const ex of protocol.exercises) {
