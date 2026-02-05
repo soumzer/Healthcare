@@ -217,6 +217,7 @@ export default function ProfilePage() {
             if (window.confirm('Supprimer toutes les données ?')) {
               await db.delete()
               await db.open()
+              localStorage.clear()
               window.location.href = '/'
             }
           }}

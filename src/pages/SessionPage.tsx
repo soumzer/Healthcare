@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, Component, type ReactNode } from 'react'
+import { useState, useCallback, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { db } from '../db'
@@ -103,7 +103,8 @@ function SessionRunner({
   }, [userId])
 
   // Once todayEntries load, recover exercise statuses
-  if (todayEntries && !recovered) {
+  useEffect(() => {
+    if (!todayEntries || recovered) return
     const exerciseIds = programSession.exercises.map(e => e.exerciseId)
     const todayByExercise = new Map<number, typeof todayEntries[0]>()
     for (const entry of todayEntries) {
@@ -128,7 +129,7 @@ function SessionRunner({
       setPhase('exercises')
     }
     setRecovered(true)
-  }
+  }, [todayEntries, recovered, programSession.exercises])
 
   // Build exercise catalog lookup
   const exerciseMap = useMemo(() => {
@@ -222,6 +223,33 @@ function SessionRunner({
     }
     setPhase('done')
   }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap])
+
+  // Swap: resolve alternatives for the current exercise
+  const swapOptions: SwapOption[] = useMemo(() => {
+    if (!currentCatalogExercise?.alternatives) return []
+    return currentCatalogExercise.alternatives
+      .map((altName) => {
+        const match = allExercises.find((e) => e.name === altName)
+        return match?.id ? { exerciseId: match.id, name: match.name } : null
+      })
+      .filter((x): x is SwapOption => x !== null)
+  }, [currentCatalogExercise, allExercises])
+
+  const handleSwapExercise = useCallback(async (newExerciseId: number) => {
+    const program = await db.workoutPrograms.get(programId)
+    if (!program?.sessions) return
+    const updatedSessions = program.sessions.map((s) => {
+      if (s.name !== programSession.name) return s
+      return {
+        ...s,
+        exercises: s.exercises.map((e, eIdx) =>
+          eIdx === currentExerciseIdx ? { ...e, exerciseId: newExerciseId } : e,
+        ),
+      }
+    })
+    await db.workoutPrograms.update(programId, { sessions: updatedSessions })
+    setPhase('exercises')
+  }, [programId, programSession.name, currentExerciseIdx])
 
   // --- Render phases ---
 
@@ -355,35 +383,6 @@ function SessionRunner({
       </div>
     )
   }
-
-  // Swap: resolve alternatives for the current exercise
-  const swapOptions: SwapOption[] = useMemo(() => {
-    if (!currentCatalogExercise?.alternatives) return []
-    return currentCatalogExercise.alternatives
-      .map((altName) => {
-        const match = allExercises.find((e) => e.name === altName)
-        return match?.id ? { exerciseId: match.id, name: match.name } : null
-      })
-      .filter((x): x is SwapOption => x !== null)
-  }, [currentCatalogExercise, allExercises])
-
-  const handleSwapExercise = useCallback(async (newExerciseId: number) => {
-    // Update the program in DB: replace exerciseId at current index
-    const program = await db.workoutPrograms.get(programId)
-    if (!program?.sessions) return
-    const updatedSessions = program.sessions.map((s, sIdx) => {
-      if (s.name !== programSession.name) return s
-      return {
-        ...s,
-        exercises: s.exercises.map((e, eIdx) =>
-          eIdx === currentExerciseIdx ? { ...e, exerciseId: newExerciseId } : e,
-        ),
-      }
-    })
-    await db.workoutPrograms.update(programId, { sessions: updatedSessions })
-    // Re-open the same exercise index (will pick up the new exercise from the live query)
-    setPhase('exercises')
-  }, [programId, programSession.name, currentExerciseIdx])
 
   if (phase === 'notebook' && currentProgramExercise && currentCatalogExercise) {
     const intensity = (programSession.intensity ?? 'volume') as 'heavy' | 'volume' | 'moderate'

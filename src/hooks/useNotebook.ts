@@ -113,26 +113,27 @@ async function autoCreateConditionIfNeeded(
       }
     }
 
-    // Deactivate all currently active programs
-    const activePrograms = await db.workoutPrograms
-      .where('userId').equals(userId)
-      .filter(p => p.isActive)
-      .toArray()
+    // Deactivate + create in a single transaction
+    await db.transaction('rw', db.workoutPrograms, async () => {
+      const activePrograms = await db.workoutPrograms
+        .where('userId').equals(userId)
+        .filter(p => p.isActive)
+        .toArray()
 
-    for (const prog of activePrograms) {
-      if (prog.id !== undefined) {
-        await db.workoutPrograms.update(prog.id, { isActive: false })
+      for (const prog of activePrograms) {
+        if (prog.id !== undefined) {
+          await db.workoutPrograms.update(prog.id, { isActive: false })
+        }
       }
-    }
 
-    // Save the new program
-    await db.workoutPrograms.add({
-      userId,
-      name: generatedProgram.name,
-      type: generatedProgram.type,
-      sessions: generatedProgram.sessions,
-      isActive: true,
-      createdAt: new Date(),
+      await db.workoutPrograms.add({
+        userId,
+        name: generatedProgram.name,
+        type: generatedProgram.type,
+        sessions: generatedProgram.sessions,
+        isActive: true,
+        createdAt: new Date(),
+      })
     })
   } catch {
     // Regeneration failed — the condition was still created, which is the
@@ -186,6 +187,13 @@ export function useNotebook(
     [userId, exerciseId],
     [] as NotebookEntry[]
   )
+
+  // Reset state when exercise changes (defensive — component usually unmounts)
+  useEffect(() => {
+    setTodayEntryId(null)
+    setLoadedEntry(false)
+    setCurrentSets([])
+  }, [exerciseId])
 
   // Load today's entry for editing (re-open completed exercise)
   useEffect(() => {
@@ -248,7 +256,7 @@ export function useNotebook(
     } finally {
       setIsSaving(false)
     }
-  }, [userId, exerciseId, exerciseName, sessionIntensity, currentSets, isSaving, onNext])
+  }, [userId, exerciseId, exerciseName, sessionIntensity, currentSets, isSaving, onNext, todayEntryId])
 
   const skipExercise = useCallback(async (zone: BodyZone): Promise<SkipResult> => {
     if (isSaving) return { conditionCreated: false }
@@ -256,17 +264,26 @@ export function useNotebook(
     try {
       // Save skipped entry (include any sets entered before skip)
       const validSets = currentSets.filter(s => s.reps > 0)
-      const entry: NotebookEntry = {
-        userId,
-        exerciseId,
-        exerciseName,
-        date: new Date(),
-        sessionIntensity,
-        sets: validSets,
-        skipped: true,
-        skipZone: zone,
+      if (todayEntryId) {
+        await db.notebookEntries.update(todayEntryId, {
+          sets: validSets,
+          skipped: true,
+          skipZone: zone,
+          date: new Date(),
+        })
+      } else {
+        const entry: NotebookEntry = {
+          userId,
+          exerciseId,
+          exerciseName,
+          date: new Date(),
+          sessionIntensity,
+          sets: validSets,
+          skipped: true,
+          skipZone: zone,
+        }
+        await db.notebookEntries.add(entry)
       }
-      await db.notebookEntries.add(entry)
 
       // Create pain report with 3-4 days of rehab accentuation
       await db.painReports.add({
@@ -292,7 +309,7 @@ export function useNotebook(
     } finally {
       setIsSaving(false)
     }
-  }, [userId, exerciseId, exerciseName, sessionIntensity, isSaving, onSkip])
+  }, [userId, exerciseId, exerciseName, sessionIntensity, currentSets, isSaving, onSkip, todayEntryId])
 
   return {
     currentSets,

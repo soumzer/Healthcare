@@ -72,26 +72,27 @@ export function useRegenerateProgram() {
         }
       }
 
-      // 7. Deactivate all currently active programs (don't delete — preserve history)
-      const activePrograms = await db.workoutPrograms
-        .where('userId').equals(userId)
-        .filter(p => p.isActive)
-        .toArray()
+      // 7-8. Deactivate old + save new in a single transaction
+      await db.transaction('rw', db.workoutPrograms, async () => {
+        const activePrograms = await db.workoutPrograms
+          .where('userId').equals(userId)
+          .filter(p => p.isActive)
+          .toArray()
 
-      for (const prog of activePrograms) {
-        if (prog.id !== undefined) {
-          await db.workoutPrograms.update(prog.id, { isActive: false })
+        for (const prog of activePrograms) {
+          if (prog.id !== undefined) {
+            await db.workoutPrograms.update(prog.id, { isActive: false })
+          }
         }
-      }
 
-      // 8. Save the new program as active
-      await db.workoutPrograms.add({
-        userId,
-        name: generatedProgram.name,
-        type: generatedProgram.type,
-        sessions: generatedProgram.sessions,
-        isActive: true,
-        createdAt: new Date(),
+        await db.workoutPrograms.add({
+          userId,
+          name: generatedProgram.name,
+          type: generatedProgram.type,
+          sessions: generatedProgram.sessions,
+          isActive: true,
+          createdAt: new Date(),
+        })
       })
 
       return { success: true }
@@ -142,26 +143,27 @@ export function useRegenerateProgram() {
         exerciseCatalog,
       )
 
-      // Deactivate old programs
-      const activePrograms = await db.workoutPrograms
-        .where('userId').equals(userId)
-        .filter(p => p.isActive)
-        .toArray()
+      // Deactivate old + save new in a single transaction
+      await db.transaction('rw', db.workoutPrograms, async () => {
+        const activePrograms = await db.workoutPrograms
+          .where('userId').equals(userId)
+          .filter(p => p.isActive)
+          .toArray()
 
-      for (const prog of activePrograms) {
-        if (prog.id !== undefined) {
-          await db.workoutPrograms.update(prog.id, { isActive: false })
+        for (const prog of activePrograms) {
+          if (prog.id !== undefined) {
+            await db.workoutPrograms.update(prog.id, { isActive: false })
+          }
         }
-      }
 
-      // Save new program
-      await db.workoutPrograms.add({
-        userId,
-        name: generatedProgram.name,
-        type: generatedProgram.type,
-        sessions: generatedProgram.sessions,
-        isActive: true,
-        createdAt: new Date(),
+        await db.workoutPrograms.add({
+          userId,
+          name: generatedProgram.name,
+          type: generatedProgram.type,
+          sessions: generatedProgram.sessions,
+          isActive: true,
+          createdAt: new Date(),
+        })
       })
 
       return { success: true }

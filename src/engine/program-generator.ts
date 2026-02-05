@@ -141,9 +141,9 @@ function findByName(exercises: Exercise[], nameFragment: string): Exercise | und
 /** Pick the first exercise from a source that is not already used, add it to usedIds */
 function pickOne(source: Exercise[], usedIds: Set<number>): Exercise | undefined {
   for (const ex of source) {
-    const id = ex.id ?? 0
-    if (usedIds.has(id)) continue
-    usedIds.add(id)
+    if (ex.id === undefined) continue
+    if (usedIds.has(ex.id)) continue
+    usedIds.add(ex.id)
     return ex
   }
   return undefined
@@ -156,10 +156,9 @@ function pickPreferred(
   usedIds: Set<number>,
 ): Exercise | undefined {
   const preferred = findByName(fallbackSource, nameFragment)
-  if (preferred) {
-    const id = preferred.id ?? 0
-    if (!usedIds.has(id)) {
-      usedIds.add(id)
+  if (preferred && preferred.id !== undefined) {
+    if (!usedIds.has(preferred.id)) {
+      usedIds.add(preferred.id)
       return preferred
     }
   }
@@ -340,7 +339,7 @@ function buildStructuredSession(
   const rehabPool = pool.filter((e) => e.isRehab && e.rehabTarget !== undefined)
 
   for (const slot of slots) {
-    const allCandidates = slot.candidates(pool).filter((e) => !usedIds.has(e.id ?? 0))
+    const allCandidates = slot.candidates(pool).filter((e) => e.id !== undefined && !usedIds.has(e.id))
     let picked: Exercise | undefined
     let isRehabSubstitution = false
 
@@ -354,11 +353,11 @@ function buildStructuredSession(
       // Find the affected zone and substitute with rehab
       const affectedZone = contraindicatedEx.contraindications.find((z) => painfulZoneSet.has(z))!
       const rehabCandidate = rehabPool.find((e) =>
-        !usedIds.has(e.id ?? 0) && e.rehabTarget === affectedZone,
+        e.id !== undefined && !usedIds.has(e.id) && e.rehabTarget === affectedZone,
       )
       if (rehabCandidate) {
         picked = rehabCandidate
-        usedIds.add(rehabCandidate.id ?? 0)
+        if (rehabCandidate.id !== undefined) usedIds.add(rehabCandidate.id)
         isRehabSubstitution = true
       }
     }
@@ -1594,9 +1593,12 @@ export function generateProgram(
   // NOTE: Contraindication filtering is now done per-slot in buildStructuredSession
   // so that contraindicated slots get rehab substitution instead of alternative exercises.
   const excludeSet = new Set(input.excludeExerciseIds ?? [])
-  const eligible = afterEquipment.filter(
-    (e) => !e.tags.includes('cardio') && !excludeSet.has(e.id ?? 0),
-  )
+  const afterCardio = afterEquipment.filter((e) => !e.tags.includes('cardio'))
+  let eligible = afterCardio.filter((e) => !excludeSet.has(e.id ?? 0))
+  // If exclusion leaves too few non-rehab exercises, ignore it to avoid empty sessions
+  if (excludeSet.size > 0 && eligible.filter(e => !e.isRehab).length < 15) {
+    eligible = afterCardio
+  }
 
   // Step 5 — determine split
   const splitType = determineSplit(input.daysPerWeek)

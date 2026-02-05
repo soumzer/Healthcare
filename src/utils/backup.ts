@@ -183,14 +183,24 @@ export async function importData(json: string): Promise<number> {
           (data.equipment as Record<string, unknown>[]).map(e => sanitizeEquipment(e, userId))
         )
       }
+      const programIdMap = new Map<number, number>()
       if (data.programs?.length) {
-        await db.workoutPrograms.bulkAdd(
-          (data.programs as Record<string, unknown>[]).map(p => sanitizeProgram(p, userId))
-        )
+        for (const p of data.programs as Record<string, unknown>[]) {
+          const oldId = Number(p.id ?? 0)
+          const newId = await db.workoutPrograms.add(sanitizeProgram(p, userId)) as number
+          if (oldId > 0) programIdMap.set(oldId, newId)
+        }
       }
       if (data.sessions?.length) {
         await db.workoutSessions.bulkAdd(
-          (data.sessions as Record<string, unknown>[]).map(s => sanitizeSession(s, userId))
+          (data.sessions as Record<string, unknown>[]).map(s => {
+            const sanitized = sanitizeSession(s, userId)
+            const oldProgramId = Number((s as Record<string, unknown>).programId ?? 0)
+            if (programIdMap.has(oldProgramId)) {
+              sanitized.programId = programIdMap.get(oldProgramId)!
+            }
+            return sanitized
+          })
         )
       }
       if (data.notebookEntries?.length) {
