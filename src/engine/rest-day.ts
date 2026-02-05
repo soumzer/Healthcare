@@ -35,7 +35,7 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
   'foot_left', 'foot_right',
 ])
 
-const MAX_REHAB_EXERCISES = 5
+const MAX_TOTAL_EXERCISES = 6 // Total including foundation blocks
 
 // Core foundation exercises — always included if user has lower_back or knee conditions
 const CORE_FOUNDATION: RestDayExercise[] = [
@@ -137,7 +137,7 @@ export function generateRestDayRoutine(
   }
 
   // Calculate remaining slots for condition-specific exercises
-  const remainingSlots = Math.max(0, MAX_REHAB_EXERCISES - exercises.length)
+  const remainingSlots = Math.max(0, MAX_TOTAL_EXERCISES - exercises.length)
 
   if (activeConditions.length > 0 && remainingSlots > 0) {
     const allExercisesWithProtocol: Array<{ exercise: RehabExercise; protocolName: string; targetZone: BodyZone }> = []
