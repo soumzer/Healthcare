@@ -29,7 +29,7 @@ describe('generateRestDayRoutine', () => {
   it('includes rehab exercises for active conditions', () => {
     const routine = generateRestDayRoutine(mockConditions)
     expect(routine.exercises.length).toBeGreaterThan(0)
-    expect(routine.exercises.length).toBeLessThanOrEqual(6)
+    expect(routine.exercises.length).toBeLessThanOrEqual(5)
   })
 
   it('picks exercises from rehab protocols for active conditions', () => {
@@ -80,7 +80,7 @@ describe('generateRestDayRoutine', () => {
 
   it('respects max exercises limit through rotation', () => {
     const routine = generateRestDayRoutine(mockConditions)
-    expect(routine.exercises.length).toBeLessThanOrEqual(6)
+    expect(routine.exercises.length).toBeLessThanOrEqual(5)
   })
 
   describe('variant filtering', () => {
