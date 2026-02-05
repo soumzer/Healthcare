@@ -38,6 +38,41 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
 const MAX_REHAB_EXERCISES = 5
 
 /**
+ * Normalize string for matching: remove accents, lowercase, trim.
+ */
+function normalizeForMatching(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics (accents)
+    .toLowerCase()
+    .trim()
+}
+
+/**
+ * Get equivalent zone for protocol matching (treats left/right as equivalent).
+ * Protocols are typically defined for one side only (e.g., hip_right).
+ */
+function getEquivalentZones(zone: BodyZone): BodyZone[] {
+  const equivalents: Record<string, BodyZone[]> = {
+    hip_left: ['hip_left', 'hip_right'],
+    hip_right: ['hip_right', 'hip_left'],
+    knee_left: ['knee_left', 'knee_right'],
+    knee_right: ['knee_right', 'knee_left'],
+    ankle_left: ['ankle_left', 'ankle_right'],
+    ankle_right: ['ankle_right', 'ankle_left'],
+    shoulder_left: ['shoulder_left', 'shoulder_right'],
+    shoulder_right: ['shoulder_right', 'shoulder_left'],
+    elbow_left: ['elbow_left', 'elbow_right'],
+    elbow_right: ['elbow_right', 'elbow_left'],
+    wrist_left: ['wrist_left', 'wrist_right'],
+    wrist_right: ['wrist_right', 'wrist_left'],
+    foot_left: ['foot_left', 'foot_right'],
+    foot_right: ['foot_right', 'foot_left'],
+  }
+  return equivalents[zone] ?? [zone]
+}
+
+/**
  * Generate a rest day routine based on active health conditions.
  *
  * Selects up to MAX_REHAB_EXERCISES from matching rehab protocols using rotation.
@@ -63,10 +98,29 @@ export function generateRestDayRoutine(
 
     for (const condition of activeConditions) {
       // Match by protocolConditionName (stored in diagnosis) if available, else fallback to zone
-      const protocol = condition.diagnosis
-        ? rehabProtocols.find(p => p.targetZone === condition.bodyZone && p.conditionName === condition.diagnosis)
-          ?? rehabProtocols.find(p => p.targetZone === condition.bodyZone)
-        : rehabProtocols.find(p => p.targetZone === condition.bodyZone)
+      // Use normalized comparison to handle accent differences
+      // Also try equivalent zones (left/right) since protocols may only exist for one side
+      const diagnosisNorm = condition.diagnosis ? normalizeForMatching(condition.diagnosis) : ''
+      const equivalentZones = getEquivalentZones(condition.bodyZone)
+
+      let protocol = null
+      if (diagnosisNorm) {
+        // Try to match by diagnosis first
+        for (const zone of equivalentZones) {
+          protocol = rehabProtocols.find(p =>
+            p.targetZone === zone &&
+            normalizeForMatching(p.conditionName) === diagnosisNorm
+          )
+          if (protocol) break
+        }
+      }
+      // Fallback to any protocol for equivalent zones
+      if (!protocol) {
+        for (const zone of equivalentZones) {
+          protocol = rehabProtocols.find(p => p.targetZone === zone)
+          if (protocol) break
+        }
+      }
       if (!protocol) continue
 
       for (const ex of protocol.exercises) {

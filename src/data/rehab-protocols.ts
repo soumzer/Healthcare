@@ -1142,7 +1142,66 @@ export const rehabProtocols: RehabProtocol[] = [
   },
 
   // =========================================================================
-  // 21. HIP FLEXOR STRAIN (Strain fléchisseurs hanche)
+  // 21. LABRAL TEAR HIP (Lésion labrale hanche)
+  // =========================================================================
+  {
+    targetZone: 'hip_right',
+    conditionName: 'Lésion labrale hanche',
+    frequency: 'every_session',
+    priority: 2,
+    progressionCriteria:
+      'Phase 1 (semaines 1-4) : éviter les positions FADDIR (flexion + adduction + rotation interne), focus sur stabilité et contrôle moteur. Phase 2 (semaines 4-8) : renforcement progressif des fessiers et du core, amplitude limitée. Phase 3 (8+ semaines) : retour progressif aux mouvements fonctionnels dans les limites de la douleur. ATTENTION : une lésion labrale significative peut nécessiter une consultation chirurgicale si les symptômes persistent.',
+    exercises: [
+      {
+        exerciseName: 'Pont fessier',
+        sets: 3,
+        reps: '12-15',
+        intensity: 'light',
+        notes:
+          'Ne pas monter trop haut pour éviter l\'hyperextension de hanche. Focus sur la contraction fessière, pas sur l\'amplitude. Maintenir 2-3 sec en haut. Progression : ajouter bande autour des genoux.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Clam shell',
+        sets: 3,
+        reps: '15/côté',
+        intensity: 'light',
+        notes:
+          'Hanches à 45° (pas plus). Ouvrir le genou en gardant les pieds joints. Renforce le moyen fessier et les rotateurs externes sans stresser le labrum. Ajouter bande quand facile.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Dead bug',
+        sets: 3,
+        reps: '8-10/côté',
+        intensity: 'light',
+        notes:
+          'Dos plaqué au sol. Étendre une jambe + bras opposé sans que le dos se cambre. Stabilisation du core essentielle pour protéger la hanche. Alternative sûre au travail abdominal classique.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Side-lying hip abduction',
+        sets: 3,
+        reps: '12-15/côté',
+        intensity: 'light',
+        notes:
+          'Allongé sur le côté, lever la jambe tendue vers le plafond. Garder le bassin stable (ne pas rouler vers l\'arrière). Renforce le moyen fessier, stabilisateur clé de la hanche.',
+        placement: 'active_wait',
+      },
+      {
+        exerciseName: 'Étirement fléchisseurs hanche (half-kneeling)',
+        sets: 3,
+        reps: '30-45 sec/côté',
+        intensity: 'very_light',
+        notes:
+          'Position de fente au sol, genou arrière posé. Avancer les hanches sans cambrer le dos. Contractez le fessier côté étiré. Les fléchisseurs raides tirent la tête fémorale vers l\'avant. Faire quotidiennement.',
+        placement: 'rest_day',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 22. HIP FLEXOR STRAIN (Strain fléchisseurs hanche)
   // =========================================================================
   {
     targetZone: 'hip_right',
