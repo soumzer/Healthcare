@@ -276,6 +276,17 @@ export default function RehabPage() {
     )
   }
 
+  // Show saved confirmation for no-conditions case
+  if (saved && conditions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
+        <p className="text-4xl mb-4">✓</p>
+        <p className="text-2xl font-bold mb-2">Routine terminée</p>
+        <p className="text-zinc-400">Bien joué ! Reviens demain.</p>
+      </div>
+    )
+  }
+
   // No conditions: show only external video option
   if (conditions.length === 0) {
     return (
