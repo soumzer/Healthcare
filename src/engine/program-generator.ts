@@ -4,7 +4,6 @@ import type {
   GymEquipment,
   ProgramSession,
   ProgramExercise,
-  BodyZone,
 } from '../db/types'
 
 // ---------------------------------------------------------------------------
@@ -288,34 +287,6 @@ export function trimSessionToTimeBudget(
 
   // Renumber the order field after trimming
   return trimmed.map((ex, i) => ({ ...ex, order: i + 1 }))
-}
-
-// ---------------------------------------------------------------------------
-// Rehab substitution helpers
-// ---------------------------------------------------------------------------
-
-const ZONE_MUSCLE_GROUP: Record<BodyZone, 'upper' | 'lower' | 'core'> = {
-  neck: 'core',
-  shoulder_left: 'upper', shoulder_right: 'upper',
-  elbow_left: 'upper', elbow_right: 'upper',
-  wrist_left: 'upper', wrist_right: 'upper',
-  upper_back: 'upper',
-  lower_back: 'core',
-  hip_left: 'lower', hip_right: 'lower',
-  knee_left: 'lower', knee_right: 'lower',
-  ankle_left: 'lower', ankle_right: 'lower',
-  foot_left: 'lower', foot_right: 'lower',
-}
-
-function slotMuscleGroup(label: string): 'upper' | 'lower' | 'core' | null {
-  const l = label.toLowerCase()
-  if (l.includes('quad') || l.includes('leg') || l.includes('calf')
-    || l.includes('hip') || l.includes('unilateral') || l.includes('hinge')) return 'lower'
-  if (l.includes('push') || l.includes('pull') || l.includes('chest')
-    || l.includes('biceps') || l.includes('triceps') || l.includes('lateral')
-    || l.includes('rear delt') || l.includes('shrug') || l.includes('face')) return 'upper'
-  if (l.includes('core')) return 'core'
-  return null
 }
 
 function buildStructuredSession(
