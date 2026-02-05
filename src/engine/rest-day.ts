@@ -37,7 +37,8 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
   'foot_left', 'foot_right',
 ])
 
-const MAX_REHAB_EXERCISES = 5
+const MAX_REHAB_EXERCISES_NORMAL = 5
+const MAX_REHAB_EXERCISES_ACCENT = 7 // 3 normal + 4 for painful zone
 
 /**
  * Normalize string for matching: remove accents, lowercase, trim.
@@ -136,9 +137,10 @@ export function generateRestDayRoutine(
       }
     }
 
+    const maxExercises = accentZones.length > 0 ? MAX_REHAB_EXERCISES_ACCENT : MAX_REHAB_EXERCISES_NORMAL
     const selectedExercises = accentZones.length > 0
-      ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, MAX_REHAB_EXERCISES)
-      : selectRotatedExercises(allExercisesWithProtocol, MAX_REHAB_EXERCISES)
+      ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, maxExercises)
+      : selectRotatedExercises(allExercisesWithProtocol, maxExercises)
 
     for (const { exercise: ex, protocolName, targetZone } of selectedExercises) {
       exercises.push({

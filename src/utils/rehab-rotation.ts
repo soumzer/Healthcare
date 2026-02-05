@@ -207,14 +207,16 @@ export function selectRotatedExercises(
 // Accent-aware selection (pain report zones)
 // ---------------------------------------------------------------------------
 
-const ACCENT_GUARANTEED_SLOTS = 2
+const ACCENT_GUARANTEED_SLOTS = 4  // exercises for painful zone
+const NORMAL_GUARANTEED_SLOTS = 3  // exercises for other conditions
 
 /**
  * Select exercises with priority for zones that have active PainReports.
  *
- * Guarantees at least ACCENT_GUARANTEED_SLOTS (2) exercises from protocols
- * whose targetZone matches one of the accentZones, then fills remaining
- * slots with normal priority+rotation from the non-accent pool.
+ * When accent zones exist (after skipping an exercise due to pain):
+ * - 4 exercises for the painful zone (ACCENT_GUARANTEED_SLOTS)
+ * - 3 exercises for other conditions (NORMAL_GUARANTEED_SLOTS)
+ * - Total: 7 exercises (temporarily increased from 5)
  *
  * Falls back to standard selectRotatedExercises when no accent zones exist.
  */
@@ -257,18 +259,17 @@ export function selectRotatedExercisesWithAccent(
     return [...accentPool, ...normalPool].map(e => ({ exercise: e.exercise, protocolName: e.protocolName, targetZone: e.targetZone }))
   }
 
-  // 2. Select guaranteed accent exercises (up to ACCENT_GUARANTEED_SLOTS)
+  // 2. Select exercises for painful zone (up to ACCENT_GUARANTEED_SLOTS = 4)
   const accentSelected = selectRehabExercises(accentPool, ACCENT_GUARANTEED_SLOTS)
 
-  // 3. Fill remaining slots from the normal pool
-  const remainingSlots = maxCount - accentSelected.length
-  const normalSelected = selectRehabExercises(normalPool, remainingSlots)
+  // 3. Select exercises for other conditions (NORMAL_GUARANTEED_SLOTS = 3)
+  const normalSelected = selectRehabExercises(normalPool, NORMAL_GUARANTEED_SLOTS)
 
-  // 4. If we still have room (accent pool was smaller than guaranteed slots),
-  //    backfill with more normal exercises
+  // 4. Combine: accent first, then normal
   const combined = [...accentSelected, ...normalSelected]
+
+  // 5. If accent pool was smaller than 4, backfill with more normal exercises
   if (combined.length < maxCount) {
-    // Get additional normal exercises not already selected
     const selectedNames = new Set(combined.map(e => e.exercise.exerciseName))
     const remaining = normalPool.filter(e => !selectedNames.has(e.exercise.exerciseName))
     const backfill = selectRehabExercises(remaining, maxCount - combined.length)

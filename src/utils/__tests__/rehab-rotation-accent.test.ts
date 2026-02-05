@@ -32,6 +32,8 @@ describe('selectRotatedExercisesWithAccent', () => {
     makeInput('Knee exercise 1', 'Knee protocol', 'knee_right'),
     makeInput('Knee exercise 2', 'Knee protocol', 'knee_right'),
     makeInput('Knee exercise 3', 'Knee protocol', 'knee_right'),
+    makeInput('Knee exercise 4', 'Knee protocol', 'knee_right'),
+    makeInput('Knee exercise 5', 'Knee protocol', 'knee_right'),
     makeInput('Back exercise 1', 'Back protocol', 'lower_back'),
     makeInput('Back exercise 2', 'Back protocol', 'lower_back'),
     makeInput('Back exercise 3', 'Back protocol', 'lower_back'),
@@ -46,27 +48,25 @@ describe('selectRotatedExercisesWithAccent', () => {
     expect(result).toHaveLength(5)
   })
 
-  it('garantit au moins 2 exercices de la zone accentuee', () => {
-    const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 5)
-    expect(result).toHaveLength(5)
+  it('garantit 4 exercices de la zone accentuee + 3 autres conditions (maxCount=7)', () => {
+    const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 7)
+    expect(result).toHaveLength(7)
 
     const kneeExercises = result.filter(e =>
       e.exercise.exerciseName.startsWith('Knee')
     )
-    expect(kneeExercises.length).toBeGreaterThanOrEqual(2)
-  })
+    // Should have 4 knee exercises (ACCENT_GUARANTEED_SLOTS)
+    expect(kneeExercises.length).toBe(4)
 
-  it('remplit les slots restants avec des exercices normaux', () => {
-    const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 5)
-    expect(result).toHaveLength(5)
-
+    // Should have 3 other exercises
     const nonKnee = result.filter(e => !e.exercise.exerciseName.startsWith('Knee'))
-    expect(nonKnee.length).toBeGreaterThan(0)
+    expect(nonKnee.length).toBe(3)
   })
 
-  it('gere le cas ou le pool accent a moins de 2 exercices', () => {
+  it('gere le cas ou le pool accent a moins de 4 exercices', () => {
     const smallInput = [
       makeInput('Knee exercise 1', 'Knee protocol', 'knee_right'),
+      makeInput('Knee exercise 2', 'Knee protocol', 'knee_right'),
       makeInput('Back exercise 1', 'Back protocol', 'lower_back'),
       makeInput('Back exercise 2', 'Back protocol', 'lower_back'),
       makeInput('Back exercise 3', 'Back protocol', 'lower_back'),
@@ -74,12 +74,16 @@ describe('selectRotatedExercisesWithAccent', () => {
       makeInput('Elbow exercise 2', 'Elbow protocol', 'elbow_right'),
     ]
 
-    const result = selectRotatedExercisesWithAccent(smallInput, ['knee_right'], 5)
-    expect(result).toHaveLength(5)
+    const result = selectRotatedExercisesWithAccent(smallInput, ['knee_right'], 7)
+    expect(result).toHaveLength(7)
 
-    // Only 1 knee exercise available, should still include it
+    // Only 2 knee exercises available, should include both
     const kneeExercises = result.filter(e => e.exercise.exerciseName.startsWith('Knee'))
-    expect(kneeExercises.length).toBeGreaterThanOrEqual(1)
+    expect(kneeExercises.length).toBe(2)
+
+    // Should backfill with more normal exercises
+    const nonKnee = result.filter(e => !e.exercise.exerciseName.startsWith('Knee'))
+    expect(nonKnee.length).toBe(5)
   })
 
   it('retourne tous les exercices si total <= maxCount', () => {
@@ -89,27 +93,32 @@ describe('selectRotatedExercisesWithAccent', () => {
       makeInput('Elbow 1', 'Elbow', 'elbow_right'),
     ]
 
-    const result = selectRotatedExercisesWithAccent(smallInput, ['knee_right'], 5)
-    expect(result).toHaveLength(3) // All of them, since 3 < 5
+    const result = selectRotatedExercisesWithAccent(smallInput, ['knee_right'], 7)
+    expect(result).toHaveLength(3) // All of them, since 3 < 7
   })
 
   it('supporte plusieurs zones accent', () => {
     const result = selectRotatedExercisesWithAccent(
       allExercises,
       ['knee_right', 'elbow_right'],
-      5,
+      7,
     )
-    expect(result).toHaveLength(5)
+    expect(result).toHaveLength(7)
 
-    // Should have exercises from both accent zones
+    // Should have exercises from both accent zones (up to 4 total for accent)
     const accentExercises = result.filter(e =>
       e.exercise.exerciseName.startsWith('Knee') || e.exercise.exerciseName.startsWith('Elbow')
     )
-    expect(accentExercises.length).toBeGreaterThanOrEqual(2)
+    expect(accentExercises.length).toBe(4)
   })
 
   it('ne depasse pas maxCount', () => {
-    const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 3)
-    expect(result).toHaveLength(3)
+    const result = selectRotatedExercisesWithAccent(allExercises, ['knee_right'], 7)
+    expect(result.length).toBeLessThanOrEqual(7)
+  })
+
+  it('avec maxCount=5 (mode normal), respecte la limite', () => {
+    const result = selectRotatedExercisesWithAccent(allExercises, [], 5)
+    expect(result).toHaveLength(5)
   })
 })
