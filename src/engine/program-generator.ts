@@ -1467,6 +1467,98 @@ const SPLIT_NAMES: Record<string, string> = {
   full_body: 'Programme Full Body',
   upper_lower: 'Programme Upper / Lower',
   push_pull_legs: 'Programme Push / Pull / Legs',
+  sa_program: 'Programme SA (Spondylarthrite)',
+}
+
+// ---------------------------------------------------------------------------
+// SA-specific fixed program (Spondylarthrite Ankylosante)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fixed 2-session program for Spondylarthrite Ankylosante (SA).
+ * All exercises are machine-based with back support to minimize spinal load.
+ * Volume-only (12-15 reps), no heavy force work.
+ */
+function buildSAProgram(
+  available: Exercise[],
+): ProgramSession[] {
+  // SA Session A: Push + Legs (8 exercises)
+  const sessionAExercises = [
+    { name: 'Leg press', sets: 3, reps: 15, rest: 90 },
+    { name: 'Hip thrust barre', sets: 3, reps: 15, rest: 90 },
+    { name: 'Développé couché machine', sets: 3, reps: 15, rest: 90 },
+    { name: 'Développé militaire machine', sets: 3, reps: 15, rest: 90 },
+    { name: 'Élévations latérales', sets: 3, reps: 15, rest: 60 },
+    { name: 'Leg extension', sets: 3, reps: 15, rest: 60 },
+    { name: 'Extension triceps poulie haute', sets: 3, reps: 15, rest: 60 },
+    { name: 'Pallof press', sets: 3, reps: 12, rest: 60 },
+  ]
+
+  // SA Session B: Pull + Legs (7 exercises)
+  const sessionBExercises = [
+    { name: 'Rowing machine (chest-supported)', sets: 3, reps: 15, rest: 90 },
+    { name: 'Tirage vertical (lat pulldown)', sets: 3, reps: 15, rest: 90 },
+    { name: 'Leg curl (ischio-jambiers)', sets: 3, reps: 15, rest: 60 },
+    { name: 'Hip thrust barre', sets: 3, reps: 15, rest: 90 },
+    { name: 'Face pull', sets: 3, reps: 15, rest: 60 },
+    { name: 'Curl biceps câble', sets: 3, reps: 15, rest: 60 },
+    { name: 'Dead bug', sets: 3, reps: 10, rest: 60 },
+  ]
+
+  const buildSASession = (
+    name: string,
+    order: number,
+    exerciseSpecs: { name: string; sets: number; reps: number; rest: number }[],
+  ): ProgramSession => {
+    const programExercises: ProgramExercise[] = []
+    let exerciseOrder = 1
+
+    for (const spec of exerciseSpecs) {
+      // Find exercise by name (exact or partial match)
+      const exercise = available.find(
+        (e) => e.name.toLowerCase() === spec.name.toLowerCase(),
+      ) ?? available.find(
+        (e) => e.name.toLowerCase().includes(spec.name.toLowerCase()),
+      )
+
+      if (exercise && exercise.id !== undefined) {
+        programExercises.push({
+          exerciseId: exercise.id,
+          order: exerciseOrder++,
+          sets: spec.sets,
+          targetReps: spec.reps,
+          restSeconds: spec.rest,
+          isRehab: false,
+        })
+      }
+    }
+
+    return {
+      name,
+      order,
+      intensity: 'volume', // SA = volume only, no heavy force
+      exercises: programExercises,
+    }
+  }
+
+  return [
+    buildSASession('SA — Push + Legs', 1, sessionAExercises),
+    buildSASession('SA — Pull + Legs', 2, sessionBExercises),
+  ]
+}
+
+/**
+ * Check if user has Spondylarthrite Ankylosante as a health condition.
+ */
+function hasSACondition(conditions: HealthCondition[]): boolean {
+  return conditions.some(
+    (c) => c.isActive && (
+      c.diagnosis.toLowerCase().includes('spondylarthrite') ||
+      c.diagnosis.toLowerCase().includes('spondyloarthrite') ||
+      c.label.toLowerCase().includes('spondylarthrite') ||
+      c.label.toLowerCase().includes('spondyloarthrite')
+    ),
+  )
 }
 
 /**
@@ -1496,6 +1588,16 @@ export function generateProgram(
   // If exclusion leaves too few non-rehab exercises, ignore it to avoid empty sessions
   if (excludeSet.size > 0 && eligible.filter(e => !e.isRehab).length < 15) {
     eligible = afterCardio
+  }
+
+  // Check for SA (Spondylarthrite Ankylosante) — use fixed 2-session program
+  if (hasSACondition(input.conditions)) {
+    const saSessions = buildSAProgram(eligible)
+    return {
+      name: SPLIT_NAMES['sa_program'] ?? 'Programme SA',
+      type: 'full_body', // Use full_body as base type for compatibility
+      sessions: saSessions,
+    }
   }
 
   // Step 5 — determine split
