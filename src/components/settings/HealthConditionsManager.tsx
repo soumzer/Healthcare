@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db'
 import type { BodyZone, HealthCondition } from '../../db/types'
 import { bodyZones } from '../../constants/body-zones'
+import { getDiagnosesForZone } from '../../data/rehab-protocols'
 
 interface ConditionForm {
   bodyZone: BodyZone
@@ -145,6 +146,8 @@ export default function HealthConditionsManager({ userId }: Props) {
 
   const renderForm = (onSave: () => void, existingId?: number) => {
     if (!form) return null
+    const availableDiagnoses = getDiagnosesForZone(form.bodyZone)
+
     return (
       <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 space-y-3">
         <h3 className="font-semibold text-sm text-zinc-300">
@@ -153,15 +156,22 @@ export default function HealthConditionsManager({ userId }: Props) {
 
         <div>
           <label className="block text-xs text-zinc-400 mb-1">
-            Qu'est-ce que vous avez ? (si vous savez)
+            Qu'est-ce que vous avez ?
           </label>
-          <input
-            type="text"
-            value={form.label}
-            onChange={e => setForm({ ...form, label: e.target.value })}
-            placeholder="Ex: tendinite, arthrose, douleur..."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-          />
+          <select
+            value={form.diagnosis}
+            onChange={e => {
+              const diagnosis = e.target.value
+              const label = diagnosis || `Douleur ${bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''}`
+              setForm({ ...form, diagnosis, label })
+            }}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+          >
+            <option value="">Je sais pas (rehab général)</option>
+            {availableDiagnoses.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex gap-2">

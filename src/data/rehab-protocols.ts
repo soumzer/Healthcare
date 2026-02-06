@@ -2205,3 +2205,26 @@ export const rehabProtocols: RehabProtocol[] = [
     ],
   },
 ]
+
+/**
+ * Get all available diagnoses for a specific body zone.
+ * Returns unique condition names from rehab protocols.
+ */
+export function getDiagnosesForZone(zone: BodyZone): string[] {
+  // Get equivalent zone (left/right are interchangeable for protocols)
+  const equivalentZones: BodyZone[] = [zone]
+  const zoneStr = zone as string
+  if (zoneStr.endsWith('_left')) {
+    equivalentZones.push(zoneStr.replace('_left', '_right') as BodyZone)
+  } else if (zoneStr.endsWith('_right')) {
+    equivalentZones.push(zoneStr.replace('_right', '_left') as BodyZone)
+  }
+
+  const diagnoses = new Set<string>()
+  for (const protocol of rehabProtocols) {
+    if (equivalentZones.includes(protocol.targetZone)) {
+      diagnoses.add(protocol.conditionName)
+    }
+  }
+  return Array.from(diagnoses).sort()
+}

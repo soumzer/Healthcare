@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { BodyZone } from '../../db/types'
 import { bodyZones } from '../../constants/body-zones'
+import { getDiagnosesForZone } from '../../data/rehab-protocols'
 import SymptomQuestionnaire, { type QuestionnaireResult } from './SymptomQuestionnaire'
 
 type Props = ReturnType<typeof useOnboarding>
@@ -31,9 +32,17 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
   const zonesWithConditions = new Set(state.conditions.map(c => c.bodyZone))
 
-  // Clicking zone button always starts questionnaire to add new condition
+  // Clicking zone button opens form with dropdown
   const handleZoneTap = (zone: BodyZone) => {
-    setShowQuestionnaire(zone)
+    setExpandedZone(zone)
+    setForm(emptyForm(zone))
+  }
+
+  // Start QCM for current zone
+  const handleStartQCM = () => {
+    if (expandedZone) {
+      setShowQuestionnaire(expandedZone)
+    }
   }
 
   // Clicking existing condition opens it for editing
@@ -148,16 +157,31 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
 
           <div>
             <label className="block text-xs text-zinc-400 mb-1">
-              Qu'est-ce que vous avez ? (si vous savez)
+              Qu'est-ce que vous avez ?
             </label>
-            <input
-              type="text"
-              value={form.label}
-              onChange={e => setForm({ ...form, label: e.target.value })}
-              placeholder="Ex: tendinite, arthrose, douleur..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
+            <select
+              value={form.diagnosis}
+              onChange={e => {
+                const diagnosis = e.target.value
+                const label = diagnosis || `Douleur ${bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''}`
+                setForm({ ...form, diagnosis, label })
+              }}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            >
+              <option value="">Je sais pas (rehab général)</option>
+              {getDiagnosesForZone(form.bodyZone).map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
           </div>
+
+          <button
+            type="button"
+            onClick={handleStartQCM}
+            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+          >
+            Faire le QCM pour trouver
+          </button>
 
           <div className="flex gap-2">
             <button
