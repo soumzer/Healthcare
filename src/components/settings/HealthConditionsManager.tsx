@@ -164,30 +164,6 @@ export default function HealthConditionsManager({ userId }: Props) {
           />
         </div>
 
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">
-            Quand est-ce que ça fait mal ?
-          </label>
-          <input
-            type="text"
-            value={form.notes}
-            onChange={e => setForm({ ...form, notes: e.target.value })}
-            placeholder="Ex: quand je pousse lourd, en marchant, au repos..."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">Depuis quand ?</label>
-          <input
-            type="text"
-            value={form.since}
-            onChange={e => setForm({ ...form, since: e.target.value })}
-            placeholder="Ex: 6 mois, 2 ans, toujours..."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-          />
-        </div>
-
         <div className="flex gap-2">
           <button
             type="button"

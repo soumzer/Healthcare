@@ -3,7 +3,6 @@ import type { useOnboarding } from '../../hooks/useOnboarding'
 type Props = ReturnType<typeof useOnboarding>
 
 const daysOptions = [1, 2, 3, 4, 5, 6, 7]
-const minutesOptions = [30, 45, 60, 75, 90, 120]
 
 export default function StepSchedule({ state, updateSchedule, nextStep, prevStep }: Props) {
   return (
@@ -20,7 +19,7 @@ export default function StepSchedule({ state, updateSchedule, nextStep, prevStep
               <button
                 key={d}
                 type="button"
-                onClick={() => updateSchedule(d, state.minutesPerSession)}
+                onClick={() => updateSchedule(d, 75)}
                 className={`flex-1 py-3 rounded-lg text-center font-medium transition-colors ${
                   state.daysPerWeek === d
                     ? 'bg-white text-black'
@@ -33,27 +32,9 @@ export default function StepSchedule({ state, updateSchedule, nextStep, prevStep
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm text-zinc-400 mb-3">
-            Minutes par séance : <span className="text-white font-semibold">{state.minutesPerSession}</span>
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {minutesOptions.map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => updateSchedule(state.daysPerWeek, m)}
-                className={`py-3 rounded-lg text-center font-medium transition-colors ${
-                  state.minutesPerSession === m
-                    ? 'bg-white text-black'
-                    : 'bg-zinc-800 text-white'
-                }`}
-              >
-                {m} min
-              </button>
-            ))}
-          </div>
-        </div>
+        <p className="text-zinc-500 text-sm">
+          Durée des séances : 75 minutes (optimal pour une séance complète)
+        </p>
       </div>
 
       <div className="flex-shrink-0 pt-4 pb-2">
