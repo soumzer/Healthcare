@@ -369,6 +369,15 @@ export default function RehabPage() {
     }
   }, [user, routine, isSaving, getLog, getSaLog, variant, videoIdx])
 
+  const handleContinue = useCallback(() => {
+    // Reset all state and refresh exercises
+    setExerciseLogs({})
+    setSaLogs({})
+    setVideoDone(false)
+    setSaved(false)
+    setRefreshKey(k => k + 1)
+  }, [])
+
   // --- Render ---
 
   if (!user || conditions === undefined) {
@@ -446,15 +455,6 @@ export default function RehabPage() {
 
   // Other rehab exercises are always available (no cooldown)
   const otherRehabAvailable = routine && routine.exercises.length > 0
-
-  const handleContinue = useCallback(() => {
-    // Reset all state and refresh exercises
-    setExerciseLogs({})
-    setSaLogs({})
-    setVideoDone(false)
-    setSaved(false)
-    setRefreshKey(k => k + 1)
-  }, [])
 
   if (saved) {
     return (
