@@ -2,11 +2,20 @@ import { useState, useCallback, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
+import type { QuestionnaireResult } from '../components/onboarding/SymptomQuestionnaire'
 import { generateProgram } from '../engine/program-generator'
 
 const MAX_HISTORY = 5
 const SKIP_LOOKBACK_DAYS = 60
 const SKIP_THRESHOLD = 3
+
+function normalizeForMatching(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
 
 /**
  * Check if a date is within the last N days from now.
@@ -157,7 +166,7 @@ export interface UseNotebookReturn {
   updateSet: (index: number, weightKg: number, reps: number) => void
   removeLastSet: () => void
   saveAndNext: () => Promise<void>
-  skipExercise: (zone: BodyZone) => Promise<SkipResult>
+  skipExercise: (zone: BodyZone, questionnaireResult?: QuestionnaireResult) => Promise<SkipResult>
 }
 
 export function useNotebook(
@@ -258,7 +267,7 @@ export function useNotebook(
     }
   }, [userId, exerciseId, exerciseName, sessionIntensity, currentSets, isSaving, onNext, todayEntryId])
 
-  const skipExercise = useCallback(async (zone: BodyZone): Promise<SkipResult> => {
+  const skipExercise = useCallback(async (zone: BodyZone, questionnaireResult?: QuestionnaireResult): Promise<SkipResult> => {
     if (isSaving) return { conditionCreated: false }
     setIsSaving(true)
     try {
@@ -294,14 +303,45 @@ export function useNotebook(
         accentDaysRemaining: 3,
       })
 
+      // Create HealthCondition from QCM result if a diagnosis was identified
+      let conditionCreated = false
+      if (questionnaireResult?.protocolConditionName) {
+        const normalizedDiagnosis = normalizeForMatching(questionnaireResult.protocolConditionName)
+        const existingCondition = await db.healthConditions
+          .where('userId').equals(userId)
+          .filter(c =>
+            c.isActive &&
+            c.bodyZone === zone &&
+            normalizeForMatching(c.diagnosis) === normalizedDiagnosis
+          )
+          .first()
+
+        if (!existingCondition) {
+          await db.healthConditions.add({
+            userId,
+            bodyZone: zone,
+            label: questionnaireResult.conditionName,
+            diagnosis: questionnaireResult.protocolConditionName,
+            painLevel: 5,
+            since: new Date().toISOString().split('T')[0],
+            notes: `Créée via QCM au skip de ${exerciseName}`,
+            isActive: true,
+            createdAt: new Date(),
+          })
+          conditionCreated = true
+        }
+      }
+
       // Auto-create HealthCondition if this exercise has been skipped >= 3 times
       // in the last 60 days (includes the entry we just added above)
-      const conditionCreated = await autoCreateConditionIfNeeded(
-        userId,
-        exerciseId,
-        exerciseName,
-        zone,
-      )
+      if (!conditionCreated) {
+        conditionCreated = await autoCreateConditionIfNeeded(
+          userId,
+          exerciseId,
+          exerciseName,
+          zone,
+        )
+      }
 
       setCurrentSets([])
       onSkip(zone)

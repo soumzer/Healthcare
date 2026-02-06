@@ -3,6 +3,8 @@ import { useNotebook } from '../../hooks/useNotebook'
 import { useRestTimer } from '../../hooks/useRestTimer'
 import { useExerciseNote } from '../../hooks/useExerciseNote'
 import { generateWarmupSets } from '../../engine/warmup'
+import SymptomQuestionnaire from '../onboarding/SymptomQuestionnaire'
+import type { QuestionnaireResult } from '../onboarding/SymptomQuestionnaire'
 import type { BodyZone } from '../../db/types'
 import type { FillerSuggestion } from '../../engine/filler'
 
@@ -110,7 +112,7 @@ export default function ExerciseNotebook({
       {/* Skip modal */}
       {showSkipModal && (
         <SkipModal
-          onSelect={(zone) => { setShowSkipModal(false); notebook.skipExercise(zone) }}
+          onSelect={(zone, result) => { setShowSkipModal(false); notebook.skipExercise(zone, result) }}
           onCancel={() => setShowSkipModal(false)}
         />
       )}
@@ -366,28 +368,40 @@ export default function ExerciseNotebook({
 
 // --- Sub-components ---
 
-function SkipModal({ onSelect, onCancel }: { onSelect: (zone: BodyZone) => void; onCancel: () => void }) {
+function SkipModal({ onSelect, onCancel }: { onSelect: (zone: BodyZone, result?: QuestionnaireResult) => void; onCancel: () => void }) {
+  const [selectedZone, setSelectedZone] = useState<BodyZone | null>(null)
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-end">
       <div className="w-full bg-zinc-900 rounded-t-2xl p-4 max-h-[70vh] overflow-auto">
-        <p className="text-white font-bold text-lg mb-3">Ou as-tu eu mal ?</p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {BODY_ZONES.map(({ zone, label }) => (
+        {selectedZone === null ? (
+          <>
+            <p className="text-white font-bold text-lg mb-3">Ou as-tu eu mal ?</p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {BODY_ZONES.map(({ zone, label }) => (
+                <button
+                  key={zone}
+                  onClick={() => setSelectedZone(zone)}
+                  className="bg-zinc-800 text-zinc-300 rounded-xl py-3 px-3 text-sm text-left"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
-              key={zone}
-              onClick={() => onSelect(zone)}
-              className="bg-zinc-800 text-zinc-300 rounded-xl py-3 px-3 text-sm text-left"
+              onClick={onCancel}
+              className="w-full bg-zinc-800 text-zinc-400 rounded-xl py-3 text-sm"
             >
-              {label}
+              Annuler
             </button>
-          ))}
-        </div>
-        <button
-          onClick={onCancel}
-          className="w-full bg-zinc-800 text-zinc-400 rounded-xl py-3 text-sm"
-        >
-          Annuler
-        </button>
+          </>
+        ) : (
+          <SymptomQuestionnaire
+            zone={selectedZone}
+            onComplete={(result) => onSelect(selectedZone, result)}
+            onCancel={() => setSelectedZone(null)}
+          />
+        )}
       </div>
     </div>
   )
