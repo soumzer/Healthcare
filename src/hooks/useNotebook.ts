@@ -260,6 +260,27 @@ export function useNotebook(
         }
         await db.notebookEntries.add(entry)
       }
+
+      // Bodyweight progression: +1 set when all sets hit 20+ reps (cap 5)
+      if (validSets.length > 0 && validSets.every(s => s.reps >= 20)) {
+        const activeProgram = await db.workoutPrograms
+          .where('userId').equals(userId)
+          .filter(p => p.isActive && p.name.includes('Poids de Corps'))
+          .first()
+
+        if (activeProgram?.id !== undefined) {
+          const updatedSessions = activeProgram.sessions.map(s => ({
+            ...s,
+            exercises: s.exercises.map(e =>
+              e.exerciseId === exerciseId && e.sets < 5
+                ? { ...e, sets: e.sets + 1 }
+                : e,
+            ),
+          }))
+          await db.workoutPrograms.update(activeProgram.id, { sessions: updatedSessions })
+        }
+      }
+
       setCurrentSets([])
       onNext()
     } finally {
@@ -322,7 +343,7 @@ export function useNotebook(
             bodyZone: zone,
             label: questionnaireResult.conditionName,
             diagnosis: questionnaireResult.protocolConditionName,
-            painLevel: 5,
+            painLevel: 0,
             since: new Date().toISOString().split('T')[0],
             notes: `Créée via QCM au skip de ${exerciseName}`,
             isActive: true,

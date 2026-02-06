@@ -67,7 +67,7 @@ export interface WorkoutProgram {
   id?: number
   userId: number
   name: string
-  type: 'push_pull_legs' | 'upper_lower' | 'full_body' | 'custom'
+  type: 'push_pull_legs' | 'upper_lower' | 'full_body' | 'bodyweight' | 'custom'
   sessions: ProgramSession[]
   isActive: boolean
   createdAt: Date

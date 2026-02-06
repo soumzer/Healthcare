@@ -29,7 +29,7 @@ export interface ProgramGeneratorInput {
 
 export interface GeneratedProgram {
   name: string
-  type: 'upper_lower' | 'full_body' | 'push_pull_legs'
+  type: 'upper_lower' | 'full_body' | 'push_pull_legs' | 'bodyweight'
   sessions: ProgramSession[]
 }
 
@@ -1468,6 +1468,7 @@ const SPLIT_NAMES: Record<string, string> = {
   upper_lower: 'Programme Upper / Lower',
   push_pull_legs: 'Programme Push / Pull / Legs',
   sa_program: 'Programme SA (Spondylarthrite)',
+  bodyweight_program: 'Programme Poids de Corps',
 }
 
 // ---------------------------------------------------------------------------
@@ -1547,6 +1548,94 @@ function buildSAProgram(
   ]
 }
 
+// ---------------------------------------------------------------------------
+// Bodyweight-only program (no equipment)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fixed 3-session program for users with no equipment.
+ * All exercises are bodyweight-only, volume intensity (15-20 reps).
+ * Progression: +1 set when all sets hit 20 reps (cap 5 sets).
+ */
+function buildBodyweightProgram(
+  available: Exercise[],
+): ProgramSession[] {
+  // Session A: Fondamentaux
+  const sessionAExercises = [
+    { name: 'Squat bulgare poids de corps', sets: 3, reps: 15, rest: 90 },
+    { name: 'Glute bridge', sets: 3, reps: 15, rest: 60 },
+    { name: 'Pompes classiques', sets: 3, reps: 15, rest: 90 },
+    { name: 'Pike pushups', sets: 3, reps: 15, rest: 90 },
+    { name: 'Rowing inversé', sets: 3, reps: 15, rest: 90 },
+    { name: 'Planche (plank)', sets: 3, reps: 30, rest: 60, isTimeBased: true },
+    { name: 'Bird dog', sets: 3, reps: 12, rest: 60 },
+  ]
+
+  // Session B: Unilatéral
+  const sessionBExercises = [
+    { name: 'Fentes poids de corps', sets: 3, reps: 15, rest: 90 },
+    { name: 'Squat sumo poids de corps', sets: 3, reps: 15, rest: 60 },
+    { name: 'Pompes diamant', sets: 3, reps: 15, rest: 90 },
+    { name: 'Pike pushups', sets: 3, reps: 15, rest: 90 },
+    { name: 'Rowing inversé', sets: 3, reps: 15, rest: 90 },
+    { name: 'Planche latérale (side plank)', sets: 3, reps: 30, rest: 60, isTimeBased: true },
+    { name: 'Dead bug', sets: 3, reps: 12, rest: 60 },
+  ]
+
+  // Session C: Intensité
+  const sessionCExercises = [
+    { name: 'Squat poids de corps', sets: 3, reps: 20, rest: 60 },
+    { name: 'Glute bridge', sets: 3, reps: 15, rest: 60 },
+    { name: 'Pompes pieds surélevés', sets: 3, reps: 15, rest: 90 },
+    { name: 'Pike pushups', sets: 3, reps: 15, rest: 90 },
+    { name: 'Rowing inversé', sets: 3, reps: 15, rest: 90 },
+    { name: 'Dead bug', sets: 3, reps: 12, rest: 60 },
+    { name: 'Mollets debout poids de corps', sets: 3, reps: 20, rest: 60 },
+  ]
+
+  const buildBWSession = (
+    name: string,
+    order: number,
+    exerciseSpecs: { name: string; sets: number; reps: number; rest: number; isTimeBased?: boolean }[],
+  ): ProgramSession => {
+    const programExercises: ProgramExercise[] = []
+    let exerciseOrder = 1
+
+    for (const spec of exerciseSpecs) {
+      const exercise = available.find(
+        (e) => e.name.toLowerCase() === spec.name.toLowerCase(),
+      ) ?? available.find(
+        (e) => e.name.toLowerCase().includes(spec.name.toLowerCase()),
+      )
+
+      if (exercise && exercise.id !== undefined) {
+        programExercises.push({
+          exerciseId: exercise.id,
+          order: exerciseOrder++,
+          sets: spec.sets,
+          targetReps: spec.reps,
+          restSeconds: spec.rest,
+          isRehab: false,
+          isTimeBased: spec.isTimeBased,
+        })
+      }
+    }
+
+    return {
+      name,
+      order,
+      intensity: 'volume', // Bodyweight = volume only, no heavy
+      exercises: programExercises,
+    }
+  }
+
+  return [
+    buildBWSession('PDC — Fondamentaux', 1, sessionAExercises),
+    buildBWSession('PDC — Unilatéral', 2, sessionBExercises),
+    buildBWSession('PDC — Intensité', 3, sessionCExercises),
+  ]
+}
+
 /**
  * Check if user has Spondylarthrite Ankylosante as a health condition.
  */
@@ -1597,6 +1686,17 @@ export function generateProgram(
       name: SPLIT_NAMES['sa_program'] ?? 'Programme SA',
       type: 'full_body', // Use full_body as base type for compatibility
       sessions: saSessions,
+    }
+  }
+
+  // Check for no equipment — use bodyweight-only program
+  const hasEquipment = input.equipment.some((e) => e.isAvailable)
+  if (!hasEquipment) {
+    const bwSessions = buildBodyweightProgram(eligible)
+    return {
+      name: SPLIT_NAMES['bodyweight_program'] ?? 'Programme Poids de Corps',
+      type: 'bodyweight',
+      sessions: bwSessions,
     }
   }
 

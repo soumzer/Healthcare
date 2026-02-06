@@ -328,6 +328,6 @@ describe('Onboarding → Program Generation integration', () => {
     const program = await db.workoutPrograms.where('userId').equals(userId).first()
     expect(program).toBeDefined()
     expect(program!.sessions).toHaveLength(3)
-    expect(program!.type).toBe('full_body')
+    expect(program!.type).toBe('bodyweight')
   })
 })
