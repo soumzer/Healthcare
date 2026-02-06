@@ -4,6 +4,7 @@ import { db } from '../../db'
 import type { BodyZone, HealthCondition } from '../../db/types'
 import { bodyZones } from '../../constants/body-zones'
 import { getDiagnosesForZone } from '../../data/rehab-protocols'
+import SymptomQuestionnaire, { type QuestionnaireResult } from '../onboarding/SymptomQuestionnaire'
 
 interface ConditionForm {
   bodyZone: BodyZone
@@ -43,6 +44,7 @@ export default function HealthConditionsManager({ userId }: Props) {
   const [addingNew, setAddingNew] = useState(false)
   const [expandedZone, setExpandedZone] = useState<BodyZone | null>(null)
   const [form, setForm] = useState<ConditionForm | null>(null)
+  const [showQuestionnaire, setShowQuestionnaire] = useState<BodyZone | null>(null)
 
   if (conditions === undefined) return null
 
@@ -144,6 +146,41 @@ export default function HealthConditionsManager({ userId }: Props) {
     setForm(null)
   }
 
+  // Start QCM for current zone
+  const handleStartQCM = () => {
+    if (expandedZone) {
+      setShowQuestionnaire(expandedZone)
+    }
+  }
+
+  // Handle QCM completion
+  const handleQuestionnaireComplete = (result: QuestionnaireResult) => {
+    setForm({
+      bodyZone: result.zone,
+      label: result.conditionName,
+      diagnosis: result.protocolConditionName,
+      since: '',
+      notes: '',
+    })
+    setExpandedZone(result.zone)
+    setShowQuestionnaire(null)
+  }
+
+  const handleQuestionnaireCancel = () => {
+    setShowQuestionnaire(null)
+  }
+
+  // Show questionnaire if active
+  if (showQuestionnaire) {
+    return (
+      <SymptomQuestionnaire
+        zone={showQuestionnaire}
+        onComplete={handleQuestionnaireComplete}
+        onCancel={handleQuestionnaireCancel}
+      />
+    )
+  }
+
   const renderForm = (onSave: () => void, existingId?: number) => {
     if (!form) return null
     const availableDiagnoses = getDiagnosesForZone(form.bodyZone)
@@ -173,6 +210,14 @@ export default function HealthConditionsManager({ userId }: Props) {
             ))}
           </select>
         </div>
+
+        <button
+          type="button"
+          onClick={handleStartQCM}
+          className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+        >
+          Faire le QCM pour trouver
+        </button>
 
         <div className="flex gap-2">
           <button

@@ -17,7 +17,6 @@ const splitLabels: Record<string, string> = {
 function TrainingSettings({
   userId,
   daysPerWeek,
-  minutesPerSession,
   programType,
   programSessionCount,
   sessionCount,
@@ -26,7 +25,6 @@ function TrainingSettings({
 }: {
   userId: number
   daysPerWeek: number
-  minutesPerSession: number
   programType?: string
   programSessionCount?: number
   sessionCount: number
@@ -34,8 +32,7 @@ function TrainingSettings({
   isRegenerating: boolean
 }) {
   const [editDays, setEditDays] = useState(daysPerWeek)
-  const [editMinutes, setEditMinutes] = useState(minutesPerSession)
-  const hasChanges = editDays !== daysPerWeek || editMinutes !== minutesPerSession
+  const hasChanges = editDays !== daysPerWeek
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -43,7 +40,7 @@ function TrainingSettings({
     try {
       await db.userProfiles.update(userId, {
         daysPerWeek: editDays,
-        minutesPerSession: editMinutes,
+        minutesPerSession: 75, // Fixed at 75 minutes
         updatedAt: new Date(),
       })
       await onRegenerate()
@@ -55,7 +52,6 @@ function TrainingSettings({
   }
 
   const daysOptions = [2, 3, 4, 5, 6]
-  const minutesOptions = [30, 45, 60, 75, 90]
 
   return (
     <div className="bg-zinc-900 rounded-xl p-4 space-y-4">
@@ -81,25 +77,10 @@ function TrainingSettings({
         </div>
       </div>
 
-      {/* Minutes per session */}
-      <div>
-        <p className="text-sm text-zinc-400 mb-2">Durée par séance</p>
-        <div className="flex gap-2">
-          {minutesOptions.map(m => (
-            <button
-              key={m}
-              onClick={() => setEditMinutes(m)}
-              className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-colors ${
-                editMinutes === m
-                  ? 'bg-white text-black'
-                  : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              {m}'
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Duration info */}
+      <p className="text-sm text-zinc-500">
+        Durée des séances : 75 minutes
+      </p>
 
       {/* Save button */}
       {hasChanges && (
@@ -169,7 +150,6 @@ export default function ProfilePage() {
       <TrainingSettings
         userId={user.id!}
         daysPerWeek={user.daysPerWeek}
-        minutesPerSession={user.minutesPerSession}
         programType={program?.type}
         programSessionCount={program?.sessions.length}
         sessionCount={sessionCount ?? 0}
