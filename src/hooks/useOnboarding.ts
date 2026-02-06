@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { db } from '../db'
 import type { HealthCondition, GymEquipment } from '../db/types'
-import { generateProgram, generateSAProgram, hasSpondylarthrite } from '../engine/program-generator'
+import { generateProgram } from '../engine/program-generator'
 
 export interface OnboardingState {
   step: number
@@ -78,19 +78,16 @@ export function useOnboarding() {
     }))
 
     // 4. Call the program generator
-    // Use SA program if user has Spondylarthrite Ankylosante
-    const generatedProgram = hasSpondylarthrite(conditionsForGenerator)
-      ? generateSAProgram(exerciseCatalog)
-      : generateProgram(
-          {
-            userId,
-            conditions: conditionsForGenerator,
-            equipment: equipmentForGenerator,
-            daysPerWeek: state.daysPerWeek,
-            minutesPerSession: state.minutesPerSession,
-          },
-          exerciseCatalog,
-        )
+    const generatedProgram = generateProgram(
+      {
+        userId,
+        conditions: conditionsForGenerator,
+        equipment: equipmentForGenerator,
+        daysPerWeek: state.daysPerWeek,
+        minutesPerSession: state.minutesPerSession,
+      },
+      exerciseCatalog,
+    )
 
     // 5. Save the generated program to the database
     await db.workoutPrograms.add({
