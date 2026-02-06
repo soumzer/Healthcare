@@ -110,6 +110,8 @@ export default function RehabPage() {
     [conditions]
   )
 
+  const [refreshKey, setRefreshKey] = useState(0)
+
   const routine = useMemo(
     () => conditions && conditions.length > 0
       ? generateRestDayRoutine(conditions, variant, accentZones)
@@ -124,7 +126,6 @@ export default function RehabPage() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
 
   // Per-exercise state (for regular rehab)
   const [exerciseLogs, setExerciseLogs] = useState<Record<number, ExerciseLogState>>({})
@@ -442,9 +443,6 @@ export default function RehabPage() {
       </div>
     )
   }
-
-  // Check if user has SA (routine SA is always available)
-  const hasSA = routine?.saRoutine !== null && routine?.saRoutine !== undefined && routine.saRoutine.length > 0
 
   // Other rehab exercises are always available (no cooldown)
   const otherRehabAvailable = routine && routine.exercises.length > 0
