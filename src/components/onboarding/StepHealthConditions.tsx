@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { useOnboarding } from '../../hooks/useOnboarding'
 import type { BodyZone } from '../../db/types'
-import { bodyZones, painLabels } from '../../constants/body-zones'
+import { bodyZones } from '../../constants/body-zones'
 import SymptomQuestionnaire, { type QuestionnaireResult } from './SymptomQuestionnaire'
 
 type Props = ReturnType<typeof useOnboarding>
@@ -10,7 +10,6 @@ interface ConditionForm {
   bodyZone: BodyZone
   label: string
   diagnosis: string
-  painLevel: number
   since: string
   notes: string
   editIndex?: number // Index of condition being edited (undefined = new)
@@ -20,7 +19,6 @@ const emptyForm = (zone: BodyZone, editIndex?: number): ConditionForm => ({
   bodyZone: zone,
   label: '',
   diagnosis: '',
-  painLevel: 3,
   since: '',
   notes: '',
   editIndex,
@@ -47,7 +45,6 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
       bodyZone: existing.bodyZone,
       label: existing.label,
       diagnosis: existing.diagnosis,
-      painLevel: existing.painLevel,
       since: existing.since,
       notes: existing.notes,
       editIndex: index,
@@ -75,7 +72,8 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
     const zoneName = bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''
     const label = form.label.trim() || `Douleur ${zoneName}`
     const { editIndex, ...conditionData } = form
-    const newCondition = { ...conditionData, label, isActive: true }
+    // painLevel defaults to 0 - user decides to skip exercises themselves
+    const newCondition = { ...conditionData, label, painLevel: 0, isActive: true }
 
     if (editIndex !== undefined) {
       // Update existing condition
@@ -175,25 +173,6 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-400 mb-1">
-              Douleur : {form.painLevel}/10 — {painLabels[form.painLevel] ?? ''}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={10}
-              value={form.painLevel}
-              onChange={e => setForm({ ...form, painLevel: Number(e.target.value) })}
-              className="w-full accent-white"
-            />
-            <div className="flex justify-between text-[10px] text-zinc-600 px-0.5">
-              <span>0</span>
-              <span>5</span>
-              <span>10</span>
-            </div>
-          </div>
-
-          <div>
             <label className="block text-xs text-zinc-400 mb-1">Depuis quand ?</label>
             <input
               type="text"
@@ -246,7 +225,6 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
                   <span className="text-sm">{c.label || bodyZones.find(z => z.zone === c.bodyZone)?.label}</span>
                   <span className="text-xs text-zinc-500 ml-2">({bodyZones.find(z => z.zone === c.bodyZone)?.label})</span>
                 </div>
-                <span className="text-xs text-zinc-400 shrink-0 ml-2">{c.painLevel}/10</span>
               </button>
             ))}
           </div>

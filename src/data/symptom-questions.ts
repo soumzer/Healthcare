@@ -305,6 +305,19 @@ export const symptomQuestions: SymptomQuestion[] = [
     multiSelect: true,
     order: 4,
   },
+  {
+    id: 'lower_back_history',
+    bodyZones: ['lower_back'],
+    question: 'Avez-vous un diagnostic médical ?',
+    options: [
+      { id: 'spondylarthrite', label: 'Spondylarthrite ankylosante', indicators: ['spondylarthrite', 'inflammatory'] },
+      { id: 'hernie', label: 'Hernie discale', indicators: ['disc', 'radicular'] },
+      { id: 'stenose', label: 'Stenose du canal lombaire', indicators: ['stenosis'] },
+      { id: 'none', label: 'Non / Je ne sais pas', indicators: [] },
+    ],
+    multiSelect: false,
+    order: 5,
+  },
 
   // =========================================================================
   // HAUT DU DOS (upper_back)
@@ -565,7 +578,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'foot_left',
     requiredIndicators: ['pain_electric', 'nerve'],
     suggestedIndicators: ['tibial_nerve', 'pain_burning', 'location_heel'],
-    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, peronaux)',
+    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, péronéaux)',
     priority: 9,
   },
   {
@@ -573,7 +586,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'foot_left',
     requiredIndicators: ['location_dorsal', 'extensor'],
     suggestedIndicators: ['pain_tension', 'timing_exercise'],
-    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, peronaux)',
+    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, péronéaux)',
     priority: 8,
   },
   {
@@ -581,7 +594,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'foot_left',
     requiredIndicators: ['location_outer', 'peroneal'],
     suggestedIndicators: ['pain_tension', 'history_sprain'],
-    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, peronaux)',
+    protocolConditionName: 'Douleur pied complexe (nerf tibial, extenseurs, péronéaux)',
     priority: 8,
   },
   {
@@ -720,6 +733,14 @@ const conditionMappings: ConditionMapping[] = [
     protocolConditionName: 'Core faible et douleurs lombaires',
     priority: 7,
   },
+  {
+    conditionName: 'Spondylarthrite ankylosante',
+    targetZone: 'lower_back',
+    requiredIndicators: ['spondylarthrite'],
+    suggestedIndicators: ['inflammatory', 'timing_morning', 'relief_walking'],
+    protocolConditionName: 'Spondylarthrite ankylosante',
+    priority: 10,
+  },
 
   // =========================================================================
   // HAUT DU DOS
@@ -745,7 +766,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'upper_back',
     requiredIndicators: ['rib_dysfunction'],
     suggestedIndicators: ['trigger_breathing', 'pain_sharp', 'location_sides', 'rib'],
-    protocolConditionName: 'Dysfonction costale', // Protocol to be added later
+    protocolConditionName: 'Dysfonction costale',
     priority: 8,
   },
 
@@ -757,7 +778,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'hip_left',
     requiredIndicators: ['hip_flexor'],
     suggestedIndicators: ['location_front', 'trigger_stairs', 'trigger_sitting', 'symptom_stiffness'],
-    protocolConditionName: 'Tendinite flechisseur hanche', // Protocol to be added later
+    protocolConditionName: 'Strain fléchisseurs hanche',
     priority: 10,
   },
   {
@@ -833,7 +854,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'ankle_left',
     requiredIndicators: ['anterior_impingement'],
     suggestedIndicators: ['location_front', 'trigger_dorsiflexion', 'trigger_stairs'],
-    protocolConditionName: 'Conflit anterieur cheville', // Protocol to be added later
+    protocolConditionName: 'Impingement antérieur cheville',
     priority: 8,
   },
 
@@ -861,7 +882,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'wrist_left',
     requiredIndicators: ['de_quervain'],
     suggestedIndicators: ['location_radial', 'trigger_thumb', 'trigger_gripping'],
-    protocolConditionName: 'Tenosynovite de De Quervain', // Protocol to be added later
+    protocolConditionName: 'Tendinite de De Quervain',
     priority: 10,
   },
   {
@@ -869,7 +890,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'wrist_left',
     requiredIndicators: ['location_radial', 'trigger_thumb'],
     suggestedIndicators: ['trigger_gripping', 'de_quervain'],
-    protocolConditionName: 'Tenosynovite de De Quervain', // Protocol to be added later
+    protocolConditionName: 'Tendinite de De Quervain',
     priority: 9,
   },
   {
@@ -885,7 +906,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'wrist_left',
     requiredIndicators: ['tfcc'],
     suggestedIndicators: ['location_ulnar', 'trigger_rotation', 'symptom_clicking', 'trigger_weight_bearing'],
-    protocolConditionName: 'Lesion TFCC poignet', // Protocol to be added later
+    protocolConditionName: 'Lésion TFCC (complexe fibrocartilagineux triangulaire)',
     priority: 9,
   },
 
@@ -897,7 +918,7 @@ const conditionMappings: ConditionMapping[] = [
     targetZone: 'neck',
     requiredIndicators: ['cervicalgia'],
     suggestedIndicators: ['location_back', 'symptom_stiffness', 'trigger_turning', 'trigger_looking_down'],
-    protocolConditionName: 'Cervicalgie', // Protocol to be added later
+    protocolConditionName: 'Cervicalgie (douleur cervicale)',
     priority: 10,
   },
   {

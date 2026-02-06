@@ -485,16 +485,6 @@ function buildFullBodySessions(
         || e.name.toLowerCase().includes('tirage vertical')),
   )
 
-  // Leg curl
-  const legCurls = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('leg curl'),
-  )
-
-  // Leg extension
-  const legExtensions = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('leg extension'),
-  )
-
   // Lateral raises
   const lateralRaises = nonRehab.filter(
     (e) => e.name.toLowerCase().includes('élévations latérales') || e.name.toLowerCase().includes('lateral raise'),
@@ -525,11 +515,6 @@ function buildFullBodySessions(
     (e) => e.category === 'compound' && e.tags.includes('unilateral') && e.tags.includes('lower_body'),
   )
 
-  // Hip thrust
-  const hipThrusts = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('hip thrust'),
-  )
-
   // Unilateral pull
   const unilateralPull = nonRehab.filter(
     (e) => e.category === 'compound'
@@ -537,7 +522,7 @@ function buildFullBodySessions(
       && e.tags.includes('unilateral'),
   )
 
-  // Biceps exercises
+  // Biceps exercises (for Full Body C to avoid face pull 3x/week)
   const bicepsExercises = nonRehab.filter(
     (e) => exercisesForMuscles([e], ['biceps', 'brachial']).length > 0
       && (e.category === 'isolation'),
@@ -547,49 +532,42 @@ function buildFullBodySessions(
   // Full Body A
   // -----------------------------------------------------------------------
 
+  // Full Body A: 3 compounds + 2 isolations + 1 core = 6 exercices
   const fullBodyASlots: ExerciseSlot[] = [
     {
-      label: 'Lower compound',
+      label: 'Quad compound',
       candidates: () => quadCompounds,
       preferredName: 'leg press',
       sets: 4,
-      reps: 10,
+      reps: 8,
       rest: 150,
     },
     {
       label: 'Horizontal push',
       candidates: () => horizontalPush,
-      preferredName: 'développé couché haltères',
-      sets: 3,
-      reps: 10,
-      rest: 120,
+      preferredName: 'développé couché',
+      sets: 4,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Horizontal pull',
       candidates: () => horizontalPull,
-      preferredName: 'rowing',
-      sets: 3,
-      reps: 10,
-      rest: 120,
-    },
-    {
-      label: 'Leg curl',
-      candidates: () => legCurls,
-      preferredName: 'leg curl',
-      sets: 3,
-      reps: 12,
-      rest: 90,
+      preferredName: 'rowing barre',
+      sets: 4,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Élévations latérales',
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
-      label: 'Face pull (posture)',
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
@@ -597,11 +575,11 @@ function buildFullBodySessions(
       rest: 60,
     },
     {
-      label: 'Core exercise',
+      label: 'Core',
       candidates: () => coreExercises,
-      preferredName: 'dead bug',
+      preferredName: 'planche',
       sets: 3,
-      reps: 10,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -610,49 +588,42 @@ function buildFullBodySessions(
   // Full Body B
   // -----------------------------------------------------------------------
 
+  // Full Body B: 3 compounds + 2 isolations + 1 core = 6 exercices
   const fullBodyBSlots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
       candidates: () => hipHinges,
-      preferredName: 'sdt smith',
+      preferredName: 'soulevé de terre roumain',
       sets: 4,
-      reps: 8,
+      reps: 10,
       rest: 150,
     },
     {
       label: 'Vertical push',
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Vertical pull',
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
-      label: 'Leg extension',
-      candidates: () => legExtensions,
-      preferredName: 'leg extension',
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
-      rest: 90,
+      reps: 15,
+      rest: 60,
     },
     {
-      label: 'Chest accessory',
-      candidates: () => [...chestAccessories, ...horizontalPush],
-      preferredName: 'pec',
-      sets: 3,
-      reps: 10,
-      rest: 90,
-    },
-    {
-      label: 'Face pull (posture)',
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
@@ -660,11 +631,11 @@ function buildFullBodySessions(
       rest: 60,
     },
     {
-      label: 'Core exercise',
+      label: 'Core',
       candidates: () => coreExercises,
-      preferredName: 'pallof',
+      preferredName: 'dead bug',
       sets: 3,
-      reps: 10,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -673,59 +644,53 @@ function buildFullBodySessions(
   // Full Body C (if 3 days)
   // -----------------------------------------------------------------------
 
+  // Full Body C: 3 compounds + 2 isolations + 1 core = 6 exercices
   const fullBodyCSlots: ExerciseSlot[] = [
     {
       label: 'Unilateral legs',
       candidates: () => unilateralLegs,
       preferredName: 'fentes',
-      sets: 3,
-      reps: 12,
-      rest: 120,
-    },
-    {
-      label: 'Horizontal push',
-      candidates: () => [...horizontalPush, ...chestAccessories],
-      preferredName: 'pec press',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
-      label: 'Horizontal pull (unilateral)',
+      label: 'Incline push',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'développé incliné',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
+      label: 'Unilateral pull',
       candidates: () => [...unilateralPull, ...horizontalPull],
-      preferredName: 'rowing haltère',
-      sets: 3,
+      preferredName: 'rowing unilatéral',
+      sets: 4,
       reps: 10,
-      rest: 90,
-    },
-    {
-      label: 'Hip thrust',
-      candidates: () => [...hipThrusts, ...hipHinges],
-      preferredName: 'hip thrust',
-      sets: 3,
-      reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Élévations latérales',
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
+      // Biceps instead of face pull to limit face pull to 2x/week (A + B only)
       label: 'Biceps',
       candidates: () => bicepsExercises,
-      preferredName: 'curl',
-      sets: 2,
+      preferredName: 'curl biceps',
+      sets: 3,
       reps: 12,
       rest: 60,
     },
     {
-      label: 'Face pull (posture)',
-      candidates: () => facePulls,
-      preferredName: 'face pull',
+      label: 'Core',
+      candidates: () => coreExercises,
+      preferredName: 'planche latérale',
       sets: 3,
       reps: 15,
       rest: 60,
@@ -770,11 +735,6 @@ function buildUpperLowerSessions(
   // Unilateral leg exercises (fentes, bulgare)
   const unilateralLegs = nonRehab.filter(
     (e) => e.category === 'compound' && e.tags.includes('unilateral') && e.tags.includes('lower_body'),
-  )
-
-  // Leg extension
-  const legExtensions = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('leg extension'),
   )
 
   // Leg curl
@@ -828,11 +788,6 @@ function buildUpperLowerSessions(
     (e) => e.name.toLowerCase().includes('face pull'),
   )
 
-  // Optional push exercises (pompes, triceps)
-  const pushAccessories = nonRehab.filter(
-    (e) => (e.category === 'isolation') && exercisesForMuscles([e], ['triceps']).length > 0,
-  )
-
   // Horizontal pull: dorsaux compound (rowing)
   const horizontalPull = nonRehab.filter(
     (e) => e.category === 'compound'
@@ -864,67 +819,56 @@ function buildUpperLowerSessions(
       && (e.category === 'isolation'),
   )
 
-  // Rear delt exercises: deltoïdes postérieurs (isolation, no rehab)
-  const rearDeltExercises = nonRehab.filter(
-    (e) => exercisesForMuscles([e], ['deltoïdes postérieurs']).length > 0
-      && e.name.toLowerCase() !== 'face pull',
-  )
-
-  // Lighter quad exercises for Lower 2 (e.g., pull-through, light press)
-  const lighterQuad = nonRehab.filter(
-    (e) => (e.name.toLowerCase().includes('pull-through')
-      || (e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0)),
-  )
-
   // -----------------------------------------------------------------------
   // Lower 1 — Quadriceps Focus
   // -----------------------------------------------------------------------
 
+  // Lower 1: 3 compounds + 2 isolations + 1 core = 6 exercices (~70 min)
   const lower1Slots: ExerciseSlot[] = [
     {
-      label: 'Compound quad-dominant',
+      label: 'Quad compound',
       candidates: () => quadCompounds,
       preferredName: 'leg press',
       sets: 4,
-      reps: 10,
+      reps: 8,
       rest: 150,
     },
     {
       label: 'Unilateral leg',
       candidates: () => unilateralLegs,
       preferredName: 'fentes',
-      sets: 3,
-      reps: 12,
-      rest: 90,
+      sets: 4,
+      reps: 10,
+      rest: 150,
     },
     {
-      label: 'Leg extension',
-      candidates: () => legExtensions,
-      preferredName: 'leg extension',
-      sets: 3,
-      reps: 12,
-      rest: 90,
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'soulevé de terre roumain',
+      sets: 4,
+      reps: 10,
+      rest: 150,
     },
     {
-      label: 'Leg curl (balance)',
+      label: 'Leg curl',
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
       reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Calf exercise',
-      candidates: () => calves,
-      sets: 3,
-      reps: 20,
       rest: 60,
     },
     {
-      label: 'Core exercise',
+      label: 'Calf',
+      candidates: () => calves,
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core',
       candidates: () => coreExercises,
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -933,51 +877,46 @@ function buildUpperLowerSessions(
   // Upper 1 — Push Focus
   // -----------------------------------------------------------------------
 
+  // Upper 1 (Push Focus): 3 compounds + 2 isolations = 5 exercices (~65 min)
   const upper1Slots: ExerciseSlot[] = [
     {
       label: 'Horizontal push',
       candidates: () => horizontalPush,
       preferredName: 'développé couché',
       sets: 4,
-      reps: 10,
-      rest: 120,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Vertical push',
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
-      sets: 3,
+      sets: 4,
+      reps: 8,
+      rest: 150,
+    },
+    {
+      label: 'Incline or chest compound',
+      candidates: () => chestAccessories,
+      preferredName: 'développé incliné',
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Élévations latérales',
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Chest accessory',
-      candidates: () => chestAccessories,
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Face pull (posture)',
-      candidates: () => facePulls,
-      preferredName: 'face pull',
-      sets: 3,
       reps: 15,
       rest: 60,
     },
     {
-      label: 'Push accessory (triceps)',
-      candidates: () => pushAccessories,
+      label: 'Face pull',
+      candidates: () => facePulls,
+      preferredName: 'face pull',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -986,13 +925,14 @@ function buildUpperLowerSessions(
   // Lower 2 — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
+  // Lower 2: 3 compounds + 2 isolations + 1 core = 6 exercices (~70 min)
   const lower2Slots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
       candidates: () => hipHinges,
-      preferredName: 'sdt smith',
+      preferredName: 'soulevé de terre roumain',
       sets: 4,
-      reps: 8,
+      reps: 10,
       rest: 150,
     },
     {
@@ -1001,7 +941,15 @@ function buildUpperLowerSessions(
       preferredName: 'hip thrust',
       sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
+    },
+    {
+      label: 'Quad compound',
+      candidates: () => quadCompounds,
+      preferredName: 'leg press',
+      sets: 4,
+      reps: 10,
+      rest: 150,
     },
     {
       label: 'Leg curl',
@@ -1009,28 +957,20 @@ function buildUpperLowerSessions(
       preferredName: 'leg curl',
       sets: 3,
       reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Lighter quad / pull-through',
-      candidates: () => lighterQuad,
-      preferredName: 'pull-through',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Calf exercise',
-      candidates: () => calves,
-      sets: 3,
-      reps: 20,
       rest: 60,
     },
     {
-      label: 'Core exercise (different from Lower 1)',
+      label: 'Calf',
+      candidates: () => calves,
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core',
       candidates: () => coreExercises,
       sets: 3,
-      reps: 10,
+      reps: 15,
       rest: 60,
     },
   ]
@@ -1039,53 +979,46 @@ function buildUpperLowerSessions(
   // Upper 2 — Pull Focus
   // -----------------------------------------------------------------------
 
+  // Upper 2 (Pull Focus): 3 compounds + 2 isolations = 5 exercices (~65 min)
   const upper2Slots: ExerciseSlot[] = [
     {
       label: 'Horizontal pull',
       candidates: () => horizontalPull,
-      preferredName: 'rowing câble',
+      preferredName: 'rowing barre',
       sets: 4,
-      reps: 10,
-      rest: 120,
-    },
-    {
-      label: 'Unilateral pull',
-      candidates: () => unilateralPull,
-      preferredName: 'unilatéral',
-      sets: 3,
-      reps: 10,
-      rest: 90,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Vertical pull',
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
-      label: 'Face pull (posture)',
+      label: 'Unilateral pull',
+      candidates: () => unilateralPull,
+      preferredName: 'rowing unilatéral',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
-      label: 'Biceps exercise',
+      label: 'Biceps',
       candidates: () => bicepsExercises,
       preferredName: 'curl biceps',
       sets: 3,
       reps: 12,
-      rest: 60,
-    },
-    {
-      label: 'Rear delt exercise',
-      candidates: () => rearDeltExercises,
-      preferredName: 'face pull',
-      sets: 3,
-      reps: 20,
       rest: 60,
     },
   ]
@@ -1137,11 +1070,6 @@ function buildPushPullLegsSessions(
     (e) => e.name.toLowerCase().includes('élévations latérales') || e.name.toLowerCase().includes('lateral raise'),
   )
 
-  // Triceps exercises
-  const tricepsExercises = nonRehab.filter(
-    (e) => (e.category === 'isolation') && exercisesForMuscles([e], ['triceps']).length > 0,
-  )
-
   // Face pull (non-rehab version)
   const facePulls = nonRehab.filter(
     (e) => e.name.toLowerCase().includes('face pull'),
@@ -1178,17 +1106,6 @@ function buildPushPullLegsSessions(
       && (e.category === 'isolation'),
   )
 
-  // Rear delt exercises (no rehab)
-  const rearDeltExercises = nonRehab.filter(
-    (e) => exercisesForMuscles([e], ['deltoïdes postérieurs']).length > 0
-      && e.name.toLowerCase() !== 'face pull',
-  )
-
-  // Shrug exercises
-  const shrugExercises = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('shrug') || e.name.toLowerCase().includes('haussements'),
-  )
-
   // Quad compounds
   const quadCompounds = nonRehab.filter(
     (e) => e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0,
@@ -1197,11 +1114,6 @@ function buildPushPullLegsSessions(
   // Unilateral legs
   const unilateralLegs = nonRehab.filter(
     (e) => e.category === 'compound' && e.tags.includes('unilateral') && e.tags.includes('lower_body'),
-  )
-
-  // Leg extension
-  const legExtensions = nonRehab.filter(
-    (e) => e.name.toLowerCase().includes('leg extension'),
   )
 
   // Leg curl
@@ -1230,59 +1142,46 @@ function buildPushPullLegsSessions(
     (e) => e.name.toLowerCase().includes('hip thrust'),
   )
 
-  // Lighter quad / pull-through for Legs B
-  const lighterQuad = nonRehab.filter(
-    (e) => (e.name.toLowerCase().includes('pull-through')
-      || (e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0)),
-  )
-
   // -----------------------------------------------------------------------
   // Push A — Horizontal push focus
   // -----------------------------------------------------------------------
 
+  // Push A: 3 compounds + 2 isolations = 5 exercices
   const pushASlots: ExerciseSlot[] = [
     {
-      label: 'Horizontal push compound',
+      label: 'Horizontal push',
       candidates: () => horizontalPush,
-      preferredName: 'développé couché haltères',
+      preferredName: 'développé couché',
       sets: 4,
-      reps: 10,
-      rest: 120,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Vertical push',
       candidates: () => verticalPush,
       preferredName: 'développé militaire',
-      sets: 3,
-      reps: 10,
-      rest: 120,
+      sets: 4,
+      reps: 8,
+      rest: 150,
     },
     {
-      label: 'Chest accessory',
+      label: 'Incline push',
       candidates: () => [...chestAccessories, ...horizontalPush],
-      preferredName: 'pec',
-      sets: 3,
-      reps: 12,
-      rest: 90,
+      preferredName: 'développé incliné',
+      sets: 4,
+      reps: 10,
+      rest: 150,
     },
     {
       label: 'Élévations latérales',
       candidates: () => lateralRaises,
       preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Triceps',
-      candidates: () => tricepsExercises,
-      preferredName: 'extension triceps poulie',
-      sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
-      label: 'Face pull (posture)',
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
@@ -1295,49 +1194,42 @@ function buildPushPullLegsSessions(
   // Push B — Vertical push focus
   // -----------------------------------------------------------------------
 
+  // Push B: 3 compounds + 2 isolations = 5 exercices
   const pushBSlots: ExerciseSlot[] = [
     {
-      label: 'Vertical push compound',
+      label: 'Vertical push',
       candidates: () => verticalPush,
-      preferredName: 'développé militaire smith',
+      preferredName: 'développé militaire',
       sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Horizontal push',
-      candidates: () => [...horizontalPush, ...chestAccessories],
-      preferredName: 'développé couché smith',
-      sets: 3,
+      candidates: () => horizontalPush,
+      preferredName: 'développé couché',
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
-      label: 'Élévations latérales câble',
-      candidates: () => lateralRaises,
-      preferredName: 'élévations latérales câble',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Chest fly / accessory',
+      label: 'Incline or chest accessory',
       candidates: () => [...chestAccessories, ...horizontalPush],
-      preferredName: 'écartés',
-      sets: 3,
+      preferredName: 'développé incliné',
+      sets: 4,
       reps: 12,
-      rest: 90,
+      rest: 150,
     },
     {
-      label: 'Triceps overhead',
-      candidates: () => tricepsExercises,
-      preferredName: 'overhead',
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
-      label: 'Face pull (posture)',
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
@@ -1350,53 +1242,46 @@ function buildPushPullLegsSessions(
   // Pull A — Horizontal pull focus
   // -----------------------------------------------------------------------
 
+  // Pull A: 3 compounds + 2 isolations = 5 exercices
   const pullASlots: ExerciseSlot[] = [
     {
       label: 'Horizontal pull',
       candidates: () => horizontalPull,
-      preferredName: 'rowing câble',
+      preferredName: 'rowing barre',
       sets: 4,
-      reps: 10,
-      rest: 120,
+      reps: 8,
+      rest: 150,
     },
     {
       label: 'Vertical pull',
       candidates: () => verticalPull,
       preferredName: 'lat pulldown',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Unilateral pull',
       candidates: () => [...unilateralPull, ...horizontalPull],
-      preferredName: 'unilatéral',
-      sets: 3,
+      preferredName: 'rowing unilatéral',
+      sets: 4,
       reps: 10,
-      rest: 90,
+      rest: 150,
     },
     {
-      label: 'Face pull (posture)',
+      label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
       label: 'Biceps',
       candidates: () => bicepsExercises,
-      preferredName: 'curl biceps haltères',
+      preferredName: 'curl biceps',
       sets: 3,
       reps: 12,
-      rest: 60,
-    },
-    {
-      label: 'Rear delt',
-      candidates: () => [...rearDeltExercises, ...lateralRaises],
-      preferredName: 'face pull',
-      sets: 3,
-      reps: 20,
       rest: 60,
     },
   ]
@@ -1405,6 +1290,7 @@ function buildPushPullLegsSessions(
   // Pull B — Vertical pull focus
   // -----------------------------------------------------------------------
 
+  // Pull B: 3 compounds + 2 isolations = 5 exercices
   const pullBSlots: ExerciseSlot[] = [
     {
       label: 'Vertical pull',
@@ -1412,44 +1298,36 @@ function buildPushPullLegsSessions(
       preferredName: 'lat pulldown',
       sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Horizontal pull',
       candidates: () => horizontalPull,
       preferredName: 'rowing machine',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 120,
+      rest: 150,
     },
     {
       label: 'Unilateral pull',
       candidates: () => [...unilateralPull, ...horizontalPull],
       preferredName: 'rowing haltère',
-      sets: 3,
+      sets: 4,
       reps: 10,
-      rest: 90,
+      rest: 150,
     },
     {
       label: 'Face pull',
       candidates: () => facePulls,
       preferredName: 'face pull',
       sets: 3,
-      reps: 12,
+      reps: 15,
       rest: 60,
     },
     {
-      label: 'Biceps curl marteau (elbow-friendly)',
+      label: 'Biceps',
       candidates: () => bicepsExercises,
       preferredName: 'curl marteau',
-      sets: 3,
-      reps: 12,
-      rest: 60,
-    },
-    {
-      label: 'Shrug',
-      candidates: () => [...shrugExercises, ...horizontalPull],
-      preferredName: 'shrug',
       sets: 3,
       reps: 12,
       rest: 60,
@@ -1460,7 +1338,79 @@ function buildPushPullLegsSessions(
   // Legs A — Quad Focus
   // -----------------------------------------------------------------------
 
+  // Legs A: 3 compounds + 2 isolations + 1 core = 6 exercices
   const legsASlots: ExerciseSlot[] = [
+    {
+      label: 'Quad compound',
+      candidates: () => quadCompounds,
+      preferredName: 'leg press',
+      sets: 4,
+      reps: 8,
+      rest: 150,
+    },
+    {
+      label: 'Unilateral legs',
+      candidates: () => unilateralLegs,
+      preferredName: 'fentes',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'soulevé de terre roumain',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
+      label: 'Leg curl',
+      candidates: () => legCurls,
+      preferredName: 'leg curl',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+    {
+      label: 'Calf',
+      candidates: () => calves,
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core',
+      candidates: () => coreExercises,
+      preferredName: 'planche',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+  ]
+
+  // -----------------------------------------------------------------------
+  // Legs B — Hamstring/Glute Focus
+  // -----------------------------------------------------------------------
+
+  // Legs B: 3 compounds + 2 isolations + 1 core = 6 exercices
+  const legsBSlots: ExerciseSlot[] = [
+    {
+      label: 'Hip hinge',
+      candidates: () => hipHinges,
+      preferredName: 'soulevé de terre roumain',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
+      label: 'Hip thrust',
+      candidates: () => hipThrusts,
+      preferredName: 'hip thrust',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
     {
       label: 'Quad compound',
       candidates: () => quadCompounds,
@@ -1470,96 +1420,26 @@ function buildPushPullLegsSessions(
       rest: 150,
     },
     {
-      label: 'Unilateral legs',
-      candidates: () => unilateralLegs,
-      preferredName: 'fentes',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Leg extension',
-      candidates: () => legExtensions,
-      preferredName: 'leg extension',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Leg curl (balance)',
-      candidates: () => legCurls,
-      preferredName: 'leg curl',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Calf exercise',
-      candidates: () => calves,
-      sets: 3,
-      reps: 20,
-      rest: 60,
-    },
-    {
-      label: 'Core exercise',
-      candidates: () => coreExercises,
-      preferredName: 'dead bug',
-      sets: 3,
-      reps: 12,
-      rest: 60,
-    },
-  ]
-
-  // -----------------------------------------------------------------------
-  // Legs B — Hamstring/Glute Focus
-  // -----------------------------------------------------------------------
-
-  const legsBSlots: ExerciseSlot[] = [
-    {
-      label: 'Hip hinge',
-      candidates: () => hipHinges,
-      preferredName: 'sdt smith',
-      sets: 4,
-      reps: 8,
-      rest: 150,
-    },
-    {
-      label: 'Hip thrust',
-      candidates: () => hipThrusts,
-      preferredName: 'hip thrust',
-      sets: 4,
-      reps: 10,
-      rest: 120,
-    },
-    {
       label: 'Leg curl',
       candidates: () => legCurls,
       preferredName: 'leg curl',
       sets: 3,
       reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Lighter quad / pull-through',
-      candidates: () => lighterQuad,
-      preferredName: 'pull-through',
-      sets: 3,
-      reps: 12,
-      rest: 90,
-    },
-    {
-      label: 'Calf exercise',
-      candidates: () => calves,
-      sets: 3,
-      reps: 20,
       rest: 60,
     },
     {
-      label: 'Core exercise',
-      candidates: () => coreExercises,
-      preferredName: 'planche',
+      label: 'Calf',
+      candidates: () => calves,
       sets: 3,
-      reps: 10,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Core',
+      candidates: () => coreExercises,
+      preferredName: 'dead bug',
+      sets: 3,
+      reps: 15,
       rest: 60,
     },
   ]

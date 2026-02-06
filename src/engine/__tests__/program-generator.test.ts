@@ -880,7 +880,7 @@ describe('Upper/Lower structured sessions', () => {
     equipment: ulEquipment,
 
     daysPerWeek: 4,
-    minutesPerSession: 60,
+    minutesPerSession: 75, // Complete sessions ~75min
   }
 
   function getSession(result: ReturnType<typeof generateProgram>, nameFragment: string) {
@@ -910,9 +910,7 @@ describe('Upper/Lower structured sessions', () => {
       expect(ids.some((id) => [101, 102].includes(id))).toBe(true)
     })
 
-    it('contains leg extension', () => {
-      expect(ids).toContain(105)
-    })
+    // Note: leg extension removed from structured slots in favor of more compounds + core
 
     it('contains leg curl (balance)', () => {
       expect(ids).toContain(106)
@@ -1471,8 +1469,8 @@ describe('Push/Pull/Legs structured sessions', () => {
     const ids = sessionExerciseIds(pullA)
 
     it('contains a horizontal pull', () => {
-      // 210 = Rowing câble, 211 = Rowing machine
-      expect(ids.some((id) => [210, 211].includes(id))).toBe(true)
+      // 210 = Rowing câble, 211 = Rowing machine, 212 = Tirage horizontal unilatéral, 224 = Rowing haltère unilatéral
+      expect(ids.some((id) => [210, 211, 212, 224].includes(id))).toBe(true)
     })
 
     it('contains a vertical pull', () => {
@@ -1530,9 +1528,7 @@ describe('Push/Pull/Legs structured sessions', () => {
       expect(ids.some((id) => [101, 102].includes(id))).toBe(true)
     })
 
-    it('contains leg extension', () => {
-      expect(ids).toContain(105)
-    })
+    // Note: leg extension removed from structured slots in favor of more compounds + core
 
     it('contains a core exercise', () => {
       expect(ids.some((id) => [109, 110, 128, 129].includes(id))).toBe(true)
@@ -1833,7 +1829,8 @@ describe('Full Body structured sessions', () => {
       // Push (horizontal chest compound) - second slot, should always be present
       expect(ids.some((id) => [201, 202].includes(id))).toBe(true)
       // Pull (horizontal pull) - third slot, should always be present
-      expect(ids.some((id) => [210, 211].includes(id))).toBe(true)
+      // 210 = Rowing câble, 211 = Rowing machine, 212 = Tirage horizontal unilatéral, 224 = Rowing haltère unilatéral
+      expect(ids.some((id) => [210, 211, 212, 224].includes(id))).toBe(true)
       // Face pull and core are later slots and may be trimmed to fit time budget
     })
 
@@ -1890,7 +1887,7 @@ describe('Full Body structured sessions', () => {
       expect(result3.sessions).toHaveLength(3)
     })
 
-    it('Full Body C exists and contains push, pull, lower, face pull', () => {
+    it('Full Body C exists and contains push, pull, lower, biceps (face pull limited to 2x/week)', () => {
       const fbC = getSession(result3, 'full body c')
       const ids = sessionExerciseIds(fbC)
 
@@ -1900,8 +1897,8 @@ describe('Full Body structured sessions', () => {
       expect(ids.some((id) => [201, 202, 206].includes(id))).toBe(true)
       // Pull (unilateral or horizontal)
       expect(ids.some((id) => [210, 211, 224].includes(id))).toBe(true)
-      // Face pull
-      expect(ids).toContain(208)
+      // Biceps (replaces face pull to limit face pull to 2x/week - A + B only)
+      expect(ids).toContain(214)
     })
 
     it('no duplicates within any session', () => {

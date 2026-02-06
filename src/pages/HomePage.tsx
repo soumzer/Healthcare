@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import { useNextSession } from '../hooks/useNextSession'
-import { isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
@@ -13,22 +11,6 @@ export default function HomePage() {
   )
   const info = useNextSession(user?.id)
   const navigate = useNavigate()
-
-  // Rehab cooldown state
-  const [rehabAvailable, setRehabAvailable] = useState(true)
-  const [rehabCooldownText, setRehabCooldownText] = useState<string | null>(null)
-
-  // Check rehab cooldown on mount and periodically
-  useEffect(() => {
-    const checkCooldown = () => {
-      setRehabAvailable(isRehabAvailable())
-      setRehabCooldownText(getRemainingCooldownText())
-    }
-    checkCooldown()
-    // Re-check every minute to update the countdown
-    const interval = setInterval(checkCooldown, 60000)
-    return () => clearInterval(interval)
-  }, [])
 
   // Loading
   if (!user || info === undefined) {
@@ -90,15 +72,10 @@ export default function HomePage() {
         <div className="flex-shrink-0 pb-4 space-y-3">
           {showRestDayRoutine && (
             <button
-              onClick={() => rehabAvailable && navigate('/rehab')}
-              disabled={!rehabAvailable}
-              className={`font-semibold rounded-xl py-4 w-full text-lg ${
-                rehabAvailable
-                  ? 'bg-white text-black'
-                  : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
-              }`}
+              onClick={() => navigate('/rehab')}
+              className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
             >
-              {rehabAvailable ? 'Faire la routine' : (rehabCooldownText ?? 'Disponible bientot')}
+              Faire la routine
             </button>
           )}
           <button

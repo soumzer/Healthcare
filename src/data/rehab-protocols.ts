@@ -2068,4 +2068,140 @@ export const rehabProtocols: RehabProtocol[] = [
       },
     ],
   },
+
+  // =========================================================================
+  // 34. DYSFONCTION COSTALE (Rib dysfunction)
+  // =========================================================================
+  {
+    targetZone: 'upper_back',
+    conditionName: 'Dysfonction costale',
+    frequency: 'daily',
+    priority: 2,
+    progressionCriteria:
+      'Quand la respiration diaphragmatique est maîtrisée (3x10 respirations profondes sans douleur), progresser vers les étirements actifs. Augmenter progressivement l\'amplitude des rotations thoraciques. Objectif : respiration profonde sans restriction ni douleur.',
+    exercises: [
+      {
+        exerciseName: 'Respiration diaphragmatique',
+        sets: 3,
+        reps: '10 respirations',
+        intensity: 'very_light',
+        notes:
+          'Allongé sur le dos, genoux pliés. Main sur le ventre, inspirer par le nez en gonflant le ventre (pas la poitrine). Expirer lentement par la bouche. Mobilise les côtes inférieures et le diaphragme. Essentiel pour la dysfonction costale.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement intercostal (side bend)',
+        sets: 2,
+        reps: '30 sec par côté',
+        intensity: 'very_light',
+        notes:
+          'Debout ou assis, lever un bras au-dessus de la tête et s\'incliner du côté opposé. Respirer profondément dans l\'étirement pour ouvrir les espaces intercostaux. Ne pas forcer — la douleur doit rester légère.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Thoracic spine rotation (rotation thoracique)',
+        sets: 2,
+        reps: '8-10 par côté',
+        intensity: 'light',
+        notes:
+          'En position 4 pattes ou assis. Placer une main derrière la tête et tourner le coude vers le plafond. Mouvement lent et contrôlé. Mobilise les articulations costo-vertébrales.',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Cat-cow (chat-vache)',
+        sets: 2,
+        reps: '10-12',
+        intensity: 'very_light',
+        notes:
+          'À quatre pattes, alterner entre dos rond (chat) et dos creux (vache). Synchroniser avec la respiration : inspirer en vache, expirer en chat. Mobilise toute la cage thoracique et les côtes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Open book stretch',
+        sets: 2,
+        reps: '8 par côté',
+        intensity: 'light',
+        notes:
+          'Allongé sur le côté, genoux pliés à 90°. Ouvrir le bras du dessus en tournant le torse, comme un livre qui s\'ouvre. Respirer profondément dans l\'ouverture. Excellent pour les restrictions costales.',
+        placement: 'rest_day',
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 35. SPONDYLARTHRITE ANKYLOSANTE (Ankylosing spondylitis)
+  // =========================================================================
+  {
+    targetZone: 'lower_back',
+    conditionName: 'Spondylarthrite ankylosante',
+    frequency: 'daily',
+    priority: 1,
+    progressionCriteria:
+      'La régularité est plus importante que l\'intensité. Maintenir les exercices QUOTIDIENNEMENT pour préserver la mobilité. Progresser en amplitude plutôt qu\'en charge. Objectif : maintenir la posture droite et l\'expansion thoracique. Éviter les périodes d\'inactivité prolongées.',
+    exercises: [
+      {
+        exerciseName: 'Extension lombaire prone (McKenzie)',
+        sets: 3,
+        reps: '10-15',
+        intensity: 'light',
+        notes:
+          'Allongé sur le ventre, se soulever sur les coudes puis sur les mains en gardant le bassin au sol. ESSENTIEL pour la SA — maintient l\'extension spinale et prévient la cyphose. Faire plusieurs fois par jour.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Expansion thoracique (chest expansion)',
+        sets: 3,
+        reps: '10 respirations',
+        intensity: 'very_light',
+        notes:
+          'Debout, mains derrière la tête ou jointes dans le dos. Inspirer profondément en ouvrant la poitrine au maximum. Mesurer régulièrement l\'expansion thoracique (différence inspiration/expiration). Objectif : maintenir > 5 cm.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Rotation cervicale',
+        sets: 2,
+        reps: '10 par côté',
+        intensity: 'very_light',
+        notes:
+          'Tourner lentement la tête de gauche à droite, menton parallèle au sol. Ne pas forcer. La SA affecte souvent le rachis cervical — maintenir la mobilité est crucial pour la conduite et les activités quotidiennes.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Cat-cow (chat-vache)',
+        sets: 2,
+        reps: '10-12',
+        intensity: 'very_light',
+        notes:
+          'À quatre pattes, alterner dos rond et dos creux. Mouvement doux et fluide. Maintient la mobilité segmentaire de la colonne. Faire lentement, respirer avec le mouvement.',
+        placement: 'warmup',
+      },
+      {
+        exerciseName: 'Étirement psoas (fente basse)',
+        sets: 2,
+        reps: '30-45 sec par côté',
+        intensity: 'light',
+        notes:
+          'En fente, genou arrière au sol. Avancer le bassin en gardant le torse droit. Le psoas raccourci tire sur la colonne lombaire. Étirement essentiel pour maintenir la posture droite.',
+        placement: 'cooldown',
+      },
+      {
+        exerciseName: 'Posture contre le mur',
+        sets: 1,
+        reps: '2-3 min',
+        intensity: 'very_light',
+        notes:
+          'Debout dos au mur, talons-fesses-omoplates-tête contre le mur. Tenir la position. Exercice de conscience posturale — aide à maintenir une posture droite et à détecter toute progression de la cyphose.',
+        placement: 'rest_day',
+      },
+      {
+        exerciseName: 'Natation ou marche aquatique',
+        sets: 1,
+        reps: '20-30 min',
+        intensity: 'light',
+        notes:
+          'La natation (surtout dos crawlé et brasse) est l\'exercice #1 recommandé pour la SA. L\'eau soutient les articulations tout en permettant un travail d\'amplitude complet. Alternative : marche aquatique.',
+        placement: 'rest_day',
+      },
+    ],
+  },
 ]

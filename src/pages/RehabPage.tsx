@@ -4,7 +4,6 @@ import { db } from '../db'
 import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
 import { generateRestDayRoutine, type RestDayVariant } from '../engine/rest-day'
 import { recordRehabExercisesDone } from '../utils/rehab-rotation'
-import { recordRehabCompletion, isRehabAvailable, getRemainingCooldownText } from '../utils/rehab-cooldown'
 
 const UPPER_ZONES: ReadonlySet<BodyZone> = new Set([
   'neck', 'shoulder_left', 'shoulder_right',
@@ -115,7 +114,8 @@ export default function RehabPage() {
     () => conditions && conditions.length > 0
       ? generateRestDayRoutine(conditions, variant, accentZones)
       : null,
-    [conditions, variant, accentZones]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conditions, variant, accentZones, refreshKey]
   )
 
   const [videoIdx] = useState(() => getNextVideoIndex())
@@ -124,9 +124,12 @@ export default function RehabPage() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  // Per-exercise state
+  // Per-exercise state (for regular rehab)
   const [exerciseLogs, setExerciseLogs] = useState<Record<number, ExerciseLogState>>({})
+  // Per-exercise state for SA routine (separate from regular rehab)
+  const [saLogs, setSaLogs] = useState<Record<number, ExerciseLogState>>({})
 
   /** Get or create log state for an exercise index */
   const getLog = useCallback((index: number): ExerciseLogState => {
@@ -139,8 +142,26 @@ export default function RehabPage() {
     }
   }, [exerciseLogs])
 
+  /** Get or create log state for SA exercise index */
+  const getSaLog = useCallback((index: number): ExerciseLogState => {
+    return saLogs[index] ?? {
+      sets: [],
+      weightInput: '0',
+      repsInput: '',
+      expanded: false,
+      checked: false,
+    }
+  }, [saLogs])
+
   const updateLog = useCallback((index: number, patch: Partial<ExerciseLogState>) => {
     setExerciseLogs(prev => ({
+      ...prev,
+      [index]: { ...prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }, ...patch },
+    }))
+  }, [])
+
+  const updateSaLog = useCallback((index: number, patch: Partial<ExerciseLogState>) => {
+    setSaLogs(prev => ({
       ...prev,
       [index]: { ...prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }, ...patch },
     }))
@@ -155,6 +176,20 @@ export default function RehabPage() {
 
   const toggleChecked = useCallback((index: number) => {
     setExerciseLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      return { ...prev, [index]: { ...current, checked: !current.checked } }
+    })
+  }, [])
+
+  const toggleSaExpand = useCallback((index: number) => {
+    setSaLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      return { ...prev, [index]: { ...current, expanded: !current.expanded } }
+    })
+  }, [])
+
+  const toggleSaChecked = useCallback((index: number) => {
+    setSaLogs(prev => {
       const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
       return { ...prev, [index]: { ...current, checked: !current.checked } }
     })
@@ -188,18 +223,54 @@ export default function RehabPage() {
     })
   }, [])
 
-  const available = isRehabAvailable()
-  const cooldownText = getRemainingCooldownText()
+  const addSaSet = useCallback((index: number) => {
+    setSaLogs(prev => {
+      const current = prev[index] ?? { sets: [], weightInput: '0', repsInput: '', expanded: false, checked: false }
+      const weight = parseFloat(current.weightInput) || 0
+      const reps = parseInt(current.repsInput) || 0
+      if (reps <= 0) return prev
+      return {
+        ...prev,
+        [index]: {
+          ...current,
+          sets: [...current.sets, { weightKg: weight, reps }],
+          repsInput: '',
+        },
+      }
+    })
+  }, [])
+
+  const removeSaLastSet = useCallback((index: number) => {
+    setSaLogs(prev => {
+      const current = prev[index]
+      if (!current || current.sets.length === 0) return prev
+      return {
+        ...prev,
+        [index]: { ...current, sets: current.sets.slice(0, -1) },
+      }
+    })
+  }, [])
 
   /** Count exercises that have data (sets logged or checked for time-based) */
   const exercisesWithData = useMemo(() => {
     if (!routine) return 0
-    return routine.exercises.filter((ex, idx) => {
+    let count = routine.exercises.filter((ex, idx) => {
       const log = getLog(idx)
       if (isTimeBased(ex.reps)) return log.checked
       return log.sets.length > 0
     }).length
-  }, [routine, exerciseLogs, getLog])
+
+    // Count SA routine exercises too
+    if (routine.saRoutine) {
+      count += routine.saRoutine.filter((ex, idx) => {
+        const log = getSaLog(idx)
+        if (isTimeBased(ex.reps)) return log.checked
+        return log.sets.length > 0
+      }).length
+    }
+
+    return count
+  }, [routine, exerciseLogs, saLogs, getLog, getSaLog])
 
   const canSave = exercisesWithData > 0 || videoDone
 
@@ -210,8 +281,35 @@ export default function RehabPage() {
     try {
       const now = new Date()
       const completedNames: string[] = []
+      let regularExercisesCompleted = 0
 
-      // Save each exercise that has data as a NotebookEntry
+      // Save SA routine exercises first (don't count towards cooldown)
+      if (routine?.saRoutine) {
+        for (let i = 0; i < routine.saRoutine.length; i++) {
+          const ex = routine.saRoutine[i]
+          const log = getSaLog(i)
+          const timeBased = isTimeBased(ex.reps)
+
+          if (timeBased && !log.checked) continue
+          if (!timeBased && log.sets.length === 0) continue
+
+          const entry: NotebookEntry = {
+            userId: user.id!,
+            exerciseId: 0,
+            exerciseName: ex.name,
+            date: now,
+            sessionIntensity: 'rehab',
+            sets: timeBased
+              ? [{ weightKg: 0, reps: ex.sets }]
+              : log.sets.filter(s => s.reps > 0),
+            skipped: false,
+          }
+          await db.notebookEntries.add(entry)
+          completedNames.push(ex.name)
+        }
+      }
+
+      // Save each regular exercise that has data as a NotebookEntry
       for (let i = 0; i < (routine?.exercises.length ?? 0); i++) {
         const ex = routine!.exercises[i]
         const log = getLog(i)
@@ -234,6 +332,7 @@ export default function RehabPage() {
         }
         await db.notebookEntries.add(entry)
         completedNames.push(ex.name)
+        regularExercisesCompleted++
       }
 
       // Record completed exercises for rotation tracking
@@ -241,30 +340,33 @@ export default function RehabPage() {
         recordRehabExercisesDone(completedNames)
       }
 
-      // Record rehab completion (cooldown)
-      if (variant !== 'all') {
+      // Update variant preference
+      if (regularExercisesCompleted > 0 && variant !== 'all') {
         localStorage.setItem(STORAGE_KEY, variant)
       }
-      localStorage.setItem('rehab_video_idx', String(videoIdx))
-      recordRehabCompletion()
 
-      // Decrement accentDaysRemaining on active PainReports
-      const activePainReports = await db.painReports
-        .where('userId').equals(user.id!)
-        .and(r => r.accentDaysRemaining > 0)
-        .toArray()
+      // Decrement accentDaysRemaining on active PainReports (skip zone feature)
+      if (regularExercisesCompleted > 0) {
+        const activePainReports = await db.painReports
+          .where('userId').equals(user.id!)
+          .and(r => r.accentDaysRemaining > 0)
+          .toArray()
 
-      for (const report of activePainReports) {
-        await db.painReports.update(report.id!, {
-          accentDaysRemaining: Math.max(0, report.accentDaysRemaining - 1),
-        })
+        for (const report of activePainReports) {
+          await db.painReports.update(report.id!, {
+            accentDaysRemaining: Math.max(0, report.accentDaysRemaining - 1),
+          })
+        }
       }
+
+      // Update video index
+      localStorage.setItem('rehab_video_idx', String(videoIdx))
 
       setSaved(true)
     } finally {
       setIsSaving(false)
     }
-  }, [user, routine, isSaving, getLog, variant, videoIdx])
+  }, [user, routine, isSaving, getLog, getSaLog, variant, videoIdx])
 
   // --- Render ---
 
@@ -325,7 +427,6 @@ export default function RehabPage() {
           <button
             onClick={async () => {
               localStorage.setItem('rehab_video_idx', String(videoIdx))
-              recordRehabCompletion()
               setSaved(true)
             }}
             disabled={!videoDone || isSaving}
@@ -342,19 +443,20 @@ export default function RehabPage() {
     )
   }
 
-  if (!available) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[var(--content-h)] px-6 text-center overflow-hidden">
-        <p className="text-2xl font-bold mb-2">Rehab</p>
-        <p className="text-zinc-400 mb-4">
-          {cooldownText ?? 'Disponible bientot'}
-        </p>
-        <p className="text-zinc-500 text-sm">
-          Reposez-vous avant la prochaine session de rehab.
-        </p>
-      </div>
-    )
-  }
+  // Check if user has SA (routine SA is always available)
+  const hasSA = routine?.saRoutine !== null && routine?.saRoutine !== undefined && routine.saRoutine.length > 0
+
+  // Other rehab exercises are always available (no cooldown)
+  const otherRehabAvailable = routine && routine.exercises.length > 0
+
+  const handleContinue = useCallback(() => {
+    // Reset all state and refresh exercises
+    setExerciseLogs({})
+    setSaLogs({})
+    setVideoDone(false)
+    setSaved(false)
+    setRefreshKey(k => k + 1)
+  }, [])
 
   if (saved) {
     return (
@@ -365,9 +467,15 @@ export default function RehabPage() {
           </svg>
         </div>
         <p className="text-2xl font-bold mb-2">Session enregistree</p>
-        <p className="text-zinc-400">
+        <p className="text-zinc-400 mb-6">
           {exercisesWithData} exercice{exercisesWithData > 1 ? 's' : ''} de rehab enregistre{exercisesWithData > 1 ? 's' : ''}
         </p>
+        <button
+          onClick={handleContinue}
+          className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+        >
+          Continuer avec d'autres exercices
+        </button>
       </div>
     )
   }
@@ -418,7 +526,158 @@ export default function RehabPage() {
 
           {/* Exercise list */}
           <div className="flex-1 overflow-y-auto px-4 space-y-3">
-            {routine.exercises.map((exercise, index) => {
+            {/* SA Routine Section */}
+            {routine.saRoutine && routine.saRoutine.length > 0 && (
+              <>
+                <div className="pt-2 pb-1">
+                  <p className="text-amber-400 text-sm font-semibold uppercase tracking-wider">
+                    Routine Spondylarthrite
+                  </p>
+                  <p className="text-zinc-500 text-xs">Exercices quotidiens essentiels</p>
+                </div>
+                {routine.saRoutine.map((exercise, index) => {
+                  const log = getSaLog(index)
+                  const timeBased = isTimeBased(exercise.reps)
+                  const hasData = timeBased ? log.checked : log.sets.length > 0
+                  const intensityInfo = INTENSITY_LABELS[exercise.intensity]
+
+                  return (
+                    <div key={`sa-${exercise.name}`} className="bg-zinc-900 rounded-xl overflow-hidden border-l-2 border-amber-500">
+                      <button
+                        onClick={() => toggleSaExpand(index)}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-left"
+                      >
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                            hasData ? 'bg-emerald-600' : 'bg-zinc-800 border border-zinc-700'
+                          }`}
+                        >
+                          {hasData && (
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium ${hasData ? 'text-zinc-400' : 'text-white'}`}>
+                            {exercise.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-zinc-400 text-xs">
+                              {exercise.sets}&times;{exercise.reps}
+                            </span>
+                            {intensityInfo && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${intensityInfo.className}`}>
+                                {intensityInfo.label}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <svg
+                          className={`w-5 h-5 text-zinc-400 transition-transform ${log.expanded ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {log.expanded && (
+                        <div className="px-4 pb-4 pt-0 border-t border-zinc-800">
+                          {exercise.notes && (
+                            <p className="text-zinc-400 text-sm leading-relaxed mt-3 mb-3">{exercise.notes}</p>
+                          )}
+                          {timeBased ? (
+                            <button
+                              onClick={() => toggleSaChecked(index)}
+                              className={`mt-2 w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                                log.checked ? 'bg-emerald-900/30 border border-emerald-700' : 'bg-zinc-800 border border-zinc-700'
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                  log.checked ? 'bg-emerald-600 border-emerald-600' : 'border-zinc-500 bg-transparent'
+                                }`}
+                              >
+                                {log.checked && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className={`text-sm ${log.checked ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                                {exercise.sets} &times; {exercise.reps} — Fait
+                              </span>
+                            </button>
+                          ) : (
+                            <div className="mt-2 space-y-3">
+                              {log.sets.length > 0 && (
+                                <div className="space-y-1.5">
+                                  {log.sets.map((s, si) => (
+                                    <div key={si} className="flex items-center gap-2 bg-zinc-800/60 rounded-lg px-3 py-2">
+                                      <span className="text-zinc-500 text-xs w-6">S{si + 1}</span>
+                                      <span className="text-white text-sm">{s.weightKg > 0 ? `${s.weightKg} kg` : 'PDC'}</span>
+                                      <span className="text-zinc-500 text-sm">&times;</span>
+                                      <span className="text-white text-sm">{s.reps} reps</span>
+                                      {si === log.sets.length - 1 && (
+                                        <button onClick={() => removeSaLastSet(index)} className="ml-auto text-zinc-500 hover:text-red-400 transition-colors">
+                                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 flex items-center gap-1 bg-zinc-800 rounded-lg px-3 py-2">
+                                  <input
+                                    type="number" inputMode="decimal" min={0} step={0.5} placeholder="0"
+                                    value={log.weightInput}
+                                    onChange={e => updateSaLog(index, { weightInput: e.target.value })}
+                                    className="w-14 bg-transparent text-white text-sm text-right outline-none placeholder-zinc-600"
+                                  />
+                                  <span className="text-zinc-500 text-xs">kg</span>
+                                </div>
+                                <span className="text-zinc-600">&times;</span>
+                                <div className="flex-1 flex items-center gap-1 bg-zinc-800 rounded-lg px-3 py-2">
+                                  <input
+                                    type="number" inputMode="numeric" min={1} placeholder="reps"
+                                    value={log.repsInput}
+                                    onChange={e => updateSaLog(index, { repsInput: e.target.value })}
+                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSaSet(index) } }}
+                                    className="w-14 bg-transparent text-white text-sm text-right outline-none placeholder-zinc-600"
+                                  />
+                                  <span className="text-zinc-500 text-xs">reps</span>
+                                </div>
+                                <button onClick={() => addSaSet(index)} className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-3 py-2 transition-colors">
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Separator if there are also regular exercises available */}
+                {otherRehabAvailable && (
+                  <div className="pt-4 pb-1">
+                    <p className="text-zinc-400 text-sm font-semibold uppercase tracking-wider">
+                      Autres exercices
+                    </p>
+                  </div>
+                )}
+
+              </>
+            )}
+
+            {/* Regular rehab exercises - only if available */}
+            {otherRehabAvailable && routine.exercises.map((exercise, index) => {
               const log = getLog(index)
               const timeBased = isTimeBased(exercise.reps)
               const hasData = timeBased ? log.checked : log.sets.length > 0

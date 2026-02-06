@@ -207,16 +207,16 @@ export function selectRotatedExercises(
 // Accent-aware selection (pain report zones)
 // ---------------------------------------------------------------------------
 
-const ACCENT_GUARANTEED_SLOTS = 4  // exercises for painful zone
-const NORMAL_GUARANTEED_SLOTS = 3  // exercises for other conditions
+const ACCENT_EXTRA_SLOTS = 2       // +2 exercises for skip zone
+const NORMAL_GUARANTEED_SLOTS = 5  // normal 5 exercises for conditions
 
 /**
  * Select exercises with priority for zones that have active PainReports.
  *
  * When accent zones exist (after skipping an exercise due to pain):
- * - 4 exercises for the painful zone (ACCENT_GUARANTEED_SLOTS)
- * - 3 exercises for other conditions (NORMAL_GUARANTEED_SLOTS)
- * - Total: 7 exercises (temporarily increased from 5)
+ * - +2 extra exercises specifically for the skip zone (guaranteed)
+ * - 5 exercises from all conditions (excluding the +2 accent)
+ * - Total: 7 exercises max
  *
  * Falls back to standard selectRotatedExercises when no accent zones exist.
  */
@@ -233,48 +233,27 @@ export function selectRotatedExercisesWithAccent(
   const accentSet = new Set(accentZones)
   const history = getRehabExerciseHistory()
 
-  // 1. Separate exercises into accent (matching zones) and non-accent
+  // 1. First, select +2 extra exercises specifically for the accent/skip zones
   const accentPool: RehabExerciseWithMeta[] = []
-  const normalPool: RehabExerciseWithMeta[] = []
-
   for (const { exercise, protocolName, targetZone } of allExercisesWithProtocol) {
-    const meta: RehabExerciseWithMeta = {
+    if (!targetZone || !accentSet.has(targetZone)) continue
+    accentPool.push({
       exercise,
       protocolName,
       targetZone,
       priority: assignPriority(exercise),
       lastDoneAt: history[exercise.exerciseName] ?? null,
-    }
-
-    if (targetZone && accentSet.has(targetZone)) {
-      accentPool.push(meta)
-    } else {
-      normalPool.push(meta)
-    }
+    })
   }
+  const accentExtra = selectRehabExercises(accentPool, ACCENT_EXTRA_SLOTS)
+  const selectedNames = new Set(accentExtra.map(e => e.exercise.exerciseName))
 
-  // If total exercises fit within maxCount, return all
-  const totalCount = accentPool.length + normalPool.length
-  if (totalCount <= maxCount) {
-    return [...accentPool, ...normalPool].map(e => ({ exercise: e.exercise, protocolName: e.protocolName, targetZone: e.targetZone }))
-  }
+  // 2. Then, select normal 5 exercises from ALL conditions (excluding the +2 accent)
+  const remainingPool = allExercisesWithProtocol.filter(
+    ({ exercise }) => !selectedNames.has(exercise.exerciseName)
+  )
+  const normalSelected = selectRotatedExercises(remainingPool, NORMAL_GUARANTEED_SLOTS)
 
-  // 2. Select exercises for painful zone (up to ACCENT_GUARANTEED_SLOTS = 4)
-  const accentSelected = selectRehabExercises(accentPool, ACCENT_GUARANTEED_SLOTS)
-
-  // 3. Select exercises for other conditions (NORMAL_GUARANTEED_SLOTS = 3)
-  const normalSelected = selectRehabExercises(normalPool, NORMAL_GUARANTEED_SLOTS)
-
-  // 4. Combine: accent first, then normal
-  const combined = [...accentSelected, ...normalSelected]
-
-  // 5. If accent pool was smaller than 4, backfill with more normal exercises
-  if (combined.length < maxCount) {
-    const selectedNames = new Set(combined.map(e => e.exercise.exerciseName))
-    const remaining = normalPool.filter(e => !selectedNames.has(e.exercise.exerciseName))
-    const backfill = selectRehabExercises(remaining, maxCount - combined.length)
-    combined.push(...backfill)
-  }
-
-  return combined
+  // 3. Combine: accent extra first, then normal = 2 + 5 = 7 max
+  return [...accentExtra, ...normalSelected]
 }

@@ -3072,6 +3072,136 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
   },
 
   // =========================================================================
+  // ADDITIONAL REHAB — DYSFONCTION COSTALE & SPONDYLARTHRITE (9)
+  // =========================================================================
+  {
+    name: 'Respiration diaphragmatique',
+    category: 'rehab',
+    primaryMuscles: ['diaphragme'],
+    secondaryMuscles: ['intercostaux', 'transverse'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Allongé sur le dos, genoux pliés. Main sur le ventre, inspirer par le nez en gonflant le ventre (pas la poitrine). Expirer lentement par la bouche. Mobilise les côtes inférieures et le diaphragme.',
+    isRehab: true,
+    rehabTarget: 'upper_back',
+    tags: ['rehab', 'breathing', 'core', 'rib'],
+  },
+  {
+    name: 'Étirement intercostal (side bend)',
+    category: 'rehab',
+    primaryMuscles: ['intercostaux', 'obliques'],
+    secondaryMuscles: ['carré des lombes', 'dorsaux'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Debout ou assis, lever un bras au-dessus de la tête et s\'incliner du côté opposé. Respirer profondément dans l\'étirement pour ouvrir les espaces intercostaux.',
+    isRehab: true,
+    rehabTarget: 'upper_back',
+    tags: ['rehab', 'stretch', 'rib', 'lateral'],
+  },
+  {
+    name: 'Open book stretch',
+    category: 'rehab',
+    primaryMuscles: ['pectoraux', 'intercostaux'],
+    secondaryMuscles: ['deltoïdes antérieurs', 'obliques'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Thoracic spine rotation (rotation thoracique)'],
+    instructions:
+      'Allongé sur le côté, genoux pliés à 90°. Ouvrir le bras du dessus en tournant le torse, comme un livre qui s\'ouvre. Respirer profondément dans l\'ouverture.',
+    isRehab: true,
+    rehabTarget: 'upper_back',
+    tags: ['rehab', 'mobility', 'thoracic', 'rotation'],
+  },
+  {
+    name: 'Extension lombaire prone (McKenzie)',
+    category: 'rehab',
+    primaryMuscles: ['érecteurs du rachis'],
+    secondaryMuscles: ['multifides', 'fessiers'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Cobra (extension thoracique)'],
+    instructions:
+      'Allongé sur le ventre, se soulever sur les coudes puis sur les mains en gardant le bassin au sol. Maintient l\'extension spinale et prévient la cyphose.',
+    isRehab: true,
+    rehabTarget: 'lower_back',
+    tags: ['rehab', 'extension', 'mckenzie', 'spine'],
+  },
+  {
+    name: 'Expansion thoracique (chest expansion)',
+    category: 'rehab',
+    primaryMuscles: ['intercostaux', 'diaphragme'],
+    secondaryMuscles: ['pectoraux', 'trapèzes'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Respiration diaphragmatique'],
+    instructions:
+      'Debout, mains derrière la tête ou jointes dans le dos. Inspirer profondément en ouvrant la poitrine au maximum. Mesurer régulièrement l\'expansion thoracique (différence inspiration/expiration).',
+    isRehab: true,
+    rehabTarget: 'upper_back',
+    tags: ['rehab', 'breathing', 'thoracic', 'posture'],
+  },
+  {
+    name: 'Rotation cervicale',
+    category: 'rehab',
+    primaryMuscles: ['sterno-cléido-mastoïdien', 'scalènes'],
+    secondaryMuscles: ['trapèzes', 'splénius'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Chin tuck (rétraction cervicale)'],
+    instructions:
+      'Tourner lentement la tête de gauche à droite, menton parallèle au sol. Ne pas forcer. Maintient la mobilité cervicale essentielle pour les activités quotidiennes.',
+    isRehab: true,
+    rehabTarget: 'neck',
+    tags: ['rehab', 'mobility', 'neck', 'cervical'],
+  },
+  {
+    name: 'Étirement psoas (fente basse)',
+    category: 'rehab',
+    primaryMuscles: ['psoas', 'iliaque'],
+    secondaryMuscles: ['quadriceps', 'fléchisseurs de hanche'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: ['Étirement fléchisseurs de hanche'],
+    instructions:
+      'En fente, genou arrière au sol. Avancer le bassin en gardant le torse droit. Le psoas raccourci tire sur la colonne lombaire. Étirement essentiel pour maintenir la posture droite.',
+    isRehab: true,
+    rehabTarget: 'hip_right',
+    tags: ['rehab', 'stretch', 'hip', 'psoas'],
+  },
+  {
+    name: 'Posture contre le mur',
+    category: 'rehab',
+    primaryMuscles: ['érecteurs du rachis', 'trapèzes'],
+    secondaryMuscles: ['rhomboïdes', 'fléchisseurs profonds du cou'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'Debout dos au mur, talons-fesses-omoplates-tête contre le mur. Tenir la position 2-3 minutes. Exercice de conscience posturale.',
+    isRehab: true,
+    rehabTarget: 'upper_back',
+    tags: ['rehab', 'posture', 'spine', 'awareness'],
+  },
+  {
+    name: 'Natation ou marche aquatique',
+    category: 'rehab',
+    primaryMuscles: ['dorsaux', 'pectoraux'],
+    secondaryMuscles: ['deltoïdes', 'core'],
+    equipmentNeeded: [],
+    contraindications: [],
+    alternatives: [],
+    instructions:
+      'La natation (surtout dos crawlé et brasse) est l\'exercice #1 recommandé pour la spondylarthrite. L\'eau soutient les articulations tout en permettant un travail d\'amplitude complet.',
+    isRehab: true,
+    rehabTarget: 'lower_back',
+    tags: ['rehab', 'cardio', 'aquatic', 'full_body'],
+  },
+
+  // =========================================================================
   // BODYWEIGHT EXERCISES - LOWER BODY (6)
   // =========================================================================
   {

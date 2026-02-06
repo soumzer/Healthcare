@@ -2,13 +2,12 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db'
 import type { BodyZone, HealthCondition } from '../../db/types'
-import { bodyZones, painLabels } from '../../constants/body-zones'
+import { bodyZones } from '../../constants/body-zones'
 
 interface ConditionForm {
   bodyZone: BodyZone
   label: string
   diagnosis: string
-  painLevel: number
   since: string
   notes: string
 }
@@ -17,7 +16,6 @@ const emptyForm = (zone: BodyZone): ConditionForm => ({
   bodyZone: zone,
   label: '',
   diagnosis: '',
-  painLevel: 3,
   since: '',
   notes: '',
 })
@@ -26,7 +24,6 @@ const formFromCondition = (c: HealthCondition): ConditionForm => ({
   bodyZone: c.bodyZone,
   label: c.label,
   diagnosis: c.diagnosis,
-  painLevel: c.painLevel,
   since: c.since,
   notes: c.notes,
 })
@@ -90,7 +87,7 @@ export default function HealthConditionsManager({ userId }: Props) {
     await db.healthConditions.update(editingId, {
       label,
       diagnosis: form.diagnosis,
-      painLevel: form.painLevel,
+      painLevel: 0, // User decides to skip exercises themselves
       since: form.since,
       notes: form.notes,
       isActive: true,
@@ -110,7 +107,7 @@ export default function HealthConditionsManager({ userId }: Props) {
       await db.healthConditions.update(existing.id!, {
         label,
         diagnosis: form.diagnosis,
-        painLevel: form.painLevel,
+        painLevel: 0, // User decides to skip exercises themselves
         since: form.since,
         notes: form.notes,
         isActive: true,
@@ -121,7 +118,7 @@ export default function HealthConditionsManager({ userId }: Props) {
         bodyZone: form.bodyZone,
         label,
         diagnosis: form.diagnosis,
-        painLevel: form.painLevel,
+        painLevel: 0, // User decides to skip exercises themselves
         since: form.since,
         notes: form.notes,
         isActive: true,
@@ -178,25 +175,6 @@ export default function HealthConditionsManager({ userId }: Props) {
             placeholder="Ex: quand je pousse lourd, en marchant, au repos..."
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1">
-            Douleur : {form.painLevel}/10 — {painLabels[form.painLevel] ?? ''}
-          </label>
-          <input
-            type="range"
-            min={0}
-            max={10}
-            value={form.painLevel}
-            onChange={e => setForm({ ...form, painLevel: Number(e.target.value) })}
-            className="w-full accent-white"
-          />
-          <div className="flex justify-between text-[10px] text-zinc-600 px-0.5">
-            <span>0</span>
-            <span>5</span>
-            <span>10</span>
-          </div>
         </div>
 
         <div>
@@ -263,9 +241,6 @@ export default function HealthConditionsManager({ userId }: Props) {
                   <span className="text-xs text-zinc-400 ml-2">{c.diagnosis}</span>
                 )}
               </div>
-              <span className="text-xs text-zinc-400 shrink-0 ml-2">
-                douleur {c.painLevel}/10
-              </span>
             </button>
           ))}
         </div>
