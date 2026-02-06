@@ -1522,3 +1522,100 @@ export function generateProgram(
     sessions,
   }
 }
+
+// ---------------------------------------------------------------------------
+// SA (Spondylarthrite Ankylosante) Program Generator
+// ---------------------------------------------------------------------------
+
+/**
+ * SA-specific exercises (safe for spondylarthrite ankylosante).
+ * These exercises avoid axial loading on the spine.
+ */
+const SA_SESSION_A_EXERCISES = [
+  { name: 'Leg press', sets: 3, reps: 15, rest: 90 },
+  { name: 'Hip thrust barre', sets: 3, reps: 15, rest: 90 },
+  { name: 'Développé couché machine', sets: 3, reps: 15, rest: 90 },
+  { name: 'Développé militaire machine', sets: 3, reps: 15, rest: 90 },
+  { name: 'Leg extension', sets: 3, reps: 15, rest: 60 },
+  { name: 'Extension triceps poulie haute', sets: 3, reps: 15, rest: 60 },
+  { name: 'Pallof press', sets: 3, reps: 12, rest: 60 },
+]
+
+const SA_SESSION_B_EXERCISES = [
+  { name: 'Rowing machine (chest-supported)', sets: 3, reps: 15, rest: 90 },
+  { name: 'Tirage vertical (lat pulldown)', sets: 3, reps: 15, rest: 90 },
+  { name: 'Leg curl (ischio-jambiers)', sets: 3, reps: 15, rest: 60 },
+  { name: 'Hip thrust barre', sets: 3, reps: 15, rest: 90 },
+  { name: 'Face pull', sets: 3, reps: 15, rest: 60 },
+  { name: 'Curl biceps câble', sets: 3, reps: 15, rest: 60 },
+  { name: 'Dead bug', sets: 3, reps: 10, rest: 60 },
+]
+
+/**
+ * Check if user has Spondylarthrite Ankylosante in their conditions
+ */
+export function hasSpondylarthrite(conditions: HealthCondition[]): boolean {
+  const SA_NORMALIZED = 'spondylarthrite ankylosante'
+  return conditions.some(c => {
+    if (!c.isActive) return false
+    const diagnosis = (c.diagnosis ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+    return diagnosis === SA_NORMALIZED
+  })
+}
+
+/**
+ * Generate a fixed 2-day program for Spondylarthrite Ankylosante.
+ * - No heavy axial loading
+ * - Volume-focused (12-15 reps)
+ * - Machines and supported exercises preferred
+ */
+export function generateSAProgram(
+  exerciseCatalog: Exercise[],
+): GeneratedProgram {
+  const buildSession = (
+    name: string,
+    order: number,
+    exerciseList: typeof SA_SESSION_A_EXERCISES,
+  ): ProgramSession => {
+    const exercises: ProgramExercise[] = []
+    let exerciseOrder = 0
+
+    for (const slot of exerciseList) {
+      const exercise = findByName(exerciseCatalog, slot.name)
+      if (!exercise || exercise.id === undefined) {
+        console.warn(`SA Program: exercise not found: ${slot.name}`)
+        continue
+      }
+
+      const isIsometric = exercise.tags.includes('isometric')
+
+      exercises.push({
+        exerciseId: exercise.id,
+        order: exerciseOrder++,
+        sets: slot.sets,
+        targetReps: slot.reps,
+        restSeconds: slot.rest,
+        isRehab: false,
+        isTimeBased: isIsometric,
+      })
+    }
+
+    return {
+      name,
+      order,
+      intensity: 'volume',
+      exercises,
+    }
+  }
+
+  const sessions: ProgramSession[] = [
+    buildSession('Séance A (Push + Legs)', 0, SA_SESSION_A_EXERCISES),
+    buildSession('Séance B (Pull + Legs)', 1, SA_SESSION_B_EXERCISES),
+  ]
+
+  return {
+    name: 'Programme SA',
+    type: 'full_body',
+    sessions,
+  }
+}

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { db } from '../db'
-import { generateProgram } from '../engine/program-generator'
+import { generateProgram, generateSAProgram, hasSpondylarthrite } from '../engine/program-generator'
 
 /**
  * Hook that returns a function to regenerate the workout program.
@@ -36,16 +36,19 @@ export function useRegenerateProgram() {
       const exerciseCatalog = await db.exercises.toArray()
 
       // 5. Generate the new program
-      const generatedProgram = generateProgram(
-        {
-          userId,
-          conditions,
-          equipment,
-          daysPerWeek: profile.daysPerWeek,
-          minutesPerSession: profile.minutesPerSession,
-        },
-        exerciseCatalog,
-      )
+      // Use SA program if user has Spondylarthrite Ankylosante
+      const generatedProgram = hasSpondylarthrite(conditions)
+        ? generateSAProgram(exerciseCatalog)
+        : generateProgram(
+            {
+              userId,
+              conditions,
+              equipment,
+              daysPerWeek: profile.daysPerWeek,
+              minutesPerSession: profile.minutesPerSession,
+            },
+            exerciseCatalog,
+          )
 
       // 6b. Merge: preserve exercises that didn't change (keeps progression history)
       const oldProgram = await db.workoutPrograms
@@ -131,17 +134,21 @@ export function useRegenerateProgram() {
       const currentExerciseIds = oldProgram?.sessions
         ?.flatMap(s => s.exercises.map(e => e.exerciseId)) ?? []
 
-      const generatedProgram = generateProgram(
-        {
-          userId,
-          conditions,
-          equipment,
-          daysPerWeek: profile.daysPerWeek,
-          minutesPerSession: profile.minutesPerSession,
-          excludeExerciseIds: currentExerciseIds,
-        },
-        exerciseCatalog,
-      )
+      // Use SA program if user has Spondylarthrite Ankylosante
+      // Note: SA program is fixed, so refresh returns the same exercises
+      const generatedProgram = hasSpondylarthrite(conditions)
+        ? generateSAProgram(exerciseCatalog)
+        : generateProgram(
+            {
+              userId,
+              conditions,
+              equipment,
+              daysPerWeek: profile.daysPerWeek,
+              minutesPerSession: profile.minutesPerSession,
+              excludeExerciseIds: currentExerciseIds,
+            },
+            exerciseCatalog,
+          )
 
       // Deactivate old + save new in a single transaction
       await db.transaction('rw', db.workoutPrograms, async () => {
