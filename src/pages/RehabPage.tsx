@@ -96,6 +96,30 @@ export default function RehabPage() {
     [user?.id]
   )
 
+  // Load rehab notebook history to display "Dernière fois" per exercise
+  const rehabHistory = useLiveQuery(
+    () => user?.id
+      ? db.notebookEntries
+          .where('sessionIntensity').equals('rehab')
+          .filter(e => e.userId === user.id! && !e.skipped && e.sets.length > 0)
+          .toArray()
+      : [],
+    [user?.id]
+  )
+
+  /** Map exerciseName → most recent NotebookEntry */
+  const lastRehabPerf = useMemo(() => {
+    const map = new Map<string, NotebookEntry>()
+    if (!rehabHistory) return map
+    for (const entry of rehabHistory) {
+      const existing = map.get(entry.exerciseName)
+      if (!existing || new Date(entry.date).getTime() > new Date(existing.date).getTime()) {
+        map.set(entry.exerciseName, entry)
+      }
+    }
+    return map
+  }, [rehabHistory])
+
   const accentZones = useMemo(
     () => {
       if (!activePainReports || activePainReports.length === 0) return []
@@ -584,6 +608,19 @@ export default function RehabPage() {
                           {exercise.notes && (
                             <p className="text-zinc-400 text-sm leading-relaxed mt-3 mb-3">{exercise.notes}</p>
                           )}
+                          {/* Last rehab performance */}
+                          {(() => {
+                            const last = lastRehabPerf.get(exercise.name)
+                            if (!last || isTimeBased(exercise.reps)) return null
+                            return (
+                              <div className="bg-zinc-800/60 rounded-lg p-2.5 mt-2 mb-2">
+                                <p className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Dernière fois</p>
+                                <p className="text-white text-sm">
+                                  {last.sets.map(s => `${s.weightKg > 0 ? s.weightKg + 'kg' : 'PDC'} × ${s.reps}`).join(' · ')}
+                                </p>
+                              </div>
+                            )
+                          })()}
                           {timeBased ? (
                             <button
                               onClick={() => toggleSaChecked(index)}
@@ -751,6 +788,20 @@ export default function RehabPage() {
                           {exercise.notes}
                         </p>
                       )}
+
+                      {/* Last rehab performance */}
+                      {(() => {
+                        const last = lastRehabPerf.get(exercise.name)
+                        if (!last || timeBased) return null
+                        return (
+                          <div className="bg-zinc-800/60 rounded-lg p-2.5 mt-2 mb-2">
+                            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Dernière fois</p>
+                            <p className="text-white text-sm">
+                              {last.sets.map(s => `${s.weightKg > 0 ? s.weightKg + 'kg' : 'PDC'} × ${s.reps}`).join(' · ')}
+                            </p>
+                          </div>
+                        )
+                      })()}
 
                       {timeBased ? (
                         /* Time-based exercise: just a checkbox */
