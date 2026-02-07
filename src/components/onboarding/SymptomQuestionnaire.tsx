@@ -140,7 +140,7 @@ export default function SymptomQuestionnaire({
 
         {matchedConditions.length > 0 ? (
           <div className="space-y-3">
-            {matchedConditions.slice(0, 3).map(({ condition, confidence }, index) => (
+            {matchedConditions.slice(0, 5).map(({ condition, confidence }, index) => (
               <button
                 key={`${condition.conditionName}-${index}`}
                 type="button"
@@ -174,11 +174,22 @@ export default function SymptomQuestionnaire({
             ))}
           </div>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4">
-            <p className="text-sm text-zinc-400">
-              Nous n'avons pas pu identifier de condition specifique.
-              Vos symptomes seront tout de meme pris en compte.
-            </p>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleSkipToGeneric}
+              className="w-full text-left bg-zinc-900 border border-zinc-700 rounded-lg p-4 hover:border-zinc-500 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Douleur générale {bodyZoneLabels[zone] ?? zone}</span>
+                <span className="text-xs px-2 py-1 rounded bg-zinc-700 text-zinc-300">
+                  Général
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-1">
+                Appuyez pour continuer avec un programme de rehab général
+              </p>
+            </button>
           </div>
         )}
 

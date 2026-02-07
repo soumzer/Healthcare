@@ -49,7 +49,6 @@ export default function HealthConditionsManager({ userId }: Props) {
   if (conditions === undefined) return null
 
   const activeConditions = conditions.filter(c => c.isActive)
-  const existingActiveZones = new Set(activeConditions.map(c => c.bodyZone))
 
   const handleEditCondition = (c: HealthCondition) => {
     setEditingId(c.id!)
@@ -71,15 +70,8 @@ export default function HealthConditionsManager({ userId }: Props) {
       setForm(null)
     } else {
       setExpandedZone(zone)
-      // Check if there's an existing condition for this zone (active or not)
-      const existing = conditions.find(c => c.bodyZone === zone)
-      if (existing) {
-        setForm(formFromCondition(existing))
-        setEditingId(existing.id!)
-      } else {
-        setForm(emptyForm(zone))
-        setEditingId(null)
-      }
+      setForm(emptyForm(zone))
+      setEditingId(null)
     }
   }
 
@@ -104,30 +96,17 @@ export default function HealthConditionsManager({ userId }: Props) {
     const zoneName = bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''
     const label = form.label.trim() || `Douleur ${zoneName}`
 
-    // Check if there's an existing (possibly inactive) condition for this zone
-    const existing = conditions.find(c => c.bodyZone === form.bodyZone)
-    if (existing) {
-      await db.healthConditions.update(existing.id!, {
-        label,
-        diagnosis: form.diagnosis,
-        painLevel: 0, // User decides to skip exercises themselves
-        since: form.since,
-        notes: form.notes,
-        isActive: true,
-      })
-    } else {
-      await db.healthConditions.add({
-        userId,
-        bodyZone: form.bodyZone,
-        label,
-        diagnosis: form.diagnosis,
-        painLevel: 0, // User decides to skip exercises themselves
-        since: form.since,
-        notes: form.notes,
-        isActive: true,
-        createdAt: new Date(),
-      })
-    }
+    await db.healthConditions.add({
+      userId,
+      bodyZone: form.bodyZone,
+      label,
+      diagnosis: form.diagnosis,
+      painLevel: 0, // User decides to skip exercises themselves
+      since: form.since,
+      notes: form.notes,
+      isActive: true,
+      createdAt: new Date(),
+    })
     setAddingNew(false)
     setExpandedZone(null)
     setForm(null)
@@ -295,11 +274,9 @@ export default function HealthConditionsManager({ userId }: Props) {
                 type="button"
                 onClick={() => handleZoneTap(zone)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  existingActiveZones.has(zone)
-                    ? 'bg-zinc-700 text-zinc-400'
-                    : expandedZone === zone
-                      ? 'bg-white text-black'
-                      : 'bg-zinc-800 text-white'
+                  expandedZone === zone
+                    ? 'bg-white text-black'
+                    : 'bg-zinc-800 text-white'
                 }`}
               >
                 {label}
