@@ -226,14 +226,16 @@ function estimateDuration(ex: RehabExercise): string {
 }
 
 function parseDuration(d: string): number {
-  if (d.includes('s') && !d.includes('min')) {
-    const match = d.match(/(\d+)/)
-    return match ? parseInt(match[1]) / 60 : 0.5
-  }
-  if (d.includes('min')) {
-    const match = d.match(/(\d+)/)
+  const dl = d.toLowerCase()
+  if (dl.includes('min')) {
+    const match = dl.match(/(\d+)/)
     return match ? parseInt(match[1]) : 2
   }
-  const match = d.match(/(\d+)/)
-  return match ? parseInt(match[1]) : 1
+  if (dl.includes('s')) {
+    const match = dl.match(/(\d+)/)
+    return match ? parseInt(match[1]) / 60 : 0.5
+  }
+  // Bare number — assume seconds
+  const match = dl.match(/(\d+)/)
+  return match ? parseInt(match[1]) / 60 : 1
 }

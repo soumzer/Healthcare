@@ -221,10 +221,11 @@ function SessionRunner({
         endPainChecks: [],
         notes: '',
       })
+      setPhase('done')
     } catch (error) {
       console.error('Failed to save session:', error)
+      setPhase('done')
     }
-    setPhase('done')
   }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap])
 
   // Swap: find alternatives with same primary muscles and category (dynamic)

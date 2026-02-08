@@ -318,46 +318,49 @@ function buildStructuredSession(
       picked = pickOne(allCandidates, usedIds)
     }
 
-    if (picked) {
-      // Adjust reps and rest based on session intensity
-      // Isolation exercises are ALWAYS volume (high reps, moderate rest)
-      let reps = slot.reps
-      let rest = slot.rest
-      let sets = slot.sets
-
-      const isIsolationOrCore = picked.category === 'isolation' || picked.category === 'core'
-      if (intensity === 'heavy' && !isIsolationOrCore) {
-        // Heavy compounds: fewer reps, 120s rest (standard non-powerlifting), +1 set
-        reps = Math.min(slot.reps, 6)
-        rest = 120
-        sets = Math.max(slot.sets, 4)
-      } else if (intensity === 'moderate' && !isIsolationOrCore) {
-        // Moderate compounds: keep slot reps, cap rest at 90s
-        rest = Math.min(slot.rest, 90)
-      } else if ((intensity === 'volume' || isIsolationOrCore)) {
-        // Volume (or isolation in any session): more reps, less rest
-        reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
-        rest = Math.min(slot.rest, 90)
-      }
-
-      // Isometric exercises (plank, side plank) use time instead of reps
-      const isIsometric = picked.tags.includes('isometric')
-      if (isIsometric) {
-        reps = 30 // 30 seconds per set
-        sets = 3
-        rest = 60
-      }
-
-      programExercises.push({
-        exerciseId: picked.id ?? 0,
-        order: exerciseOrder++,
-        sets,
-        targetReps: reps,
-        restSeconds: rest,
-        isRehab: picked.isRehab,
-        isTimeBased: isIsometric,
-      })
+    if (!picked) {
+      console.warn(`[program-generator] No exercise found for slot "${slot.label}" (${allCandidates.length} candidates, ${usedIds.size} used)`)
+      continue
     }
+
+    // Adjust reps and rest based on session intensity
+    // Isolation exercises are ALWAYS volume (high reps, moderate rest)
+    let reps = slot.reps
+    let rest = slot.rest
+    let sets = slot.sets
+
+    const isIsolationOrCore = picked.category === 'isolation' || picked.category === 'core'
+    if (intensity === 'heavy' && !isIsolationOrCore) {
+      // Heavy compounds: fewer reps, 120s rest (standard non-powerlifting), +1 set
+      reps = Math.min(slot.reps, 6)
+      rest = 120
+      sets = Math.max(slot.sets, 4)
+    } else if (intensity === 'moderate' && !isIsolationOrCore) {
+      // Moderate compounds: keep slot reps, cap rest at 90s
+      rest = Math.min(slot.rest, 90)
+    } else if ((intensity === 'volume' || isIsolationOrCore)) {
+      // Volume (or isolation in any session): more reps, less rest
+      reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
+      rest = Math.min(slot.rest, 90)
+    }
+
+    // Isometric exercises (plank, side plank) use time instead of reps
+    const isIsometric = picked.tags.includes('isometric')
+    if (isIsometric) {
+      reps = 30 // 30 seconds per set
+      sets = 3
+      rest = 60
+    }
+
+    programExercises.push({
+      exerciseId: picked.id ?? 0,
+      order: exerciseOrder++,
+      sets,
+      targetReps: reps,
+      restSeconds: rest,
+      isRehab: picked.isRehab,
+      isTimeBased: isIsometric,
+    })
   }
 
   // Trim to time budget AFTER intensity adjustments are applied
