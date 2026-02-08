@@ -406,7 +406,9 @@ function SessionRunner({
           category: currentCatalogExercise.category as 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core',
           primaryMuscles: currentCatalogExercise.primaryMuscles,
           isRehab: currentCatalogExercise.isRehab,
+          contraindications: currentCatalogExercise.contraindications,
         }}
+        activeZones={data.conditions.map(c => c.bodyZone)}
         target={{
           sets: currentProgramExercise.sets,
           reps: currentProgramExercise.targetReps,

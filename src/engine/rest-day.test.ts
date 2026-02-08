@@ -6,22 +6,22 @@ describe('generateRestDayRoutine', () => {
   const mockConditions: HealthCondition[] = [
     {
       id: 1, userId: 1, bodyZone: 'upper_back', label: 'Posture',
-      diagnosis: 'Posture antérieure', painLevel: 3, since: '2 ans',
+      diagnosis: 'Posture antérieure', since: '2 ans',
       notes: '', isActive: true, createdAt: new Date(),
     },
     {
       id: 2, userId: 1, bodyZone: 'foot_left', label: 'Pieds plats',
-      diagnosis: 'Pieds plats et arthrite', painLevel: 4, since: '3 ans',
+      diagnosis: 'Pieds plats et arthrite', since: '3 ans',
       notes: '', isActive: true, createdAt: new Date(),
     },
     {
       id: 3, userId: 1, bodyZone: 'hip_right', label: 'Sciatique',
-      diagnosis: 'Compression nerf sciatique', painLevel: 5, since: '1 an',
+      diagnosis: 'Compression nerf sciatique', since: '1 an',
       notes: '', isActive: true, createdAt: new Date(),
     },
     {
       id: 4, userId: 1, bodyZone: 'knee_left', label: 'Ancien',
-      diagnosis: '', painLevel: 0, since: '', notes: '',
+      diagnosis: '', since: '', notes: '',
       isActive: false, createdAt: new Date(),
     },
   ]
@@ -69,7 +69,7 @@ describe('generateRestDayRoutine', () => {
     const elbowOnly: HealthCondition[] = [
       {
         id: 10, userId: 1, bodyZone: 'elbow_right', label: 'Golf elbow',
-        diagnosis: 'Épicondylite médiale', painLevel: 5, since: '1 an',
+        diagnosis: 'Épicondylite médiale', since: '1 an',
         notes: '', isActive: true, createdAt: new Date(),
       },
     ]
@@ -87,27 +87,27 @@ describe('generateRestDayRoutine', () => {
     const mixedConditions: HealthCondition[] = [
       {
         id: 10, userId: 1, bodyZone: 'elbow_right', label: 'Golf elbow',
-        diagnosis: 'Épicondylite médiale', painLevel: 4, since: '1 an',
+        diagnosis: 'Épicondylite médiale', since: '1 an',
         notes: '', isActive: true, createdAt: new Date(),
       },
       {
         id: 1, userId: 1, bodyZone: 'upper_back', label: 'Posture',
-        diagnosis: 'Posture antérieure', painLevel: 3, since: '2 ans',
+        diagnosis: 'Posture antérieure', since: '2 ans',
         notes: '', isActive: true, createdAt: new Date(),
       },
       {
         id: 2, userId: 1, bodyZone: 'foot_left', label: 'Pieds plats',
-        diagnosis: 'Pieds plats et arthrite', painLevel: 4, since: '3 ans',
+        diagnosis: 'Pieds plats et arthrite', since: '3 ans',
         notes: '', isActive: true, createdAt: new Date(),
       },
       {
         id: 3, userId: 1, bodyZone: 'hip_right', label: 'Sciatique',
-        diagnosis: 'Compression nerf sciatique', painLevel: 5, since: '1 an',
+        diagnosis: 'Compression nerf sciatique', since: '1 an',
         notes: '', isActive: true, createdAt: new Date(),
       },
       {
         id: 4, userId: 1, bodyZone: 'knee_left', label: 'Ancien',
-        diagnosis: '', painLevel: 0, since: '', notes: '',
+        diagnosis: '', since: '', notes: '',
         isActive: false, createdAt: new Date(),
       },
     ]

@@ -21,7 +21,10 @@ export interface ExerciseNotebookProps {
     category: 'compound' | 'isolation' | 'rehab' | 'mobility' | 'core'
     primaryMuscles: string[]
     isRehab: boolean
+    contraindications: string[]
   }
+  /** Active painful zones from user's health conditions */
+  activeZones: string[]
   target: {
     sets: number
     reps: number
@@ -53,6 +56,7 @@ export default function ExerciseNotebook({
   exerciseIndex,
   totalExercises,
   userId,
+  activeZones,
   fillerSuggestions,
   swapOptions,
   onNext,
@@ -76,6 +80,10 @@ export default function ExerciseNotebook({
   const [showOccupied, setShowOccupied] = useState(false)
   const [showSwap, setShowSwap] = useState(false)
   const [workingWeight, setWorkingWeight] = useState<string>('')
+
+  // Check if exercise touches a painful zone
+  const hasContraindication = activeZones.length > 0 &&
+    exercise.contraindications.some(z => activeZones.includes(z))
 
   // Warmup sets for compounds
   const isCompound = exercise.category === 'compound'
@@ -157,6 +165,13 @@ export default function ExerciseNotebook({
             </p>
           )}
         </div>
+
+        {/* Contraindication warning */}
+        {hasContraindication && (
+          <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg px-3 py-2 mb-2">
+            <p className="text-amber-400 text-sm">Attention — zone sensible. Adapte la charge ou skip si douleur.</p>
+          </div>
+        )}
 
         {/* Description toggle + swap button */}
         <div className="flex items-center gap-3 mb-2">

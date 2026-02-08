@@ -292,7 +292,6 @@ describe('Onboarding → Program Generation integration', () => {
           bodyZone: 'knee_right',
           label: 'Tendinite genou droit',
           diagnosis: 'Tendinopathie rotulienne',
-          painLevel: 5,
           since: '6 mois',
           notes: '',
           isActive: true,

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   filterExercisesByEquipment,
-  filterExercisesByContraindications,
   determineSplit,
   generateProgram,
   estimateSlotMinutes,
@@ -42,7 +41,7 @@ function makeEquipment(name: string, isAvailable = true): GymEquipment {
 
 function makeCondition(
   bodyZone: HealthCondition['bodyZone'],
-  painLevel: number,
+  _painLevel?: number,
   isActive = true,
 ): HealthCondition {
   return {
@@ -51,7 +50,6 @@ function makeCondition(
     bodyZone,
     label: `Test ${bodyZone}`,
     diagnosis: '',
-    painLevel,
     since: '1 an',
     notes: '',
     isActive,
@@ -139,243 +137,6 @@ describe('filterExercisesByEquipment', () => {
       equipment,
     )
     expect(result).toHaveLength(4)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// filterExercisesByContraindications
-// ---------------------------------------------------------------------------
-
-describe('filterExercisesByContraindications', () => {
-  const shoulderExercise = makeExercise({
-    id: 10,
-    name: 'Overhead Press',
-    contraindications: ['shoulder_left', 'shoulder_right'],
-  })
-
-  const kneeExercise = makeExercise({
-    id: 11,
-    name: 'Squat',
-    contraindications: ['knee_left', 'knee_right', 'lower_back'],
-  })
-
-  const safeExercise = makeExercise({
-    id: 12,
-    name: 'Dead Bug',
-    contraindications: [],
-  })
-
-  it('excludes exercise when zone has painLevel >= 7 (severe)', () => {
-    const conditions = [makeCondition('shoulder_left', 8)]
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('allows exercise when zone painLevel < 7 (moderate pain)', () => {
-    const conditions = [makeCondition('shoulder_left', 5)]
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, safeExercise],
-      conditions,
-    )
-    // Both should pass because painLevel < 7
-    expect(result).toHaveLength(2)
-  })
-
-  it('allows exercise when condition is inactive', () => {
-    const conditions = [makeCondition('shoulder_left', 8, false)]
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('handles exact boundary: painLevel 7 excludes', () => {
-    const conditions = [makeCondition('knee_right', 7)]
-    const result = filterExercisesByContraindications(
-      [kneeExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('handles exact boundary: painLevel 6 allows (below threshold)', () => {
-    const conditions = [makeCondition('knee_right', 6)]
-    const result = filterExercisesByContraindications(
-      [kneeExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('handles exact boundary: painLevel 5 allows', () => {
-    const conditions = [makeCondition('knee_right', 5)]
-    const result = filterExercisesByContraindications(
-      [kneeExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('keeps all exercises when no conditions provided', () => {
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, kneeExercise, safeExercise],
-      [],
-    )
-    expect(result).toHaveLength(3)
-  })
-
-  it('excludes exercises with overlapping zones from multiple conditions', () => {
-    const conditions = [
-      makeCondition('shoulder_left', 8),
-      makeCondition('lower_back', 9),
-    ]
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, kneeExercise, safeExercise],
-      conditions,
-    )
-    // shoulderExercise excluded by shoulder_left, kneeExercise excluded by lower_back
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  // -----------------------------------------------------------------------
-  // Threshold >= 7 — aligned with session "skip" tier
-  // -----------------------------------------------------------------------
-
-  it('excludes exercises with lower_back contraindication at painLevel >= 7', () => {
-    const rowingBarre = makeExercise({
-      id: 30,
-      name: 'Rowing barre',
-      contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
-    })
-    const conditions = [makeCondition('lower_back', 7)]
-    const result = filterExercisesByContraindications(
-      [rowingBarre, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('allows exercises with lower_back contraindication at painLevel 6 (below threshold)', () => {
-    const rowingBarre = makeExercise({
-      id: 30,
-      name: 'Rowing barre',
-      contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
-    })
-    const conditions = [makeCondition('lower_back', 6)]
-    const result = filterExercisesByContraindications(
-      [rowingBarre, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('does NOT exclude machine rowing (no lower_back contraindication) even with back pain', () => {
-    const machineRowing = makeExercise({
-      id: 31,
-      name: 'Rowing machine (chest-supported)',
-      contraindications: [],
-    })
-    const conditions = [makeCondition('lower_back', 7)]
-    const result = filterExercisesByContraindications(
-      [machineRowing, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('does NOT exclude leg press (no lower_back contraindication) even with back pain', () => {
-    const legPress = makeExercise({
-      id: 32,
-      name: 'Leg press',
-      contraindications: [],
-    })
-    const conditions = [makeCondition('lower_back', 7)]
-    const result = filterExercisesByContraindications(
-      [legPress, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('does NOT exclude hip thrust (no lower_back contraindication) even with back pain', () => {
-    const hipThrust = makeExercise({
-      id: 33,
-      name: 'Hip thrust smith machine',
-      contraindications: ['hip_left', 'hip_right'],
-    })
-    const conditions = [makeCondition('lower_back', 7)]
-    const result = filterExercisesByContraindications(
-      [hipThrust, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('knee pain at 6 does NOT trigger filtering (below threshold)', () => {
-    const conditions = [makeCondition('knee_left', 6)]
-    const result = filterExercisesByContraindications(
-      [kneeExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(2)
-  })
-
-  it('knee pain at 7 excludes exercises with knee contraindication', () => {
-    const conditions = [makeCondition('knee_left', 7)]
-    const result = filterExercisesByContraindications(
-      [kneeExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('shoulder pain at 7 excludes exercises with shoulder contraindication', () => {
-    const conditions = [makeCondition('shoulder_left', 7)]
-    const result = filterExercisesByContraindications(
-      [shoulderExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('elbow pain at 7 excludes exercises with elbow contraindication', () => {
-    const elbowExercise = makeExercise({
-      id: 35,
-      name: 'Curl biceps barre',
-      contraindications: ['elbow_left', 'elbow_right'],
-    })
-    const conditions = [makeCondition('elbow_left', 7)]
-    const result = filterExercisesByContraindications(
-      [elbowExercise, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
-  })
-
-  it('excludes SDT with lower_back contraindication at painLevel 7', () => {
-    const sdt = makeExercise({
-      id: 34,
-      name: 'SDT smith machine (soulevé de terre)',
-      contraindications: ['lower_back'],
-    })
-    const conditions = [makeCondition('lower_back', 7)]
-    const result = filterExercisesByContraindications(
-      [sdt, safeExercise],
-      conditions,
-    )
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe('Dead Bug')
   })
 })
 
@@ -564,25 +325,20 @@ describe('generateProgram', () => {
     }
   })
 
-  it('respects contraindication filtering — excludes exercises for painful zones', () => {
+  it('conditions do not affect exercise count — no filtering by health conditions', () => {
     const conditions = [makeCondition('shoulder_left', 8)]
-    // Add a shoulder-contraindicated exercise to catalog
-    const shoulderBadExercise = makeExercise({
-      id: 20,
-      name: 'Overhead Press',
-      category: 'compound',
-      tags: ['push', 'upper_body', 'shoulders'],
-      equipmentNeeded: ['barbell'],
-      contraindications: ['shoulder_left', 'shoulder_right'],
-    })
-    const result = generateProgram(
+    const withConditions = generateProgram(
       { ...baseInput, daysPerWeek: 3, conditions },
-      [...catalog, shoulderBadExercise],
+      catalog,
     )
-    for (const session of result.sessions) {
-      for (const ex of session.exercises) {
-        expect(ex.exerciseId).not.toBe(20)
-      }
+    const withoutConditions = generateProgram(
+      { ...baseInput, daysPerWeek: 3, conditions: [] },
+      catalog,
+    )
+    // Same number of exercises in each session regardless of conditions
+    for (let i = 0; i < withConditions.sessions.length; i++) {
+      expect(withConditions.sessions[i].exercises.length)
+        .toBe(withoutConditions.sessions[i].exercises.length)
     }
   })
 
@@ -1946,428 +1702,6 @@ describe('Full Body structured sessions', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Lower back contraindication filtering — hip hinge slot adaptation
-// ---------------------------------------------------------------------------
-
-describe('Lower back contraindication filtering — hip hinge slot adaptation', () => {
-  // Shared catalog with SDT exercises (111, 112) having lower_back contraindication
-  // and hip thrust (113) without lower_back contraindication
-  const sdtCatalog: Exercise[] = [
-    // === COMPOUND LOWER: Quad-dominant ===
-    makeExercise({
-      id: 101, name: 'Leg press', category: 'compound',
-      primaryMuscles: ['quadriceps', 'fessiers'],
-      tags: ['legs', 'lower_body', 'machine'],
-      equipmentNeeded: ['leg_press'],
-    }),
-    makeExercise({
-      id: 102, name: 'Squat smith machine', category: 'compound',
-      primaryMuscles: ['quadriceps', 'fessiers'],
-      tags: ['legs', 'lower_body', 'squat', 'smith_machine'],
-      equipmentNeeded: ['smith_machine'],
-    }),
-
-    // === COMPOUND LOWER: Unilateral legs ===
-    makeExercise({
-      id: 103, name: 'Fentes haltères', category: 'compound',
-      primaryMuscles: ['quadriceps', 'fessiers'],
-      tags: ['legs', 'lower_body', 'lunge', 'dumbbells', 'unilateral'],
-      equipmentNeeded: ['dumbbells'],
-    }),
-
-    // === ISOLATION LOWER: Leg extension ===
-    makeExercise({
-      id: 105, name: 'Leg extension', category: 'isolation',
-      primaryMuscles: ['quadriceps'],
-      tags: ['legs', 'lower_body', 'quadriceps', 'machine'],
-      equipmentNeeded: ['leg_extension'],
-    }),
-
-    // === ISOLATION LOWER: Leg curl ===
-    makeExercise({
-      id: 106, name: 'Leg curl (ischio-jambiers)', category: 'isolation',
-      primaryMuscles: ['ischio-jambiers'],
-      tags: ['legs', 'lower_body', 'hamstrings', 'machine'],
-      equipmentNeeded: ['leg_curl'],
-    }),
-
-    // === ISOLATION LOWER: Calves ===
-    makeExercise({
-      id: 107, name: 'Mollets debout smith machine (calf raise)', category: 'isolation',
-      primaryMuscles: ['gastrocnémiens'],
-      tags: ['legs', 'lower_body', 'calves', 'smith_machine'],
-      equipmentNeeded: ['smith_machine'],
-    }),
-
-    // === CORE ===
-    makeExercise({
-      id: 109, name: 'Dead bug', category: 'core',
-      primaryMuscles: ['transverse abdominal', 'rectus abdominis'],
-      tags: ['core', 'abs', 'stability', 'bodyweight'],
-      equipmentNeeded: [],
-    }),
-    makeExercise({
-      id: 110, name: 'Pallof press', category: 'core',
-      primaryMuscles: ['obliques', 'transverse abdominal'],
-      tags: ['core', 'anti_rotation', 'stability', 'cable'],
-      equipmentNeeded: ['cable'],
-    }),
-
-    // === COMPOUND LOWER: Hip hinge (SDT variants) ===
-    makeExercise({
-      id: 111, name: 'SDT smith machine (soulevé de terre jambes tendues)', category: 'compound',
-      primaryMuscles: ['ischio-jambiers', 'fessiers'],
-      contraindications: ['lower_back'],
-      tags: ['pull', 'lower_body', 'posterior_chain', 'smith_machine', 'hamstrings'],
-      equipmentNeeded: ['smith_machine'],
-    }),
-    makeExercise({
-      id: 112, name: 'Soulevé de terre roumain haltères', category: 'compound',
-      primaryMuscles: ['ischio-jambiers', 'fessiers'],
-      contraindications: ['lower_back'],
-      tags: ['pull', 'lower_body', 'posterior_chain', 'dumbbells', 'hamstrings'],
-      equipmentNeeded: ['dumbbells'],
-    }),
-
-    // === COMPOUND LOWER: Hip thrust ===
-    makeExercise({
-      id: 113, name: 'Hip thrust smith machine', category: 'compound',
-      primaryMuscles: ['fessiers'],
-      tags: ['lower_body', 'glutes', 'smith_machine'],
-      equipmentNeeded: ['smith_machine', 'bench'],
-    }),
-
-    // === ISOLATION LOWER: Pull-through ===
-    makeExercise({
-      id: 114, name: 'Pull-through câble (tirage entre les jambes)', category: 'isolation',
-      primaryMuscles: ['fessiers', 'ischio-jambiers'],
-      tags: ['lower_body', 'glutes', 'posterior_chain', 'cable'],
-      equipmentNeeded: ['cable', 'rope_attachment'],
-    }),
-
-    // === COMPOUND UPPER: Horizontal push ===
-    makeExercise({
-      id: 201, name: 'Développé couché haltères', category: 'compound',
-      primaryMuscles: ['pectoraux'],
-      tags: ['push', 'upper_body', 'chest', 'dumbbells'],
-      equipmentNeeded: ['bench', 'dumbbells'],
-    }),
-
-    // === COMPOUND UPPER: Vertical push ===
-    makeExercise({
-      id: 203, name: 'Développé militaire haltères', category: 'compound',
-      primaryMuscles: ['deltoïdes'],
-      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
-      equipmentNeeded: ['dumbbells'],
-    }),
-
-    // === ISOLATION UPPER ===
-    makeExercise({
-      id: 205, name: 'Élévations latérales', category: 'isolation',
-      primaryMuscles: ['deltoïdes latéraux'],
-      tags: ['push', 'upper_body', 'shoulders', 'dumbbells'],
-      equipmentNeeded: ['dumbbells'],
-    }),
-    makeExercise({
-      id: 206, name: 'Câble crossover (écartés câble)', category: 'isolation',
-      primaryMuscles: ['pectoraux'],
-      tags: ['push', 'upper_body', 'chest', 'cable'],
-      equipmentNeeded: ['cable'],
-    }),
-    makeExercise({
-      id: 208, name: 'Face pull', category: 'isolation',
-      primaryMuscles: ['deltoïdes postérieurs', 'rhomboïdes'],
-      tags: ['pull', 'upper_body', 'shoulders', 'posture', 'cable'],
-      equipmentNeeded: ['cable', 'rope_attachment'],
-    }),
-    makeExercise({
-      id: 209, name: 'Extension triceps poulie haute', category: 'isolation',
-      primaryMuscles: ['triceps'],
-      tags: ['push', 'upper_body', 'arms', 'triceps', 'cable'],
-      equipmentNeeded: ['cable'],
-    }),
-
-    // === COMPOUND UPPER: Horizontal pull ===
-    makeExercise({
-      id: 210, name: 'Rowing câble assis', category: 'compound',
-      primaryMuscles: ['dorsaux', 'rhomboïdes'],
-      tags: ['pull', 'upper_body', 'back', 'cable', 'posture'],
-      equipmentNeeded: ['cable'],
-    }),
-
-    // === COMPOUND UPPER: Unilateral pull ===
-    makeExercise({
-      id: 212, name: 'Tirage horizontal câble unilatéral', category: 'compound',
-      primaryMuscles: ['dorsaux', 'rhomboïdes'],
-      tags: ['pull', 'upper_body', 'back', 'cable', 'unilateral'],
-      equipmentNeeded: ['cable'],
-    }),
-
-    // === COMPOUND UPPER: Vertical pull ===
-    makeExercise({
-      id: 213, name: 'Tirage vertical (lat pulldown)', category: 'compound',
-      primaryMuscles: ['dorsaux', 'grand rond'],
-      tags: ['pull', 'upper_body', 'back', 'machine'],
-      equipmentNeeded: ['lat_pulldown'],
-    }),
-
-    // === ISOLATION UPPER: Biceps ===
-    makeExercise({
-      id: 214, name: 'Curl biceps haltères', category: 'isolation',
-      primaryMuscles: ['biceps'],
-      tags: ['pull', 'upper_body', 'arms', 'biceps', 'dumbbells'],
-      equipmentNeeded: ['dumbbells'],
-    }),
-
-    // === REHAB ===
-    makeExercise({
-      id: 215, name: 'Band pull-apart', category: 'rehab',
-      primaryMuscles: ['deltoïdes postérieurs', 'rhomboïdes'],
-      tags: ['rehab', 'posture', 'shoulders', 'upper_back', 'band'],
-      equipmentNeeded: ['resistance_band'],
-      isRehab: true,
-    }),
-  ]
-
-  const sdtEquipment: GymEquipment[] = [
-    makeEquipment('bench'),
-    makeEquipment('dumbbells'),
-    makeEquipment('dumbbell'),
-    makeEquipment('cable'),
-    makeEquipment('rope_attachment'),
-    makeEquipment('smith_machine'),
-    makeEquipment('leg_press'),
-    makeEquipment('leg_extension'),
-    makeEquipment('leg_curl'),
-    makeEquipment('lat_pulldown'),
-    makeEquipment('resistance_band'),
-  ]
-
-  const sdtBaseInput = {
-    userId: 1,
-
-    conditions: [] as HealthCondition[],
-    equipment: sdtEquipment,
-
-    minutesPerSession: 60,
-  }
-
-  function getSession(result: ReturnType<typeof generateProgram>, nameFragment: string) {
-    return result.sessions.find((s) => s.name.toLowerCase().includes(nameFragment.toLowerCase()))!
-  }
-
-  function sessionExerciseIds(session: { exercises: { exerciseId: number }[] }): number[] {
-    return session.exercises.map((e) => e.exerciseId)
-  }
-
-  // SDT exercise IDs: 111 = SDT smith, 112 = Soulevé de terre roumain
-  const sdtExerciseIds = [111, 112]
-  const hipThrustId = 113
-
-  // -----------------------------------------------------------------------
-  // Upper/Lower split — Lower 2
-  // -----------------------------------------------------------------------
-  describe('Upper/Lower — Lower 2', () => {
-    it('without lower_back condition, Lower 2 contains SDT as expected', () => {
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4 },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      const ids = sessionExerciseIds(lower2)
-      expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
-    })
-
-    it('with lower_back painLevel=7, Lower 2 does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      const ids = sessionExerciseIds(lower2)
-      for (const sdtId of sdtExerciseIds) {
-        expect(ids).not.toContain(sdtId)
-      }
-    })
-
-    it('with lower_back painLevel=7 (boundary), Lower 2 excludes SDT', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      const ids = sessionExerciseIds(lower2)
-      for (const sdtId of sdtExerciseIds) {
-        expect(ids).not.toContain(sdtId)
-      }
-    })
-
-    it('with lower_back painLevel=6, Lower 2 keeps SDT (below threshold)', () => {
-      const conditions = [makeCondition('lower_back', 6)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      const ids = sessionExerciseIds(lower2)
-      expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
-    })
-
-    it('with inactive lower_back condition (painLevel=7), Lower 2 keeps SDT', () => {
-      const conditions = [makeCondition('lower_back', 7, false)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions },
-        sdtCatalog,
-      )
-      const lower2 = getSession(result, 'lower 2')
-      const ids = sessionExerciseIds(lower2)
-      expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // PPL split — Legs B
-  // -----------------------------------------------------------------------
-  describe('PPL — Legs B', () => {
-    it('with lower_back painLevel=7, Legs B does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 5, conditions },
-        sdtCatalog,
-      )
-      const legsB = getSession(result, 'legs b')
-      const ids = sessionExerciseIds(legsB)
-      for (const sdtId of sdtExerciseIds) {
-        expect(ids).not.toContain(sdtId)
-      }
-    })
-
-    it('without lower_back condition, Legs B contains SDT', () => {
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 5 },
-        sdtCatalog,
-      )
-      const legsB = getSession(result, 'legs b')
-      const ids = sessionExerciseIds(legsB)
-      expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Full Body split — Full Body B
-  // -----------------------------------------------------------------------
-  describe('Full Body — Full Body B', () => {
-    it('with lower_back painLevel=7, Full Body B does NOT contain any SDT exercise', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 2, conditions },
-        sdtCatalog,
-      )
-      const fbB = getSession(result, 'full body b')
-      const ids = sessionExerciseIds(fbB)
-      for (const sdtId of sdtExerciseIds) {
-        expect(ids).not.toContain(sdtId)
-      }
-    })
-
-    it('without lower_back condition, Full Body B contains SDT', () => {
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 2 },
-        sdtCatalog,
-      )
-      const fbB = getSession(result, 'full body b')
-      const ids = sessionExerciseIds(fbB)
-      expect(ids.some((id) => sdtExerciseIds.includes(id))).toBe(true)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Broader lower_back filtering — exercises beyond SDT
-  // -----------------------------------------------------------------------
-  describe('Broader lower_back filtering', () => {
-    // Extended catalog that adds rowing barre (lower_back contraindicated)
-    // and rowing câble (no lower_back contraindication)
-    const extendedCatalog: Exercise[] = [
-      ...sdtCatalog,
-      makeExercise({
-        id: 301, name: 'Rowing barre', category: 'compound',
-        primaryMuscles: ['dorsaux', 'rhomboïdes'],
-        contraindications: ['lower_back', 'elbow_left', 'elbow_right'],
-        tags: ['pull', 'upper_body', 'back', 'barbell'],
-        equipmentNeeded: ['barbell'],
-      }),
-      makeExercise({
-        id: 302, name: 'Rowing câble assis', category: 'compound',
-        primaryMuscles: ['dorsaux', 'rhomboïdes'],
-        contraindications: [],
-        tags: ['pull', 'upper_body', 'back', 'cable', 'posture'],
-        equipmentNeeded: ['cable'],
-      }),
-      makeExercise({
-        id: 303, name: 'Rowing machine (chest-supported)', category: 'compound',
-        primaryMuscles: ['dorsaux', 'rhomboïdes'],
-        contraindications: [],
-        tags: ['pull', 'upper_body', 'back', 'machine'],
-        equipmentNeeded: ['rowing_machine'],
-      }),
-    ]
-    const extendedEquipment = [
-      ...sdtEquipment,
-      makeEquipment('barbell'),
-      makeEquipment('rowing_machine'),
-    ]
-
-    it('with lower_back pain >= 7, rowing barre is excluded from all sessions', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
-        extendedCatalog,
-      )
-      for (const session of result.sessions) {
-        for (const ex of session.exercises) {
-          expect(ex.exerciseId).not.toBe(301)
-        }
-      }
-    })
-
-    it('with lower_back pain >= 7, rowing câble (no lower_back contraindication) survives filter', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const rowingCable = extendedCatalog.find((e) => e.id === 302)!
-      const filtered = filterExercisesByContraindications([rowingCable], conditions)
-      expect(filtered).toHaveLength(1)
-    })
-
-    it('with lower_back pain >= 7, hip thrust (no lower_back contraindication) is NOT excluded', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
-        extendedCatalog,
-      )
-      const allIds = result.sessions.flatMap((s) => s.exercises.map((e) => e.exerciseId))
-      expect(allIds).toContain(hipThrustId)
-    })
-
-    it('with lower_back pain >= 7, leg press (no lower_back contraindication) is NOT excluded', () => {
-      const conditions = [makeCondition('lower_back', 7)]
-      const result = generateProgram(
-        { ...sdtBaseInput, daysPerWeek: 4, conditions, equipment: extendedEquipment },
-        extendedCatalog,
-      )
-      const allIds = result.sessions.flatMap((s) => s.exercises.map((e) => e.exerciseId))
-      expect(allIds).toContain(101) // Leg press
-    })
-
-    it('without lower_back condition, rowing barre survives filter', () => {
-      const rowingBarre = extendedCatalog.find((e) => e.id === 301)!
-      const filtered = filterExercisesByContraindications([rowingBarre], [])
-      expect(filtered).toHaveLength(1)
-    })
-  })
-})
-
-// ---------------------------------------------------------------------------
 // trimSlotsToTimeBudget — unit tests
 // ---------------------------------------------------------------------------
 
@@ -2427,8 +1761,7 @@ describe('trimSlotsToTimeBudget', () => {
 // generateProgram — minutesPerSession integration test
 // ---------------------------------------------------------------------------
 
-describe('generateProgram — minutesPerSession', () => {
-  // Reuse a rich catalog with enough exercises for all split types
+describe('generateProgram — minutesPerSession hardcoded to 75', () => {
   const catalog: Exercise[] = [
     makeExercise({ id: 1, name: 'Bench Press', category: 'compound', primaryMuscles: ['pectoraux'], tags: ['push', 'upper_body', 'chest'], equipmentNeeded: ['bench', 'barbell'] }),
     makeExercise({ id: 2, name: 'DB Shoulder Press', category: 'compound', primaryMuscles: ['deltoïdes'], tags: ['push', 'upper_body', 'shoulders'], equipmentNeeded: ['dumbbells'] }),
@@ -2456,102 +1789,47 @@ describe('generateProgram — minutesPerSession', () => {
     makeEquipment('leg_curl'),
   ]
 
-  /**
-   * Estimate session duration using the same formula as estimateSlotMinutes:
-   *   sum(sets * (45 + restSeconds)) / 60 + 5
-   */
   function estimateSessionMinutes(session: { exercises: { sets: number; restSeconds: number }[] }): number {
     let totalSec = 0
     for (const ex of session.exercises) totalSec += ex.sets * (45 + ex.restSeconds)
     return Math.round(totalSec / 60) + 5
   }
 
-  it('with minutesPerSession: 45, all sessions estimate <= 45min (respects exact budget)', () => {
-    // After the fix, trimSessionToTimeBudget runs AFTER intensity adjustments,
-    // so sessions now respect the exact time budget specified.
+  it('all sessions estimate <= 75min (hardcoded budget)', () => {
     for (const daysPerWeek of [3, 4, 5]) {
       const result = generateProgram(
         {
           userId: 1,
-
           conditions: [],
           equipment: allEquipment,
-      
           daysPerWeek,
-          minutesPerSession: 45,
+          minutesPerSession: 75,
         },
         catalog,
       )
 
       for (const session of result.sessions) {
         const estimated = estimateSessionMinutes(session)
-        expect(estimated).toBeLessThanOrEqual(45)
+        expect(estimated).toBeLessThanOrEqual(75)
       }
     }
   })
 
-  it('with minutesPerSession: 45, sessions are shorter than with minutesPerSession: 90', () => {
+  it('input minutesPerSession is ignored — always uses 75', () => {
+    // Even if caller passes 45, program uses hardcoded 75
     for (const daysPerWeek of [3, 4, 5]) {
-      const short = generateProgram(
-        {
-          userId: 1,
-
-          conditions: [],
-          equipment: allEquipment,
-      
-          daysPerWeek,
-          minutesPerSession: 45,
-        },
+      const with45 = generateProgram(
+        { userId: 1, conditions: [], equipment: allEquipment, daysPerWeek, minutesPerSession: 45 },
+        catalog,
+      )
+      const with75 = generateProgram(
+        { userId: 1, conditions: [], equipment: allEquipment, daysPerWeek, minutesPerSession: 75 },
         catalog,
       )
 
-      const long = generateProgram(
-        {
-          userId: 1,
-
-          conditions: [],
-          equipment: allEquipment,
-      
-          daysPerWeek,
-          minutesPerSession: 90,
-        },
-        catalog,
-      )
-
-      const shortTotal = short.sessions.reduce(
-        (sum, s) => sum + estimateSessionMinutes(s),
-        0,
-      )
-      const longTotal = long.sessions.reduce(
-        (sum, s) => sum + estimateSessionMinutes(s),
-        0,
-      )
-
-      expect(shortTotal).toBeLessThanOrEqual(longTotal)
-    }
-  })
-
-  it('with minutesPerSession: 60, all sessions estimate <= 60min (bug fix: was 83min)', () => {
-    // This test verifies the fix for the bug where 60min sessions showed 83min
-    // due to intensity adjustments (heavy: +sets, +rest) being applied AFTER trimming.
-    // The fix applies trimSessionToTimeBudget AFTER buildStructuredSession's intensity adjustments.
-    for (const daysPerWeek of [3, 4, 5]) {
-      const result = generateProgram(
-        {
-          userId: 1,
-
-          conditions: [],
-          equipment: allEquipment,
-      
-          daysPerWeek,
-          minutesPerSession: 60,
-        },
-        catalog,
-      )
-
-      for (const session of result.sessions) {
-        const estimated = estimateSessionMinutes(session)
-        expect(estimated).toBeLessThanOrEqual(60)
+      // Same number of exercises since budget is always 75
+      for (let i = 0; i < with45.sessions.length; i++) {
+        expect(with45.sessions[i].exercises.length).toBe(with75.sessions[i].exercises.length)
       }
     }
   })

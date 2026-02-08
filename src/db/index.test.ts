@@ -35,7 +35,7 @@ describe('HealthCoachDB', () => {
     }) as number
     await db.healthConditions.add({
       userId, bodyZone: 'elbow_right', label: 'Golf elbow',
-      diagnosis: 'Epicondylite mediale', painLevel: 6,
+      diagnosis: 'Epicondylite mediale',
       since: '1 an', notes: 'Douleur en poussant',
       isActive: true, createdAt: new Date(),
     })

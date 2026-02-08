@@ -3,11 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
 import type { QuestionnaireResult } from '../components/onboarding/SymptomQuestionnaire'
-import { generateProgram } from '../engine/program-generator'
-
 const MAX_HISTORY = 5
-const SKIP_LOOKBACK_DAYS = 60
-const SKIP_THRESHOLD = 3
 
 function normalizeForMatching(s: string): string {
   return s
@@ -17,123 +13,8 @@ function normalizeForMatching(s: string): string {
     .trim()
 }
 
-/**
- * Check if a date is within the last N days from now.
- */
-function isWithinDays(date: Date, days: number): boolean {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - days)
-  return date >= cutoff
-}
-
-/**
- * After 3 skips of the same exercise within 60 days, auto-create a
- * HealthCondition for the skip zone (if one doesn't already exist) and
- * regenerate the workout program so the engine can adapt.
- */
-async function autoCreateConditionIfNeeded(
-  userId: number,
-  exerciseId: number,
-  exerciseName: string,
-  zone: BodyZone,
-): Promise<boolean> {
-  // 1. Count recent skips for this specific exercise within SKIP_LOOKBACK_DAYS
-  const recentSkipCount = await db.notebookEntries
-    .where('[userId+exerciseId]')
-    .equals([userId, exerciseId])
-    .filter(e => e.skipped === true && isWithinDays(e.date, SKIP_LOOKBACK_DAYS))
-    .count()
-
-  if (recentSkipCount < SKIP_THRESHOLD) {
-    return false
-  }
-
-  // 2. Check if an active HealthCondition already exists for this zone
-  const existingCondition = await db.healthConditions
-    .where('userId').equals(userId)
-    .filter(c => c.bodyZone === zone && c.isActive)
-    .first()
-
-  if (existingCondition) {
-    return false
-  }
-
-  // 3. Create the HealthCondition
-  await db.healthConditions.add({
-    userId,
-    bodyZone: zone,
-    label: `Douleur auto-détectée (${exerciseName})`,
-    diagnosis: '',
-    painLevel: 7,
-    since: new Date().toISOString().split('T')[0],
-    notes: `Créée automatiquement après 3 skips de ${exerciseName}`,
-    isActive: true,
-    createdAt: new Date(),
-  })
-
-  // 4. Regenerate the workout program with the new condition
-  try {
-    const profile = await db.userProfiles.get(userId)
-    if (!profile) return true // condition was created, but can't regenerate without profile
-
-    const conditions = await db.healthConditions
-      .where('userId').equals(userId)
-      .filter(c => c.isActive)
-      .toArray()
-
-    const equipment = await db.gymEquipment
-      .where('userId').equals(userId)
-      .toArray()
-
-    const exerciseCatalog = await db.exercises.toArray()
-
-    const generatedProgram = generateProgram(
-      {
-        userId,
-        conditions,
-        equipment,
-        daysPerWeek: profile.daysPerWeek,
-        minutesPerSession: profile.minutesPerSession,
-      },
-      exerciseCatalog,
-    )
-
-    // Note: ProgramExercise is pure prescription (sets/reps/rest).
-    // Progression data (weights) lives in WorkoutSession logs, not here.
-    // No merge needed — always use freshly generated parameters.
-
-    // Deactivate + create in a single transaction
-    await db.transaction('rw', db.workoutPrograms, async () => {
-      const activePrograms = await db.workoutPrograms
-        .where('userId').equals(userId)
-        .filter(p => p.isActive)
-        .toArray()
-
-      for (const prog of activePrograms) {
-        if (prog.id !== undefined) {
-          await db.workoutPrograms.update(prog.id, { isActive: false })
-        }
-      }
-
-      await db.workoutPrograms.add({
-        userId,
-        name: generatedProgram.name,
-        type: generatedProgram.type,
-        sessions: generatedProgram.sessions,
-        isActive: true,
-        createdAt: new Date(),
-      })
-    })
-  } catch {
-    // Regeneration failed — the condition was still created, which is the
-    // important part. Program will be regenerated on next profile edit.
-  }
-
-  return true
-}
-
 export interface SkipResult {
-  /** True if a new HealthCondition was auto-created after >= 3 skips */
+  /** True if a new HealthCondition was created via QCM */
   conditionCreated: boolean
 }
 
@@ -323,7 +204,6 @@ export function useNotebook(
             bodyZone: zone,
             label: questionnaireResult.conditionName,
             diagnosis: questionnaireResult.protocolConditionName,
-            painLevel: 0,
             since: new Date().toISOString().split('T')[0],
             notes: `Créée via QCM au skip de ${exerciseName}`,
             isActive: true,
@@ -331,17 +211,6 @@ export function useNotebook(
           })
           conditionCreated = true
         }
-      }
-
-      // Auto-create HealthCondition if this exercise has been skipped >= 3 times
-      // in the last 60 days (includes the entry we just added above)
-      if (!conditionCreated) {
-        conditionCreated = await autoCreateConditionIfNeeded(
-          userId,
-          exerciseId,
-          exerciseName,
-          zone,
-        )
       }
 
       setCurrentSets([])

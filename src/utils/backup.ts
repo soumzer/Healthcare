@@ -28,7 +28,6 @@ function sanitizeCondition(c: Record<string, unknown>, userId: number): Omit<Hea
     bodyZone: String(c.bodyZone ?? '') as HealthCondition['bodyZone'],
     label: String(c.label ?? ''),
     diagnosis: String(c.diagnosis ?? ''),
-    painLevel: Number(c.painLevel ?? 0),
     since: String(c.since ?? ''),
     notes: String(c.notes ?? ''),
     isActive: Boolean(c.isActive ?? true),

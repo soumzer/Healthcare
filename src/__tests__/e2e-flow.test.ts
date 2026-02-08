@@ -33,7 +33,6 @@ const USER_CONDITIONS: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[] = 
     bodyZone: 'elbow_right',
     label: 'Golf elbow (coude droit)',
     diagnosis: 'Epicondylite mediale',
-    painLevel: 4,
     since: '2 ans',
     notes: 'Douleur lors des mouvements de poussee et prehension',
     isActive: true,
@@ -42,7 +41,6 @@ const USER_CONDITIONS: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[] = 
     bodyZone: 'knee_right',
     label: 'Tendinite genou droit',
     diagnosis: 'Tendinopathie rotulienne',
-    painLevel: 3,
     since: '1 an',
     notes: 'Douleur en montant les escaliers',
     isActive: true,
@@ -51,7 +49,6 @@ const USER_CONDITIONS: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[] = 
     bodyZone: 'lower_back',
     label: 'Douleurs lombaires',
     diagnosis: 'Core faible, douleurs lombaires chroniques',
-    painLevel: 5,
     since: '3 ans',
     notes: 'Aggrave en position assise prolongee',
     isActive: true,
@@ -60,7 +57,6 @@ const USER_CONDITIONS: Omit<HealthCondition, 'id' | 'userId' | 'createdAt'>[] = 
     bodyZone: 'upper_back',
     label: 'Posture anteriere',
     diagnosis: 'Tete et epaules en avant, core faible',
-    painLevel: 2,
     since: '5 ans',
     notes: 'Travail de bureau',
     isActive: true,
@@ -202,37 +198,11 @@ describe('E2E flow: onboarding -> programme -> notebook session -> dashboard', (
       }
     })
 
-    it('aucun exercice n\'a de contre-indication pour les zones avec douleur severe (>= 7)', () => {
-      // Only zones with pain >= 7 trigger hard exclusion
-      // In our test data: elbow_right (4), knee_right (3), lower_back (5) — all below 7
-      // So no exercises should be excluded by contraindications in this scenario
-      const severeZones = new Set(
-        USER_CONDITIONS
-          .filter(c => c.painLevel >= 7)
-          .map(c => c.bodyZone)
-      )
-
-      // If no zones are severe, all exercises are allowed regardless of contraindications
-      if (severeZones.size === 0) {
-        // Just verify program was generated with exercises
-        for (const session of generatedProgram.sessions) {
-          expect(session.exercises.length).toBeGreaterThan(0)
-        }
-        return
-      }
-
+    it('conditions do not filter exercises — program includes all exercises regardless', () => {
+      // No contraindication filtering in program generator
+      // Just verify program was generated with exercises
       for (const session of generatedProgram.sessions) {
-        for (const progEx of session.exercises) {
-          const exercise = exerciseCatalog.find(e => e.id === progEx.exerciseId)
-          expect(exercise).toBeDefined()
-          const hasContraindication = exercise!.contraindications.some(
-            zone => severeZones.has(zone)
-          )
-          expect(
-            hasContraindication,
-            `Exercise "${exercise!.name}" has contraindication for a severe zone`
-          ).toBe(false)
-        }
+        expect(session.exercises.length).toBeGreaterThan(0)
       }
     })
 

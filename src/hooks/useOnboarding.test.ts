@@ -49,7 +49,7 @@ describe('useOnboarding', () => {
       result.current.updateBody({ name: 'Test', height: 180, weight: 80, age: 25, sex: 'male' })
       result.current.updateConditions([{
         bodyZone: 'elbow_right', label: 'Golf elbow',
-        diagnosis: 'Epicondylite mediale', painLevel: 6,
+        diagnosis: 'Epicondylite mediale',
         since: '1 an', notes: '', isActive: true,
       }])
     })

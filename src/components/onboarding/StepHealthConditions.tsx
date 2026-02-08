@@ -81,8 +81,7 @@ export default function StepHealthConditions({ state, updateConditions, nextStep
     const zoneName = bodyZones.find(z => z.zone === form.bodyZone)?.label ?? ''
     const label = form.label.trim() || `Douleur ${zoneName}`
     const { editIndex, ...conditionData } = form
-    // painLevel defaults to 0 - user decides to skip exercises themselves
-    const newCondition = { ...conditionData, label, painLevel: 0, isActive: true }
+    const newCondition = { ...conditionData, label, isActive: true }
 
     if (editIndex !== undefined) {
       // Update existing condition

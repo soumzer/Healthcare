@@ -19,7 +19,6 @@ export interface HealthCondition {
   bodyZone: BodyZone
   label: string // e.g. "Golf elbow", "Tendinite genou droit"
   diagnosis: string
-  painLevel: number // 0-10 at onboarding
   since: string // e.g. "2 ans"
   notes: string
   isActive: boolean
@@ -127,7 +126,6 @@ export interface SessionSet {
   repsInReserve?: number
   painReported: boolean
   painZone?: BodyZone
-  painLevel?: number
   restPrescribedSeconds: number
   restActualSeconds?: number
   completedAt?: Date

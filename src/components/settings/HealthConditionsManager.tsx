@@ -82,7 +82,6 @@ export default function HealthConditionsManager({ userId }: Props) {
     await db.healthConditions.update(editingId, {
       label,
       diagnosis: form.diagnosis,
-      painLevel: 0, // User decides to skip exercises themselves
       since: form.since,
       notes: form.notes,
       isActive: true,
@@ -101,7 +100,6 @@ export default function HealthConditionsManager({ userId }: Props) {
       bodyZone: form.bodyZone,
       label,
       diagnosis: form.diagnosis,
-      painLevel: 0, // User decides to skip exercises themselves
       since: form.since,
       notes: form.notes,
       isActive: true,
