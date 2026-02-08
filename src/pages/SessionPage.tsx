@@ -44,7 +44,7 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
     )
   }
 
-  const { program, user, allExercises } = data
+  const { program, user, allExercises, conditions } = data
   const programSession = program.sessions?.[sessionIndex]
 
   if (!programSession || !programSession.exercises?.length) {
@@ -64,6 +64,7 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
       userId={user.id!}
       programId={programId}
       allExercises={allExercises}
+      activeZones={conditions.map(c => c.bodyZone)}
     />
   )
 }
@@ -73,11 +74,13 @@ function SessionRunner({
   userId,
   programId,
   allExercises,
+  activeZones,
 }: {
   programSession: ProgramSession
   userId: number
   programId: number
   allExercises: Exercise[]
+  activeZones: string[]
 }) {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<SessionPhase>('warmup')
@@ -408,7 +411,7 @@ function SessionRunner({
           isRehab: currentCatalogExercise.isRehab,
           contraindications: currentCatalogExercise.contraindications,
         }}
-        activeZones={data.conditions.map(c => c.bodyZone)}
+        activeZones={activeZones}
         target={{
           sets: currentProgramExercise.sets,
           reps: currentProgramExercise.targetReps,
