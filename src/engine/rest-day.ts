@@ -39,8 +39,9 @@ const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
   'foot_left', 'foot_right',
 ])
 
-const MAX_REHAB_EXERCISES_NORMAL = 5
-const MAX_REHAB_EXERCISES_ACCENT = 7 // 5 normal + 2 extra for skip zone
+const BASE_REHAB_EXERCISES = 5
+const ACCENT_BONUS = 2 // extra slots for skip zone
+const CONDITION_THRESHOLD = 4 // above this, scale up max exercises
 
 // Spondylarthrite ankylosante protocol name (normalized for matching)
 const SA_PROTOCOL_NAME_NORMALIZED = 'spondylarthrite ankylosante'
@@ -180,7 +181,10 @@ export function generateRestDayRoutine(
       }
     }
 
-    const maxExercises = accentZones.length > 0 ? MAX_REHAB_EXERCISES_ACCENT : MAX_REHAB_EXERCISES_NORMAL
+    // Scale max exercises: 5 base, +1 per condition above 4, cap at 10
+    const conditionBonus = Math.max(0, nonSAConditions.length - CONDITION_THRESHOLD)
+    const baseMax = Math.min(BASE_REHAB_EXERCISES + conditionBonus, 10)
+    const maxExercises = accentZones.length > 0 ? baseMax + ACCENT_BONUS : baseMax
     const selectedExercises = accentZones.length > 0
       ? selectRotatedExercisesWithAccent(allExercisesWithProtocol, accentZones, maxExercises)
       : selectRotatedExercises(allExercisesWithProtocol, maxExercises)

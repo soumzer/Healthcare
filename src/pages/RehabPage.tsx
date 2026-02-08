@@ -1,26 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import type { NotebookEntry, NotebookSet, BodyZone } from '../db/types'
-import { generateRestDayRoutine, type RestDayVariant } from '../engine/rest-day'
+import type { NotebookEntry, NotebookSet } from '../db/types'
+import { generateRestDayRoutine } from '../engine/rest-day'
 import { recordRehabExercisesDone } from '../utils/rehab-rotation'
-
-const UPPER_ZONES: ReadonlySet<BodyZone> = new Set([
-  'neck', 'shoulder_left', 'shoulder_right',
-  'elbow_left', 'elbow_right',
-  'wrist_left', 'wrist_right',
-  'upper_back',
-])
-
-const LOWER_ZONES: ReadonlySet<BodyZone> = new Set([
-  'lower_back',
-  'hip_left', 'hip_right',
-  'knee_left', 'knee_right',
-  'ankle_left', 'ankle_right',
-  'foot_left', 'foot_right',
-])
-
-const STORAGE_KEY = 'rest_day_last_variant'
 
 const EXTERNAL_VIDEOS = [
   { id: 'full_body', label: 'Full body stretching', duration: '10 min' },
@@ -30,11 +13,6 @@ const EXTERNAL_VIDEOS = [
   { id: 'ankles_feet', label: 'Ankles & feet mobility', duration: '5 min' },
 ]
 
-const VARIANT_LABELS: Record<RestDayVariant, string> = {
-  upper: 'Haut du corps',
-  lower: 'Bas du corps',
-  all: 'Routine complete',
-}
 
 const INTENSITY_LABELS: Record<string, { label: string; className: string }> = {
   very_light: { label: 'Tres leger', className: 'text-emerald-400 bg-emerald-900/30' },
@@ -47,15 +25,6 @@ function getNextVideoIndex(): number {
   return (lastIdx + 1) % EXTERNAL_VIDEOS.length
 }
 
-function pickVariant(conditions: { bodyZone: BodyZone }[]): RestDayVariant {
-  const hasUpper = conditions.some(c => UPPER_ZONES.has(c.bodyZone))
-  const hasLower = conditions.some(c => LOWER_ZONES.has(c.bodyZone))
-
-  if (!hasUpper || !hasLower) return 'all'
-
-  const last = localStorage.getItem(STORAGE_KEY) as RestDayVariant | null
-  return last === 'upper' ? 'lower' : 'upper'
-}
 
 /** Check if reps string is time-based (e.g. "30s", "45s") */
 function isTimeBased(reps: string): boolean {
@@ -129,19 +98,14 @@ export default function RehabPage() {
     [activePainReports]
   )
 
-  const variant = useMemo(
-    () => conditions && conditions.length > 0 ? pickVariant(conditions) : 'all' as RestDayVariant,
-    [conditions]
-  )
-
   const [refreshKey, setRefreshKey] = useState(0)
 
   const routine = useMemo(
     () => conditions && conditions.length > 0
-      ? generateRestDayRoutine(conditions, variant, accentZones)
+      ? generateRestDayRoutine(conditions, 'all', accentZones)
       : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [conditions, variant, accentZones, refreshKey]
+    [conditions, accentZones, refreshKey]
   )
 
   const [videoIdx] = useState(() => getNextVideoIndex())
@@ -365,11 +329,6 @@ export default function RehabPage() {
         recordRehabExercisesDone(completedNames)
       }
 
-      // Update variant preference
-      if (regularExercisesCompleted > 0 && variant !== 'all') {
-        localStorage.setItem(STORAGE_KEY, variant)
-      }
-
       // Decrement accentDaysRemaining on active PainReports (skip zone feature)
       if (regularExercisesCompleted > 0) {
         const activePainReports = await db.painReports
@@ -391,7 +350,7 @@ export default function RehabPage() {
     } finally {
       setIsSaving(false)
     }
-  }, [user, routine, isSaving, getLog, getSaLog, variant, videoIdx])
+  }, [user, routine, isSaving, getLog, getSaLog, videoIdx])
 
   const handleContinue = useCallback(() => {
     // Reset all state and refresh exercises
@@ -539,7 +498,7 @@ export default function RehabPage() {
               Jour de repos
             </p>
             <h2 className="text-xl font-bold">
-              {VARIANT_LABELS[variant]} &middot; ~{routine.totalMinutes} min
+              Routine complète &middot; ~{routine.totalMinutes} min
             </h2>
             <p className="text-zinc-400 text-sm mt-1">
               Saisis tes series ou coche les exercices chronometres
