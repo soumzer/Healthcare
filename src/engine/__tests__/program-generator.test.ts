@@ -1478,8 +1478,8 @@ describe('Push/Pull/Legs structured sessions', () => {
       expect(ids.some((id) => [213, 225].includes(id))).toBe(true)
     })
 
-    it('contains face pull', () => {
-      expect(ids).toContain(208)
+    it('contains a core exercise', () => {
+      expect(ids.some((id) => [109, 110, 128, 129].includes(id))).toBe(true)
     })
 
     it('has no duplicate exercise IDs', () => {
@@ -1507,8 +1507,8 @@ describe('Push/Pull/Legs structured sessions', () => {
       expect(ids.some((id) => [210, 211, 212, 224].includes(id))).toBe(true)
     })
 
-    it('contains face pull', () => {
-      expect(ids).toContain(208)
+    it('contains a core exercise', () => {
+      expect(ids.some((id) => [109, 110, 128, 129].includes(id))).toBe(true)
     })
 
     it('has no duplicate exercise IDs', () => {
@@ -1578,15 +1578,11 @@ describe('Push/Pull/Legs structured sessions', () => {
   // Cross-session invariants
   // -----------------------------------------------------------------------
   describe('Cross-session invariants', () => {
-    it('face pull appears in all push and pull sessions', () => {
+    it('face pull appears in all push sessions', () => {
       const pushA = getSession(result, 'push a')
       const pushB = getSession(result, 'push b')
-      const pullA = getSession(result, 'pull a')
-      const pullB = getSession(result, 'pull b')
       expect(sessionExerciseIds(pushA)).toContain(208)
       expect(sessionExerciseIds(pushB)).toContain(208)
-      expect(sessionExerciseIds(pullA)).toContain(208)
-      expect(sessionExerciseIds(pullB)).toContain(208)
     })
 
     it('no exercise ID duplicated within any single session', () => {
@@ -1857,11 +1853,11 @@ describe('Full Body structured sessions', () => {
       }
     })
 
-    it('each session has 3-7 exercises (respects time budget)', () => {
+    it('each session has 3-9 exercises (respects time budget)', () => {
       // Time budget trimming keeps minimum 3 exercises
       for (const session of result2.sessions) {
         expect(session.exercises.length).toBeGreaterThanOrEqual(3)
-        expect(session.exercises.length).toBeLessThanOrEqual(7)
+        expect(session.exercises.length).toBeLessThanOrEqual(9)
       }
     })
   })

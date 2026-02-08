@@ -397,10 +397,13 @@ function buildStructuredSession(
       } else {
         const isIsolationOrCore = picked.category === 'isolation' || picked.category === 'core'
         if (intensity === 'heavy' && !picked.isRehab && !isIsolationOrCore) {
-          // Heavy compounds: fewer reps, more rest, +1 set
+          // Heavy compounds: fewer reps, 120s rest (standard non-powerlifting), +1 set
           reps = Math.min(slot.reps, 6)
-          rest = Math.max(slot.rest, 150)
+          rest = 120
           sets = Math.max(slot.sets, 4)
+        } else if (intensity === 'moderate' && !picked.isRehab && !isIsolationOrCore) {
+          // Moderate compounds: keep slot reps, cap rest at 90s
+          rest = Math.min(slot.rest, 90)
         } else if ((intensity === 'volume' || isIsolationOrCore) && !picked.isRehab) {
           // Volume (or isolation in any session): more reps, less rest
           reps = Math.max(slot.reps, picked.category === 'compound' ? 12 : 15)
@@ -528,6 +531,22 @@ function buildFullBodySessions(
       && (e.category === 'isolation'),
   )
 
+  // Leg curl
+  const legCurls = nonRehab.filter(
+    (e) => e.name.toLowerCase().includes('leg curl'),
+  )
+
+  // Quad isolation (leg extension)
+  const quadIsolation = nonRehab.filter(
+    (e) => e.category === 'isolation' && exercisesForMuscles([e], ['quadriceps']).length > 0,
+  )
+
+  // Calf exercises
+  const calves = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['gastrocnémiens', 'soléaire', 'mollets']).length > 0
+      && e.tags.includes('calves'),
+  )
+
   // -----------------------------------------------------------------------
   // Full Body A
   // -----------------------------------------------------------------------
@@ -582,13 +601,20 @@ function buildFullBodySessions(
       reps: 15,
       rest: 60,
     },
+    {
+      label: 'Calf',
+      candidates: () => calves,
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
   // Full Body B
   // -----------------------------------------------------------------------
 
-  // Full Body B: 3 compounds + 2 isolations + 1 core = 6 exercices
+  // Full Body B: 3 compounds + 3 isolations + 1 core = 7 exercices (core trimmed at 60min)
   const fullBodyBSlots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
@@ -613,6 +639,22 @@ function buildFullBodySessions(
       sets: 4,
       reps: 10,
       rest: 150,
+    },
+    {
+      label: 'Chest accessory',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'développé incliné',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+    {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 15,
+      rest: 60,
     },
     {
       label: 'Élévations latérales',
@@ -695,6 +737,29 @@ function buildFullBodySessions(
       reps: 15,
       rest: 60,
     },
+    {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Leg curl',
+      candidates: () => legCurls,
+      preferredName: 'leg curl',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+    {
+      label: 'Calf',
+      candidates: () => calves,
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
@@ -740,6 +805,11 @@ function buildUpperLowerSessions(
   // Leg curl
   const legCurls = nonRehab.filter(
     (e) => e.name.toLowerCase().includes('leg curl'),
+  )
+
+  // Quad isolation (leg extension)
+  const quadIsolation = nonRehab.filter(
+    (e) => e.category === 'isolation' && exercisesForMuscles([e], ['quadriceps']).length > 0,
   )
 
   // Calf exercises
@@ -819,11 +889,17 @@ function buildUpperLowerSessions(
       && (e.category === 'isolation'),
   )
 
+  // Triceps exercises
+  const tricepsExercises = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['triceps']).length > 0
+      && (e.category === 'isolation'),
+  )
+
   // -----------------------------------------------------------------------
   // Lower 1 — Quadriceps Focus
   // -----------------------------------------------------------------------
 
-  // Lower 1: 3 compounds + 2 isolations + 1 core = 6 exercices (~70 min)
+  // Lower 1: 3 compounds + 3 isolations + 1 core = 7 exercices
   const lower1Slots: ExerciseSlot[] = [
     {
       label: 'Quad compound',
@@ -845,9 +921,17 @@ function buildUpperLowerSessions(
       label: 'Hip hinge',
       candidates: () => hipHinges,
       preferredName: 'soulevé de terre roumain',
-      sets: 4,
+      sets: 3,
       reps: 10,
       rest: 150,
+    },
+    {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 12,
+      rest: 60,
     },
     {
       label: 'Leg curl',
@@ -874,10 +958,10 @@ function buildUpperLowerSessions(
   ]
 
   // -----------------------------------------------------------------------
-  // Upper 1 — Push Focus
+  // Upper 1 — Push Focus (with pull for 2x/week back frequency)
   // -----------------------------------------------------------------------
 
-  // Upper 1 (Push Focus): 3 compounds + 2 isolations = 5 exercices (~65 min)
+  // Upper 1: 2 push + 1 pull compound + isolations
   const upper1Slots: ExerciseSlot[] = [
     {
       label: 'Horizontal push',
@@ -888,19 +972,19 @@ function buildUpperLowerSessions(
       rest: 150,
     },
     {
-      label: 'Vertical push',
-      candidates: () => verticalPush,
-      preferredName: 'développé militaire',
+      label: 'Horizontal pull',
+      candidates: () => horizontalPull,
+      preferredName: 'rowing barre',
       sets: 4,
       reps: 8,
       rest: 150,
     },
     {
-      label: 'Incline or chest compound',
-      candidates: () => chestAccessories,
-      preferredName: 'développé incliné',
+      label: 'Vertical push',
+      candidates: () => verticalPush,
+      preferredName: 'développé militaire',
       sets: 4,
-      reps: 10,
+      reps: 8,
       rest: 150,
     },
     {
@@ -919,13 +1003,21 @@ function buildUpperLowerSessions(
       reps: 15,
       rest: 60,
     },
+    {
+      label: 'Triceps',
+      candidates: () => tricepsExercises,
+      preferredName: 'extension poulie haute',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
   // Lower 2 — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
-  // Lower 2: 3 compounds + 2 isolations + 1 core = 6 exercices (~70 min)
+  // Lower 2: 3 compounds + 3 isolations + 1 core = 7 exercices
   const lower2Slots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
@@ -952,6 +1044,14 @@ function buildUpperLowerSessions(
       rest: 150,
     },
     {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+    {
       label: 'Leg curl',
       candidates: () => legCurls,
       preferredName: 'leg curl',
@@ -976,19 +1076,11 @@ function buildUpperLowerSessions(
   ]
 
   // -----------------------------------------------------------------------
-  // Upper 2 — Pull Focus
+  // Upper 2 — Pull Focus (with push for 2x/week chest frequency)
   // -----------------------------------------------------------------------
 
-  // Upper 2 (Pull Focus): 3 compounds + 2 isolations = 5 exercices (~65 min)
+  // Upper 2: 2 pull + 1 push compound + isolations
   const upper2Slots: ExerciseSlot[] = [
-    {
-      label: 'Horizontal pull',
-      candidates: () => horizontalPull,
-      preferredName: 'rowing barre',
-      sets: 4,
-      reps: 8,
-      rest: 150,
-    },
     {
       label: 'Vertical pull',
       candidates: () => verticalPull,
@@ -998,12 +1090,28 @@ function buildUpperLowerSessions(
       rest: 150,
     },
     {
+      label: 'Incline or chest compound',
+      candidates: () => [...chestAccessories, ...horizontalPush],
+      preferredName: 'développé incliné',
+      sets: 4,
+      reps: 10,
+      rest: 150,
+    },
+    {
       label: 'Unilateral pull',
-      candidates: () => unilateralPull,
+      candidates: () => [...unilateralPull, ...horizontalPull],
       preferredName: 'rowing unilatéral',
       sets: 4,
       reps: 10,
       rest: 150,
+    },
+    {
+      label: 'Élévations latérales',
+      candidates: () => lateralRaises,
+      preferredName: 'élévations latérales',
+      sets: 3,
+      reps: 15,
+      rest: 60,
     },
     {
       label: 'Face pull',
@@ -1106,6 +1214,12 @@ function buildPushPullLegsSessions(
       && (e.category === 'isolation'),
   )
 
+  // Triceps exercises
+  const tricepsExercises = nonRehab.filter(
+    (e) => exercisesForMuscles([e], ['triceps']).length > 0
+      && (e.category === 'isolation'),
+  )
+
   // Quad compounds
   const quadCompounds = nonRehab.filter(
     (e) => e.category === 'compound' && exercisesForMuscles([e], ['quadriceps']).length > 0,
@@ -1119,6 +1233,11 @@ function buildPushPullLegsSessions(
   // Leg curl
   const legCurls = nonRehab.filter(
     (e) => e.name.toLowerCase().includes('leg curl'),
+  )
+
+  // Quad isolation (leg extension)
+  const quadIsolation = nonRehab.filter(
+    (e) => e.category === 'isolation' && exercisesForMuscles([e], ['quadriceps']).length > 0,
   )
 
   // Calf exercises
@@ -1140,6 +1259,11 @@ function buildPushPullLegsSessions(
   // Hip thrust
   const hipThrusts = nonRehab.filter(
     (e) => e.name.toLowerCase().includes('hip thrust'),
+  )
+
+  // Rear delt isolation (oiseau / reverse fly — NOT face pull)
+  const rearDeltExercises = nonRehab.filter(
+    (e) => e.category === 'isolation' && e.tags.includes('rear_delt'),
   )
 
   // -----------------------------------------------------------------------
@@ -1186,6 +1310,14 @@ function buildPushPullLegsSessions(
       preferredName: 'face pull',
       sets: 3,
       reps: 15,
+      rest: 60,
+    },
+    {
+      label: 'Triceps',
+      candidates: () => tricepsExercises,
+      preferredName: 'extension poulie haute',
+      sets: 3,
+      reps: 12,
       rest: 60,
     },
   ]
@@ -1236,13 +1368,21 @@ function buildPushPullLegsSessions(
       reps: 15,
       rest: 60,
     },
+    {
+      label: 'Triceps',
+      candidates: () => tricepsExercises,
+      preferredName: 'extension poulie haute',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
   // Pull A — Horizontal pull focus
   // -----------------------------------------------------------------------
 
-  // Pull A: 3 compounds + 2 isolations = 5 exercices
+  // Pull A: 3 compounds + 3 isolations + 1 core = 7 exercices
   const pullASlots: ExerciseSlot[] = [
     {
       label: 'Horizontal pull',
@@ -1269,9 +1409,9 @@ function buildPushPullLegsSessions(
       rest: 150,
     },
     {
-      label: 'Face pull',
-      candidates: () => facePulls,
-      preferredName: 'face pull',
+      label: 'Rear delt',
+      candidates: () => rearDeltExercises,
+      preferredName: 'oiseau haltères',
       sets: 3,
       reps: 15,
       rest: 60,
@@ -1284,13 +1424,21 @@ function buildPushPullLegsSessions(
       reps: 12,
       rest: 60,
     },
+    {
+      label: 'Core',
+      candidates: () => coreExercises,
+      preferredName: 'pallof press',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
   // Pull B — Vertical pull focus
   // -----------------------------------------------------------------------
 
-  // Pull B: 3 compounds + 2 isolations = 5 exercices
+  // Pull B: 3 compounds + 3 isolations + 1 core = 7 exercices
   const pullBSlots: ExerciseSlot[] = [
     {
       label: 'Vertical pull',
@@ -1317,9 +1465,9 @@ function buildPushPullLegsSessions(
       rest: 150,
     },
     {
-      label: 'Face pull',
-      candidates: () => facePulls,
-      preferredName: 'face pull',
+      label: 'Rear delt',
+      candidates: () => rearDeltExercises,
+      preferredName: 'oiseau câble',
       sets: 3,
       reps: 15,
       rest: 60,
@@ -1332,13 +1480,21 @@ function buildPushPullLegsSessions(
       reps: 12,
       rest: 60,
     },
+    {
+      label: 'Core',
+      candidates: () => coreExercises,
+      preferredName: 'dead bug',
+      sets: 3,
+      reps: 15,
+      rest: 60,
+    },
   ]
 
   // -----------------------------------------------------------------------
   // Legs A — Quad Focus
   // -----------------------------------------------------------------------
 
-  // Legs A: 3 compounds + 2 isolations + 1 core = 6 exercices
+  // Legs A: 3 compounds + 3 isolations + 1 core = 7 exercices
   const legsASlots: ExerciseSlot[] = [
     {
       label: 'Quad compound',
@@ -1360,9 +1516,17 @@ function buildPushPullLegsSessions(
       label: 'Hip hinge',
       candidates: () => hipHinges,
       preferredName: 'soulevé de terre roumain',
-      sets: 4,
+      sets: 3,
       reps: 10,
       rest: 150,
+    },
+    {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 12,
+      rest: 60,
     },
     {
       label: 'Leg curl',
@@ -1393,7 +1557,7 @@ function buildPushPullLegsSessions(
   // Legs B — Hamstring/Glute Focus
   // -----------------------------------------------------------------------
 
-  // Legs B: 3 compounds + 2 isolations + 1 core = 6 exercices
+  // Legs B: 3 compounds + 3 isolations + 1 core = 7 exercices
   const legsBSlots: ExerciseSlot[] = [
     {
       label: 'Hip hinge',
@@ -1420,6 +1584,14 @@ function buildPushPullLegsSessions(
       rest: 150,
     },
     {
+      label: 'Leg extension',
+      candidates: () => quadIsolation,
+      preferredName: 'leg extension',
+      sets: 3,
+      reps: 12,
+      rest: 60,
+    },
+    {
       label: 'Leg curl',
       candidates: () => legCurls,
       preferredName: 'leg curl',
@@ -1437,7 +1609,7 @@ function buildPushPullLegsSessions(
     {
       label: 'Core',
       candidates: () => coreExercises,
-      preferredName: 'dead bug',
+      preferredName: 'planche latérale',
       sets: 3,
       reps: 15,
       rest: 60,
@@ -1486,7 +1658,7 @@ function buildSAProgram(
   // SA Session A: Push + Legs (8 exercises)
   const sessionAExercises = [
     { name: 'Leg press', sets: 3, reps: 15, rest: 90 },
-    { name: 'Hip thrust barre', sets: 3, reps: 15, rest: 90 },
+    { name: 'Pull-through câble', sets: 3, reps: 15, rest: 90 },
     { name: 'Développé couché machine', sets: 3, reps: 15, rest: 90 },
     { name: 'Développé militaire machine', sets: 3, reps: 15, rest: 90 },
     { name: 'Élévations latérales', sets: 3, reps: 15, rest: 60 },

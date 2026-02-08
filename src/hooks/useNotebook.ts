@@ -98,29 +98,9 @@ async function autoCreateConditionIfNeeded(
       exerciseCatalog,
     )
 
-    // Merge: preserve exercises that didn't change (keeps progression history)
-    const oldProgram = await db.workoutPrograms
-      .where('userId').equals(userId)
-      .filter(p => p.isActive)
-      .first()
-
-    if (oldProgram?.sessions) {
-      for (let sIdx = 0; sIdx < generatedProgram.sessions.length; sIdx++) {
-        const oldSession = oldProgram.sessions[sIdx]
-        const newSession = generatedProgram.sessions[sIdx]
-        if (!oldSession || !newSession) continue
-
-        for (let eIdx = 0; eIdx < newSession.exercises.length; eIdx++) {
-          const oldEx = oldSession.exercises[eIdx]
-          const newEx = newSession.exercises[eIdx]
-          if (!oldEx || !newEx) continue
-
-          if (oldEx.exerciseId === newEx.exerciseId) {
-            newSession.exercises[eIdx] = oldEx
-          }
-        }
-      }
-    }
+    // Note: ProgramExercise is pure prescription (sets/reps/rest).
+    // Progression data (weights) lives in WorkoutSession logs, not here.
+    // No merge needed — always use freshly generated parameters.
 
     // Deactivate + create in a single transaction
     await db.transaction('rw', db.workoutPrograms, async () => {
