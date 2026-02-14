@@ -5,10 +5,6 @@ import { useNextSession } from '../hooks/useNextSession'
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
-  const conditions = useLiveQuery(
-    () => user?.id ? db.healthConditions.where('userId').equals(user.id).and(c => c.isActive).toArray() : [],
-    [user?.id]
-  )
   const info = useNextSession(user?.id)
   const navigate = useNavigate()
 
