@@ -16,7 +16,7 @@ export interface NextSessionPreview {
 }
 
 export interface NextSessionInfo {
-  status: 'ready' | 'rest_recommended' | 'no_program'
+  status: 'ready' | 'editing_window' | 'no_program'
   nextSessionName?: string
   nextSessionIndex?: number
   programId?: number
@@ -31,6 +31,9 @@ export interface NextSessionInfo {
   program: WorkoutProgram | null
   preview: NextSessionPreview | null
   deloadReminder: string | null
+  lastSessionName?: string
+  lastSessionIndex?: number
+  editingHoursRemaining?: number
 }
 
 export function useNextSession(userId: number | undefined): NextSessionInfo | undefined {
@@ -118,7 +121,7 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
     const warmupCooldown = 10 * 60 // 5 min warmup + 5 min cooldown
     const estimatedMinutes = Math.round((totalSeconds + warmupCooldown) / 60)
 
-    const minimumRestHours = 24
+    const minimumRestHours = 10
 
     // Build session preview with exercise names
     const exerciseIds = nextProgramSession.exercises.map((e) => e.exerciseId)
@@ -149,22 +152,25 @@ export function useNextSession(userId: number | undefined): NextSessionInfo | un
 
       if (hoursSinceLastSession < minimumRestHours) {
         const remainingHours = Math.ceil(minimumRestHours - hoursSinceLastSession)
+        // Find the index of the last completed session so user can re-open it
+        const lastSessionIndex = activeProgram.sessions.findIndex(
+          (s) => s.name === lastSession.sessionName
+        )
         return {
-          status: 'rest_recommended' as const,
-          nextSessionName: nextProgramSession.name,
-          nextSessionIndex,
+          status: 'editing_window' as const,
           programId: activeProgram.id!,
-          exerciseCount,
-          estimatedMinutes,
           lastSessionDate: lastSession.completedAt,
           hoursSinceLastSession,
           minimumRestHours,
-          nextSession: nextProgramSession,
+          nextSession: null,
           canStart: false,
-          restRecommendation: `Repos recommandé : encore ${remainingHours}h avant la prochaine séance`,
+          restRecommendation: null,
           program: activeProgram,
-          preview,
-          deloadReminder,
+          preview: null,
+          deloadReminder: null,
+          lastSessionName: lastSession.sessionName,
+          lastSessionIndex: lastSessionIndex >= 0 ? lastSessionIndex : 0,
+          editingHoursRemaining: remainingHours,
         }
       }
     }

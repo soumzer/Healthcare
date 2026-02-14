@@ -92,25 +92,24 @@ function SessionRunner({
   const [warmupChecked, setWarmupChecked] = useState<Set<number>>(() => new Set())
   const [recovered, setRecovered] = useState(false)
 
-  // Recover session state from today's notebookEntries
-  const todayEntries = useLiveQuery(async () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  // Recover session state from recent notebookEntries (within 10h editing window)
+  const recentEntries = useLiveQuery(async () => {
+    const cutoff = new Date(Date.now() - 10 * 60 * 60 * 1000)
     return db.notebookEntries
       .where('userId').equals(userId)
       .filter(e => {
         const d = e.date instanceof Date ? e.date : new Date(e.date)
-        return d >= today
+        return d >= cutoff
       })
       .toArray()
   }, [userId])
 
-  // Once todayEntries load, recover exercise statuses
+  // Once recentEntries load, recover exercise statuses
   useEffect(() => {
-    if (!todayEntries || recovered) return
+    if (!recentEntries || recovered) return
     const exerciseIds = programSession.exercises.map(e => e.exerciseId)
-    const todayByExercise = new Map<number, typeof todayEntries[0]>()
-    for (const entry of todayEntries) {
+    const todayByExercise = new Map<number, typeof recentEntries[0]>()
+    for (const entry of recentEntries) {
       if (exerciseIds.includes(entry.exerciseId)) {
         todayByExercise.set(entry.exerciseId, entry)
       }
@@ -132,7 +131,7 @@ function SessionRunner({
       setPhase('exercises')
     }
     setRecovered(true)
-  }, [todayEntries, recovered, programSession.exercises])
+  }, [recentEntries, recovered, programSession.exercises])
 
   // Build exercise catalog lookup
   const exerciseMap = useMemo(() => {

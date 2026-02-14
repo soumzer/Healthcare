@@ -65,14 +65,13 @@ export function useNotebook(
     setCurrentSets([])
   }, [exerciseId])
 
-  // Load today's entry for editing (re-open completed exercise)
+  // Load recent entry for editing (re-open completed exercise within 10h window)
   useEffect(() => {
     if (loadedEntry || history.length === 0) return
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const cutoff = new Date(Date.now() - 10 * 60 * 60 * 1000)
     const todayEntry = history.find(e => {
       const d = e.date instanceof Date ? e.date : new Date(e.date)
-      return d >= today && !e.skipped && e.sets.length > 0
+      return d >= cutoff && !e.skipped && e.sets.length > 0
     })
     if (todayEntry?.id) {
       setCurrentSets(todayEntry.sets)

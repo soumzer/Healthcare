@@ -39,54 +39,32 @@ export default function HomePage() {
     )
   }
 
-  // Rest recommended
-  if (info.status === 'rest_recommended') {
-    const hoursAgo = Math.round(info.hoursSinceLastSession ?? 0)
-
-    // Show rest day routine if user has active health conditions
-    const hasActiveConditions = (conditions?.length ?? 0) > 0
-    const showRestDayRoutine = hasActiveConditions
+  // Editing window — last session can be corrected
+  if (info.status === 'editing_window') {
+    const hoursRemaining = info.editingHoursRemaining ?? 0
 
     return (
       <div className="flex flex-col h-[var(--content-h)] overflow-hidden px-6 pt-6">
         <div className="flex-1">
-          <p className="text-2xl font-bold mb-2">{showRestDayRoutine ? "Repos recommand\u00E9" : "Jour de repos"}</p>
+          <p className="text-2xl font-bold mb-2">{info.lastSessionName}</p>
           <p className="text-zinc-400 mb-4">
-            {"Derni\u00E8re s\u00E9ance il y a "}{hoursAgo}{"h"}
+            {"S\u00E9ance termin\u00E9e — tu peux encore la modifier"}
           </p>
-
-          {info.restRecommendation && (
-            <p className="text-zinc-400 text-sm mb-4">{info.restRecommendation}</p>
-          )}
-
-          {showRestDayRoutine && (
-            <div className="mb-4">
-              <p className="text-zinc-400 mb-3">{"Routine l\u00E9g\u00E8re disponible :"}</p>
-              <div className="space-y-1 text-zinc-400 text-sm">
-                <p>{"\u00B7 Mobilit\u00E9 + rehab (15-20 min)"}</p>
-              </div>
-            </div>
-          )}
+          <p className="text-zinc-500 text-sm">
+            {"Prochaine s\u00E9ance dans "}{hoursRemaining}{"h"}
+          </p>
         </div>
 
-        <div className="flex-shrink-0 pb-4 space-y-3">
-          {showRestDayRoutine && (
-            <button
-              onClick={() => navigate('/rehab')}
-              className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
-            >
-              Faire la routine
-            </button>
-          )}
+        <div className="flex-shrink-0 pb-4">
           <button
             onClick={() =>
               navigate(
-                `/session?programId=${info.programId}&sessionIndex=${info.nextSessionIndex}`
+                `/session?programId=${info.programId}&sessionIndex=${info.lastSessionIndex}`
               )
             }
-            className="border border-zinc-600 text-zinc-300 font-semibold rounded-xl py-4 w-full text-lg"
+            className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
           >
-            {"Commencer quand m\u00EAme"}
+            {"Modifier la s\u00E9ance"}
           </button>
         </div>
       </div>

@@ -171,29 +171,31 @@ describe('useNextSession', () => {
     expect(result.current!.nextSessionIndex).toBe(0)
   })
 
-  it('recommends rest if last session was less than 24h ago', async () => {
+  it('returns editing_window if last session was less than 10h ago', async () => {
     const programId = await createTestProgram(userId)
-    // Completed 14h ago
-    const completedAt = new Date(Date.now() - 14 * 60 * 60 * 1000)
+    // Completed 5h ago
+    const completedAt = new Date(Date.now() - 5 * 60 * 60 * 1000)
     await createCompletedSession(userId, programId, 'Push A', completedAt)
 
     const { result } = renderHook(() => useNextSession(userId))
 
     await waitFor(() => {
       expect(result.current).toBeDefined()
-      expect(result.current!.status).toBe('rest_recommended')
+      expect(result.current!.status).toBe('editing_window')
     })
 
-    expect(result.current!.nextSessionName).toBe('Push B')
-    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(13)
-    expect(result.current!.hoursSinceLastSession).toBeLessThan(15)
-    expect(result.current!.minimumRestHours).toBe(24)
+    expect(result.current!.lastSessionName).toBe('Push A')
+    expect(result.current!.lastSessionIndex).toBe(0)
+    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(4)
+    expect(result.current!.hoursSinceLastSession).toBeLessThan(6)
+    expect(result.current!.minimumRestHours).toBe(10)
+    expect(result.current!.editingHoursRemaining).toBeGreaterThan(0)
   })
 
-  it('returns ready if last session was more than 24h ago', async () => {
+  it('returns ready if last session was more than 10h ago', async () => {
     const programId = await createTestProgram(userId)
-    // Completed 30h ago
-    const completedAt = new Date(Date.now() - 30 * 60 * 60 * 1000)
+    // Completed 12h ago
+    const completedAt = new Date(Date.now() - 12 * 60 * 60 * 1000)
     await createCompletedSession(userId, programId, 'Push A', completedAt)
 
     const { result } = renderHook(() => useNextSession(userId))
@@ -204,7 +206,7 @@ describe('useNextSession', () => {
     })
 
     expect(result.current!.nextSessionName).toBe('Push B')
-    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(29)
+    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(11)
   })
 })
 
@@ -231,22 +233,21 @@ describe('useNextSession - new integration fields', () => {
     expect(result.current!.nextSession!.exercises).toHaveLength(4)
   })
 
-  it('returns canStart=true when ready, false when rest recommended', async () => {
+  it('returns canStart=false during editing window', async () => {
     const programId = await createTestProgram(userId)
-    // Completed 14h ago
-    const completedAt = new Date(Date.now() - 14 * 60 * 60 * 1000)
+    // Completed 5h ago
+    const completedAt = new Date(Date.now() - 5 * 60 * 60 * 1000)
     await createCompletedSession(userId, programId, 'Push A', completedAt)
 
     const { result } = renderHook(() => useNextSession(userId))
 
     await waitFor(() => {
       expect(result.current).toBeDefined()
-      expect(result.current!.status).toBe('rest_recommended')
+      expect(result.current!.status).toBe('editing_window')
     })
 
     expect(result.current!.canStart).toBe(false)
-    expect(result.current!.restRecommendation).not.toBeNull()
-    expect(result.current!.restRecommendation).toContain('Repos recommandé')
+    expect(result.current!.lastSessionName).toBe('Push A')
   })
 
   it('returns canStart=true and no rest recommendation when enough time elapsed', async () => {
@@ -394,24 +395,25 @@ describe('useNextSession - Upper/Lower 4-session rotation', () => {
     expect(result.current!.nextSessionIndex).toBe(0)
   })
 
-  it('rest check still works with 4-session rotation', async () => {
+  it('editing window works with 4-session rotation', async () => {
     const programId = await createUpperLowerProgram(userId)
-    // Completed only 10h ago
-    const completedAt = new Date(Date.now() - 10 * 60 * 60 * 1000)
+    // Completed only 5h ago
+    const completedAt = new Date(Date.now() - 5 * 60 * 60 * 1000)
     await createCompletedSession(userId, programId, 'Lower 1', completedAt)
 
     const { result } = renderHook(() => useNextSession(userId))
 
     await waitFor(() => {
       expect(result.current).toBeDefined()
-      expect(result.current!.status).toBe('rest_recommended')
+      expect(result.current!.status).toBe('editing_window')
     })
 
     expect(result.current!.canStart).toBe(false)
-    expect(result.current!.nextSessionName).toBe('Upper 1')
-    expect(result.current!.restRecommendation).toContain('Repos recommandé')
-    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(9)
-    expect(result.current!.hoursSinceLastSession).toBeLessThan(11)
+    expect(result.current!.lastSessionName).toBe('Lower 1')
+    expect(result.current!.lastSessionIndex).toBe(0)
+    expect(result.current!.editingHoursRemaining).toBeGreaterThan(0)
+    expect(result.current!.hoursSinceLastSession).toBeGreaterThanOrEqual(4)
+    expect(result.current!.hoursSinceLastSession).toBeLessThan(6)
   })
 
   it('returns nextSession with correct exercises for the next scheduled session', async () => {
