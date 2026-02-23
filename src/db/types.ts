@@ -1,3 +1,26 @@
+// --- Session persistence ---
+
+export type SessionPhase = 'warmup' | 'exercises' | 'notebook' | 'cooldown' | 'done'
+
+export interface ExerciseStatus {
+  exerciseId: number
+  status: 'pending' | 'done' | 'skipped'
+  skipZone?: BodyZone
+}
+
+export interface ActiveSessionState {
+  id?: number                    // Always 1 (singleton)
+  programId: number
+  sessionIndex: number
+  phase: SessionPhase
+  currentExerciseIdx: number
+  exerciseStatuses: ExerciseStatus[]
+  sessionStartTime: Date
+  warmupChecked: number[]        // Set<number> serialized as array
+  draftSets: { exerciseId: number; sets: NotebookSet[] }[]
+  updatedAt: Date
+}
+
 // User profile from onboarding
 export interface UserProfile {
   id?: number

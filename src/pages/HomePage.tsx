@@ -2,10 +2,12 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../db'
 import { useNextSession } from '../hooks/useNextSession'
+import { useActiveSession } from '../hooks/useActiveSession'
 
 export default function HomePage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
   const info = useNextSession(user?.id)
+  const activeSession = useActiveSession()
   const navigate = useNavigate()
 
   // Loading
@@ -61,6 +63,36 @@ export default function HomePage() {
             className="bg-white text-black font-semibold rounded-xl py-4 w-full text-lg"
           >
             {"Modifier la s\u00E9ance"}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Active session — resume
+  if (activeSession) {
+    const doneCount = activeSession.exerciseStatuses.filter(s => s.status !== 'pending').length
+    const totalCount = activeSession.exerciseStatuses.length
+    return (
+      <div className="flex flex-col h-[var(--content-h)] overflow-hidden px-6 pt-6">
+        <div className="flex-1 overflow-y-auto">
+          <p className="text-zinc-400 mb-1">{"S\u00E9ance en cours"}</p>
+          <p className="text-3xl font-bold mb-4">{info.status === 'ready' ? info.nextSessionName : info.lastSessionName ?? 'S\u00E9ance'}</p>
+          <p className="text-zinc-400">
+            {doneCount}/{totalCount} exercices
+          </p>
+        </div>
+
+        <div className="flex-shrink-0 pb-4">
+          <button
+            onClick={() =>
+              navigate(
+                `/session?programId=${activeSession.programId}&sessionIndex=${activeSession.sessionIndex}`
+              )
+            }
+            className="bg-emerald-600 text-white font-semibold rounded-xl py-4 w-full text-lg"
+          >
+            {"Reprendre la s\u00E9ance"}
           </button>
         </div>
       </div>

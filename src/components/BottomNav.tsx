@@ -1,13 +1,21 @@
 import { NavLink } from 'react-router-dom'
+import { useActiveSession } from '../hooks/useActiveSession'
 
 export default function BottomNav() {
+  const activeSession = useActiveSession()
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-col items-center text-xs ${isActive ? 'text-emerald-400' : 'text-zinc-500'}`
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 flex justify-around pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
       <NavLink to="/" className={linkClass}>
-        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 2L6 22"/><path d="M18 2L18 22"/><path d="M3 6h3"/><path d="M3 18h3"/><path d="M18 6h3"/><path d="M18 18h3"/><path d="M12 2v20"/></svg>
+        <div className="relative">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 2L6 22"/><path d="M18 2L18 22"/><path d="M3 6h3"/><path d="M3 18h3"/><path d="M18 6h3"/><path d="M18 18h3"/><path d="M12 2v20"/></svg>
+          {activeSession && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full" />
+          )}
+        </div>
         <span>Muscu</span>
       </NavLink>
       <NavLink to="/rehab" className={linkClass}>

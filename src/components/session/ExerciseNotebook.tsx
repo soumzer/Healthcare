@@ -5,7 +5,7 @@ import { useExerciseNote } from '../../hooks/useExerciseNote'
 import { generateWarmupSets } from '../../engine/warmup'
 import SymptomQuestionnaire from '../onboarding/SymptomQuestionnaire'
 import type { QuestionnaireResult } from '../onboarding/SymptomQuestionnaire'
-import type { BodyZone } from '../../db/types'
+import type { BodyZone, NotebookSet } from '../../db/types'
 import type { FillerSuggestion } from '../../engine/filler'
 
 export interface SwapOption {
@@ -37,6 +37,8 @@ export interface ExerciseNotebookProps {
   userId: number
   fillerSuggestions: FillerSuggestion[]
   swapOptions: SwapOption[]
+  initialDraftSets?: NotebookSet[]
+  onDraftSetsChange?: (exerciseId: number, sets: NotebookSet[]) => void
   onNext: () => void
   onSkip: (zone: BodyZone) => void
   onSwap: (newExerciseId: number) => void
@@ -59,6 +61,8 @@ export default function ExerciseNotebook({
   activeZones,
   fillerSuggestions,
   swapOptions,
+  initialDraftSets,
+  onDraftSetsChange,
   onNext,
   onSkip,
   onSwap,
@@ -70,6 +74,8 @@ export default function ExerciseNotebook({
     target.intensity,
     onNext,
     onSkip,
+    initialDraftSets,
+    onDraftSetsChange,
   )
 
   const timer = useRestTimer(target.restSeconds)
@@ -248,7 +254,14 @@ export default function ExerciseNotebook({
           if (!lastEntry) return null
           return (
             <div className="bg-zinc-900 rounded-xl p-3 mb-3">
-              <p className="text-zinc-400 text-xs uppercase tracking-wider mb-1">Dernière fois</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-zinc-400 text-xs uppercase tracking-wider">Dernière fois</p>
+                {lastEntry.sessionIntensity && INTENSITY_COLORS[lastEntry.sessionIntensity] && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${INTENSITY_COLORS[lastEntry.sessionIntensity].bg} ${INTENSITY_COLORS[lastEntry.sessionIntensity].text}`}>
+                    {INTENSITY_COLORS[lastEntry.sessionIntensity].label}
+                  </span>
+                )}
+              </div>
               <p className="text-white text-sm">
                 {lastEntry.sets.map(s => `${s.weightKg}kg \u00d7 ${s.reps}`).join(' \u00b7 ')}
               </p>

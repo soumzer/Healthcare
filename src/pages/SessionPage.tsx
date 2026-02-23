@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, Component, type ReactNode } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef, Component, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { db } from '../db'
@@ -6,16 +6,9 @@ import ExerciseNotebook from '../components/session/ExerciseNotebook'
 import { fixedWarmupRoutine } from '../data/warmup-routine'
 import { selectCooldownExercises } from '../engine/cooldown'
 import { suggestFillerFromCatalog } from '../engine/filler'
-import type { BodyZone, Exercise, ProgramSession } from '../db/types'
+import { useSessionPersistence } from '../hooks/useSessionPersistence'
+import type { BodyZone, Exercise, ProgramSession, SessionPhase, ExerciseStatus, NotebookSet } from '../db/types'
 import type { SwapOption } from '../components/session/ExerciseNotebook'
-
-type SessionPhase = 'warmup' | 'exercises' | 'notebook' | 'cooldown' | 'done'
-
-interface ExerciseStatus {
-  exerciseId: number
-  status: 'pending' | 'done' | 'skipped'
-  skipZone?: BodyZone
-}
 
 function SessionContent({ programId, sessionIndex }: { programId: number; sessionIndex: number }) {
   const navigate = useNavigate()
@@ -63,6 +56,7 @@ function SessionContent({ programId, sessionIndex }: { programId: number; sessio
       programSession={programSession}
       userId={user.id!}
       programId={programId}
+      sessionIndex={sessionIndex}
       allExercises={allExercises}
       activeZones={conditions.map(c => c.bodyZone)}
     />
@@ -73,12 +67,14 @@ function SessionRunner({
   programSession,
   userId,
   programId,
+  sessionIndex,
   allExercises,
   activeZones,
 }: {
   programSession: ProgramSession
   userId: number
   programId: number
+  sessionIndex: number
   allExercises: Exercise[]
   activeZones: string[]
 }) {
@@ -88,11 +84,37 @@ function SessionRunner({
   const [exerciseStatuses, setExerciseStatuses] = useState<ExerciseStatus[]>(() =>
     programSession.exercises.map(e => ({ exerciseId: e.exerciseId, status: 'pending' }))
   )
-  const [sessionStartTime] = useState(() => new Date())
+  const [sessionStartTime, setSessionStartTime] = useState(() => new Date())
   const [warmupChecked, setWarmupChecked] = useState<Set<number>>(() => new Set())
   const [recovered, setRecovered] = useState(false)
 
-  // Recover session state from recent notebookEntries (within 10h editing window)
+  // Session persistence
+  const { saveSessionState, loadSessionState, clearSessionState } = useSessionPersistence()
+  const restoredRef = useRef(false)
+  const draftSetsRef = useRef<Map<number, NotebookSet[]>>(new Map())
+
+  // Try to restore from activeSession table first
+  useEffect(() => {
+    if (restoredRef.current) return
+    restoredRef.current = true
+
+    loadSessionState(programId, sessionIndex).then(saved => {
+      if (saved) {
+        setPhase(saved.phase)
+        setCurrentExerciseIdx(saved.currentExerciseIdx)
+        setExerciseStatuses(saved.exerciseStatuses)
+        setSessionStartTime(saved.sessionStartTime instanceof Date ? saved.sessionStartTime : new Date(saved.sessionStartTime))
+        setWarmupChecked(new Set(saved.warmupChecked))
+        // Restore draft sets
+        const map = new Map<number, NotebookSet[]>()
+        for (const d of saved.draftSets) map.set(d.exerciseId, d.sets)
+        draftSetsRef.current = map
+        setRecovered(true)
+      }
+    })
+  }, [programId, sessionIndex, loadSessionState])
+
+  // Recover session state from recent notebookEntries (within 10h editing window) — fallback
   const recentEntries = useLiveQuery(async () => {
     const cutoff = new Date(Date.now() - 10 * 60 * 60 * 1000)
     return db.notebookEntries
@@ -104,7 +126,7 @@ function SessionRunner({
       .toArray()
   }, [userId])
 
-  // Once recentEntries load, recover exercise statuses
+  // Once recentEntries load, recover exercise statuses (only if not restored from activeSession)
   useEffect(() => {
     if (!recentEntries || recovered) return
     const exerciseIds = programSession.exercises.map(e => e.exerciseId)
@@ -132,6 +154,38 @@ function SessionRunner({
     }
     setRecovered(true)
   }, [recentEntries, recovered, programSession.exercises])
+
+  // Auto-save session state on changes (debounced)
+  useEffect(() => {
+    if (!restoredRef.current || phase === 'done') return
+    saveSessionState({
+      programId,
+      sessionIndex,
+      phase,
+      currentExerciseIdx,
+      exerciseStatuses,
+      sessionStartTime,
+      warmupChecked: [...warmupChecked],
+      draftSets: [...draftSetsRef.current.entries()].map(([exerciseId, sets]) => ({ exerciseId, sets })),
+    })
+  }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
+
+  // Draft sets change handler
+  const handleDraftSetsChange = useCallback((exerciseId: number, sets: NotebookSet[]) => {
+    draftSetsRef.current.set(exerciseId, sets)
+    // Trigger a save with current state
+    if (!restoredRef.current || phase === 'done') return
+    saveSessionState({
+      programId,
+      sessionIndex,
+      phase,
+      currentExerciseIdx,
+      exerciseStatuses,
+      sessionStartTime,
+      warmupChecked: [...warmupChecked],
+      draftSets: [...draftSetsRef.current.entries()].map(([eid, s]) => ({ exerciseId: eid, sets: s })),
+    })
+  }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
 
   // Build exercise catalog lookup
   const exerciseMap = useMemo(() => {
@@ -220,12 +274,13 @@ function SessionRunner({
         endPainChecks: [],
         notes: '',
       })
+      await clearSessionState()
       setPhase('done')
     } catch (error) {
       console.error('Failed to save session:', error)
       setPhase('done')
     }
-  }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap])
+  }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap, clearSessionState])
 
   // Swap: find alternatives with same primary muscles and category (dynamic)
   const swapOptions: SwapOption[] = useMemo(() => {
@@ -400,6 +455,7 @@ function SessionRunner({
 
   if (phase === 'notebook' && currentProgramExercise && currentCatalogExercise) {
     const intensity = (programSession.intensity ?? 'volume') as 'heavy' | 'volume' | 'moderate'
+    const drafts = draftSetsRef.current.get(currentProgramExercise.exerciseId)
     return (
       <ExerciseNotebook
         exercise={{
@@ -424,6 +480,8 @@ function SessionRunner({
         userId={userId}
         fillerSuggestions={fillerSuggestions}
         swapOptions={swapOptions}
+        initialDraftSets={drafts}
+        onDraftSetsChange={handleDraftSetsChange}
         onNext={handleNextExercise}
         onSkip={handleSkipExercise}
         onSwap={handleSwapExercise}

@@ -37,8 +37,10 @@ export function useNotebook(
   sessionIntensity: 'heavy' | 'volume' | 'moderate' | 'rehab',
   onNext: () => void,
   onSkip: (zone: BodyZone) => void,
+  initialDraftSets?: NotebookSet[],
+  onDraftSetsChange?: (exerciseId: number, sets: NotebookSet[]) => void,
 ): UseNotebookReturn {
-  const [currentSets, setCurrentSets] = useState<NotebookSet[]>([])
+  const [currentSets, setCurrentSets] = useState<NotebookSet[]>(initialDraftSets ?? [])
   const [isSaving, setIsSaving] = useState(false)
   const [todayEntryId, setTodayEntryId] = useState<number | null>(null)
   const [loadedEntry, setLoadedEntry] = useState(false)
@@ -62,8 +64,8 @@ export function useNotebook(
   useEffect(() => {
     setTodayEntryId(null)
     setLoadedEntry(false)
-    setCurrentSets([])
-  }, [exerciseId])
+    setCurrentSets(initialDraftSets ?? [])
+  }, [exerciseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load recent entry for editing (re-open completed exercise within 10h window)
   useEffect(() => {
@@ -84,6 +86,11 @@ export function useNotebook(
   const lastWeight = history.length > 0 && !history[0].skipped && history[0].sets.length > 0
     ? history[0].sets[0].weightKg
     : null
+
+  // Notify parent of draft sets changes for session persistence
+  useEffect(() => {
+    onDraftSetsChange?.(exerciseId, currentSets)
+  }, [currentSets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const addSet = useCallback((weightKg: number, reps: number) => {
     setCurrentSets(prev => [...prev, { weightKg, reps }])

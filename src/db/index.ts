@@ -4,6 +4,7 @@ import type {
   Exercise, WorkoutProgram, WorkoutSession,
   ExerciseNote,
   NotebookEntry, PainReport,
+  ActiveSessionState,
 } from './types'
 
 class HealthCoachDB extends Dexie {
@@ -16,6 +17,7 @@ class HealthCoachDB extends Dexie {
   exerciseNotes!: EntityTable<ExerciseNote, 'id'>
   notebookEntries!: EntityTable<NotebookEntry, 'id'>
   painReports!: EntityTable<PainReport, 'id'>
+  activeSession!: EntityTable<ActiveSessionState, 'id'>
 
   constructor() {
     super('HealthCoachDB')
@@ -62,6 +64,11 @@ class HealthCoachDB extends Dexie {
       exerciseProgress: null,
       painLogs: null,
       trainingPhases: null,
+    })
+
+    // Version 5: Active session persistence (singleton)
+    this.version(5).stores({
+      activeSession: 'id',
     })
   }
 }
