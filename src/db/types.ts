@@ -18,6 +18,7 @@ export interface ActiveSessionState {
   sessionStartTime: Date
   warmupChecked: number[]        // Set<number> serialized as array
   draftSets: { exerciseId: number; sets: NotebookSet[] }[]
+  restTimerEndTime: number | null  // Date.now() timestamp when timer expires, null if not running
   updatedAt: Date
 }
 

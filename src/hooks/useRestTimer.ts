@@ -21,17 +21,50 @@ function playTimerSound() {
 export interface UseRestTimerReturn {
   remaining: number
   isRunning: boolean
+  endTime: number | null
   start: () => void
   pause: () => void
   reset: () => void
   formatTime: () => string
 }
 
-export function useRestTimer(restSeconds: number): UseRestTimerReturn {
-  const [remaining, setRemaining] = useState(restSeconds)
-  const [isRunning, setIsRunning] = useState(false)
+export function useRestTimer(restSeconds: number, initialEndTime?: number | null): UseRestTimerReturn {
+  const [remaining, setRemaining] = useState(() => {
+    if (initialEndTime) {
+      const left = Math.max(0, Math.ceil((initialEndTime - Date.now()) / 1000))
+      return left > 0 ? left : restSeconds
+    }
+    return restSeconds
+  })
+  const [isRunning, setIsRunning] = useState(() => {
+    if (initialEndTime) {
+      return initialEndTime > Date.now()
+    }
+    return false
+  })
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const endTimeRef = useRef<number | null>(null)
+  const endTimeRef = useRef<number | null>(initialEndTime && initialEndTime > Date.now() ? initialEndTime : null)
+
+  // Auto-start interval if restored with a running timer
+  useEffect(() => {
+    if (endTimeRef.current && endTimeRef.current > Date.now() && !intervalRef.current) {
+      const end = endTimeRef.current
+      intervalRef.current = setInterval(() => {
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 1000))
+        setRemaining(left)
+        if (left <= 0) {
+          clearInterval(intervalRef.current!)
+          intervalRef.current = null
+          endTimeRef.current = null
+          setIsRunning(false)
+          playTimerSound()
+          try {
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200])
+          } catch { /* ignore */ }
+        }
+      }, 250)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
@@ -106,5 +139,5 @@ export function useRestTimer(restSeconds: number): UseRestTimerReturn {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }, [remaining])
 
-  return { remaining, isRunning, start, pause, reset, formatTime }
+  return { remaining, isRunning, endTime: endTimeRef.current, start, pause, reset, formatTime }
 }

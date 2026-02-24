@@ -38,7 +38,9 @@ export interface ExerciseNotebookProps {
   fillerSuggestions: FillerSuggestion[]
   swapOptions: SwapOption[]
   initialDraftSets?: NotebookSet[]
+  initialRestTimerEndTime?: number | null
   onDraftSetsChange?: (exerciseId: number, sets: NotebookSet[]) => void
+  onRestTimerChange?: (endTime: number | null) => void
   onNext: () => void
   onSkip: (zone: BodyZone) => void
   onSwap: (newExerciseId: number) => void
@@ -62,7 +64,9 @@ export default function ExerciseNotebook({
   fillerSuggestions,
   swapOptions,
   initialDraftSets,
+  initialRestTimerEndTime,
   onDraftSetsChange,
+  onRestTimerChange,
   onNext,
   onSkip,
   onSwap,
@@ -78,7 +82,12 @@ export default function ExerciseNotebook({
     onDraftSetsChange,
   )
 
-  const timer = useRestTimer(target.restSeconds)
+  const timer = useRestTimer(target.restSeconds, initialRestTimerEndTime)
+
+  // Notify parent when rest timer state changes
+  useEffect(() => {
+    onRestTimerChange?.(timer.endTime)
+  }, [timer.endTime]) // eslint-disable-line react-hooks/exhaustive-deps
   const exerciseNote = useExerciseNote(userId, exercise.exerciseId)
 
   const [showDescription, setShowDescription] = useState(exercise.isRehab)

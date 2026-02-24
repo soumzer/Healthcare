@@ -92,6 +92,7 @@ function SessionRunner({
   const { saveSessionState, loadSessionState, clearSessionState } = useSessionPersistence()
   const restoredRef = useRef(false)
   const draftSetsRef = useRef<Map<number, NotebookSet[]>>(new Map())
+  const restTimerEndTimeRef = useRef<number | null>(null)
 
   // Try to restore from activeSession table first
   useEffect(() => {
@@ -109,6 +110,8 @@ function SessionRunner({
         const map = new Map<number, NotebookSet[]>()
         for (const d of saved.draftSets) map.set(d.exerciseId, d.sets)
         draftSetsRef.current = map
+        // Restore rest timer
+        restTimerEndTimeRef.current = saved.restTimerEndTime ?? null
         setRecovered(true)
       }
     })
@@ -167,13 +170,13 @@ function SessionRunner({
       sessionStartTime,
       warmupChecked: [...warmupChecked],
       draftSets: [...draftSetsRef.current.entries()].map(([exerciseId, sets]) => ({ exerciseId, sets })),
+      restTimerEndTime: restTimerEndTimeRef.current,
     })
   }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
 
   // Draft sets change handler
   const handleDraftSetsChange = useCallback((exerciseId: number, sets: NotebookSet[]) => {
     draftSetsRef.current.set(exerciseId, sets)
-    // Trigger a save with current state
     if (!restoredRef.current || phase === 'done') return
     saveSessionState({
       programId,
@@ -184,6 +187,24 @@ function SessionRunner({
       sessionStartTime,
       warmupChecked: [...warmupChecked],
       draftSets: [...draftSetsRef.current.entries()].map(([eid, s]) => ({ exerciseId: eid, sets: s })),
+      restTimerEndTime: restTimerEndTimeRef.current,
+    })
+  }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
+
+  // Rest timer change handler
+  const handleRestTimerChange = useCallback((endTime: number | null) => {
+    restTimerEndTimeRef.current = endTime
+    if (!restoredRef.current || phase === 'done') return
+    saveSessionState({
+      programId,
+      sessionIndex,
+      phase,
+      currentExerciseIdx,
+      exerciseStatuses,
+      sessionStartTime,
+      warmupChecked: [...warmupChecked],
+      draftSets: [...draftSetsRef.current.entries()].map(([eid, s]) => ({ exerciseId: eid, sets: s })),
+      restTimerEndTime: endTime,
     })
   }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
 
@@ -481,7 +502,9 @@ function SessionRunner({
         fillerSuggestions={fillerSuggestions}
         swapOptions={swapOptions}
         initialDraftSets={drafts}
+        initialRestTimerEndTime={restTimerEndTimeRef.current}
         onDraftSetsChange={handleDraftSetsChange}
+        onRestTimerChange={handleRestTimerChange}
         onNext={handleNextExercise}
         onSkip={handleSkipExercise}
         onSwap={handleSwapExercise}
