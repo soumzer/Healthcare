@@ -9,7 +9,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 flex justify-around pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
-      <NavLink to="/" className={linkClass}>
+      <NavLink to={activeSession ? `/session?programId=${activeSession.programId}&sessionIndex=${activeSession.sessionIndex}` : '/'} className={linkClass}>
         <div className="relative">
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 2L6 22"/><path d="M18 2L18 22"/><path d="M3 6h3"/><path d="M3 18h3"/><path d="M18 6h3"/><path d="M18 18h3"/><path d="M12 2v20"/></svg>
           {activeSession && (
