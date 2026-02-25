@@ -114,14 +114,20 @@ export default function DashboardPage() {
             {data.sessionVolumes.length > 0 && (
               <div className="bg-zinc-900 rounded-xl p-4 mb-4">
                 <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Tonnage par seance</p>
-                <div className="flex items-end gap-1 h-20">
+                <div className="flex items-end gap-1 h-24">
                   {data.sessionVolumes.slice(0, 10).reverse().map((sv, i) => {
                     const max = Math.max(...data.sessionVolumes.slice(0, 10).map(s => s.tonnageKg))
                     const pct = max > 0 ? (sv.tonnageKg / max) * 100 : 0
+                    const badge = sv.intensity && intensityBadge[sv.intensity]
+                    const barColor = sv.intensity === 'heavy' ? 'bg-blue-500' :
+                      sv.intensity === 'moderate' ? 'bg-amber-500' : 'bg-emerald-600'
                     return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                        {badge && (
+                          <span className={`${badge.color} text-[9px] font-bold`}>{badge.letter}</span>
+                        )}
                         <div
-                          className="w-full bg-emerald-600 rounded-t"
+                          className={`w-full ${barColor} rounded-t`}
                           style={{ height: `${Math.max(pct, 4)}%` }}
                           title={`${sv.tonnageKg}kg — ${formatDate(sv.date)}`}
                         />

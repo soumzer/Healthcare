@@ -21,6 +21,7 @@ export interface SessionVolume {
   date: Date
   tonnageKg: number
   exerciseCount: number
+  intensity: 'heavy' | 'volume' | 'moderate' | null
 }
 
 export interface DashboardData {
@@ -113,22 +114,33 @@ export function useDashboardData(userId: number | undefined): DashboardData {
     exercises.sort((a, b) => b.lastDate.getTime() - a.lastDate.getTime())
 
     // Compute tonnage per session day
-    const byDay = new Map<string, { date: Date; tonnage: number; exerciseIds: Set<number> }>()
+    const byDay = new Map<string, { date: Date; tonnage: number; exerciseIds: Set<number>; intensities: Map<string, number> }>()
     for (const entry of allEntries) {
       if (entry.skipped || entry.sets.length === 0) continue
       const d = entry.date instanceof Date ? entry.date : new Date(entry.date)
       const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
       if (!byDay.has(dayKey)) {
-        byDay.set(dayKey, { date: d, tonnage: 0, exerciseIds: new Set() })
+        byDay.set(dayKey, { date: d, tonnage: 0, exerciseIds: new Set(), intensities: new Map() })
       }
       const day = byDay.get(dayKey)!
       for (const s of entry.sets) {
         day.tonnage += s.weightKg * s.reps
       }
       day.exerciseIds.add(entry.exerciseId)
+      if (entry.sessionIntensity && entry.sessionIntensity !== 'rehab') {
+        day.intensities.set(entry.sessionIntensity, (day.intensities.get(entry.sessionIntensity) ?? 0) + 1)
+      }
     }
     const sessionVolumes: SessionVolume[] = [...byDay.values()]
-      .map(d => ({ date: d.date, tonnageKg: Math.round(d.tonnage), exerciseCount: d.exerciseIds.size }))
+      .map(d => {
+        // Dominant intensity = most frequent
+        let intensity: 'heavy' | 'volume' | 'moderate' | null = null
+        let maxCount = 0
+        for (const [k, v] of d.intensities) {
+          if (v > maxCount) { maxCount = v; intensity = k as 'heavy' | 'volume' | 'moderate' }
+        }
+        return { date: d.date, tonnageKg: Math.round(d.tonnage), exerciseCount: d.exerciseIds.size, intensity }
+      })
       .sort((a, b) => b.date.getTime() - a.date.getTime())
 
     return {
