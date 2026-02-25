@@ -143,6 +143,32 @@ export function useRestTimer(restSeconds: number, initialEndTime?: number | null
     }
   }, [restSeconds, isRunning])
 
+  // When app comes back to foreground, catch expired timer and notify
+  const firedRef = useRef(false)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (!endTimeRef.current || firedRef.current) return
+      if (Date.now() >= endTimeRef.current) {
+        // Timer expired while backgrounded — notify now
+        firedRef.current = true
+        setRemaining(0)
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+        endTimeRef.current = null
+        setIsRunning(false)
+        playTimerSound()
+        vibrate([200, 100, 200])
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  // Reset firedRef when timer starts
+  useEffect(() => {
+    if (isRunning) firedRef.current = false
+  }, [isRunning])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
