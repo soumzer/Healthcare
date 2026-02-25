@@ -91,6 +91,138 @@ function ExerciseRow({ exercise }: { exercise: ExerciseHistory }) {
   )
 }
 
+function TonnageChart({ sessionVolumes }: { sessionVolumes: SessionVolume[] }) {
+  const [expanded, setExpanded] = useState(false)
+  const [selected, setSelected] = useState<{ key: string; idx: number } | null>(null)
+
+  // Take last 12 sessions, reversed to chronological order
+  const recent = sessionVolumes.slice(0, 12).reverse()
+  const allTonnages = recent.map(s => s.tonnageKg)
+  const maxT = Math.max(...allTonnages)
+  const minT = Math.min(...allTonnages)
+  const range = maxT - minT || 1
+
+  // Chart dimensions
+  const W = 300
+  const H = expanded ? 180 : 100
+  const PAD_X = 4
+  const PAD_Y = 8
+
+  // Group points by intensity
+  const linesByIntensity: Record<string, { x: number; y: number; sv: SessionVolume }[]> = {}
+  recent.forEach((sv, i) => {
+    const key = sv.intensity ?? 'moderate'
+    if (!linesByIntensity[key]) linesByIntensity[key] = []
+    const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
+    const y = PAD_Y + (1 - (sv.tonnageKg - minT) / range) * (H - PAD_Y * 2)
+    linesByIntensity[key].push({ x, y, sv })
+  })
+
+  const activeKeys = Object.keys(linesByIntensity).filter(k => intensityLine[k])
+
+  // Find selected point info
+  const selectedInfo = selected && linesByIntensity[selected.key]?.[selected.idx]
+  const selectedCfg = selected ? intensityLine[selected.key] : null
+
+  return (
+    <div className="bg-zinc-900 rounded-xl p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-zinc-400 text-xs uppercase tracking-wider">Tonnage par s{'\u00e9'}ance</p>
+        <button
+          onClick={() => { setExpanded(e => !e); setSelected(null) }}
+          className="text-zinc-600 text-xs"
+        >
+          {expanded ? '\u25B2 Reduire' : '\u25BC Agrandir'}
+        </button>
+      </div>
+
+      {/* Selected point tooltip */}
+      {selectedInfo && selectedCfg && (
+        <div className="flex items-center gap-2 mb-2 text-xs">
+          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: selectedCfg.stroke }} />
+          <span className="text-white font-semibold">{selectedInfo.sv.tonnageKg.toLocaleString()}kg</span>
+          <span className="text-zinc-500">{selectedCfg.label} — {formatDate(selectedInfo.sv.date)}</span>
+        </div>
+      )}
+
+      <svg
+        viewBox={`0 0 ${W} ${H + 16}`}
+        className={`w-full transition-all duration-300 ${expanded ? 'h-52' : 'h-28'}`}
+        onClick={() => setSelected(null)}
+      >
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+          if (!expanded && (pct === 0.25 || pct === 0.75)) return null
+          const y = PAD_Y + (1 - pct) * (H - PAD_Y * 2)
+          const val = Math.round(minT + pct * range)
+          return (
+            <g key={pct}>
+              <line x1={PAD_X} y1={y} x2={W - PAD_X} y2={y} stroke="#27272a" strokeWidth="0.5" />
+              <text x={W - PAD_X} y={y - 2} textAnchor="end" fill="#52525b" fontSize="7">{val >= 1000 ? `${(val / 1000).toFixed(1)}t` : `${val}kg`}</text>
+            </g>
+          )
+        })}
+
+        {/* Lines + dots per intensity */}
+        {activeKeys.map(key => {
+          const points = linesByIntensity[key]
+          const cfg = intensityLine[key]
+          const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
+          return (
+            <g key={key}>
+              {points.length > 1 && (
+                <polyline
+                  points={polyline}
+                  fill="none"
+                  stroke={cfg.stroke}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              {points.map((p, j) => (
+                <circle
+                  key={j}
+                  cx={p.x}
+                  cy={p.y}
+                  r={selected?.key === key && selected?.idx === j ? 5 : 3}
+                  fill={cfg.stroke}
+                  className="cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); setSelected({ key, idx: j }) }}
+                />
+              ))}
+            </g>
+          )
+        })}
+
+        {/* X-axis dates */}
+        {recent.map((sv, i) => {
+          const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
+          if (recent.length > 6 && i % 2 !== 0 && i !== recent.length - 1) return null
+          return (
+            <text key={i} x={x} y={H + 12} textAnchor="middle" fill="#52525b" fontSize="7">
+              {formatDate(sv.date)}
+            </text>
+          )
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex gap-3 mt-1">
+        {activeKeys.map(key => {
+          const cfg = intensityLine[key]
+          return (
+            <div key={key} className="flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: cfg.stroke }} />
+              <span className="text-zinc-500 text-[10px]">{cfg.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const user = useLiveQuery(() => db.userProfiles.toCollection().first())
   const userId = user?.id
@@ -117,104 +249,9 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* Volume tracker — line chart per intensity */}
-            {data.sessionVolumes.length > 0 && (() => {
-              // Take last 12 sessions, reversed to chronological order
-              const recent = data.sessionVolumes.slice(0, 12).reverse()
-              const allTonnages = recent.map(s => s.tonnageKg)
-              const maxT = Math.max(...allTonnages)
-              const minT = Math.min(...allTonnages)
-              const range = maxT - minT || 1
-
-              // Chart dimensions
-              const W = 300
-              const H = 100
-              const PAD_X = 4
-              const PAD_Y = 8
-
-              // Group points by intensity
-              const linesByIntensity: Record<string, { x: number; y: number; sv: SessionVolume }[]> = {}
-              recent.forEach((sv, i) => {
-                const key = sv.intensity ?? 'moderate'
-                if (!linesByIntensity[key]) linesByIntensity[key] = []
-                const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
-                const y = PAD_Y + (1 - (sv.tonnageKg - minT) / range) * (H - PAD_Y * 2)
-                linesByIntensity[key].push({ x, y, sv })
-              })
-
-              // Active intensities for legend
-              const activeKeys = Object.keys(linesByIntensity).filter(k => intensityLine[k])
-
-              return (
-                <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-                  <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Tonnage par s{'\u00e9'}ance</p>
-
-                  <svg viewBox={`0 0 ${W} ${H + 16}`} className="w-full h-28">
-                    {/* Grid lines */}
-                    {[0, 0.5, 1].map(pct => {
-                      const y = PAD_Y + (1 - pct) * (H - PAD_Y * 2)
-                      const val = Math.round(minT + pct * range)
-                      return (
-                        <g key={pct}>
-                          <line x1={PAD_X} y1={y} x2={W - PAD_X} y2={y} stroke="#27272a" strokeWidth="0.5" />
-                          <text x={W - PAD_X} y={y - 2} textAnchor="end" fill="#52525b" fontSize="7">{val >= 1000 ? `${(val / 1000).toFixed(1)}t` : `${val}kg`}</text>
-                        </g>
-                      )
-                    })}
-
-                    {/* Lines + dots per intensity */}
-                    {activeKeys.map(key => {
-                      const points = linesByIntensity[key]
-                      const cfg = intensityLine[key]
-                      const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
-                      return (
-                        <g key={key}>
-                          {points.length > 1 && (
-                            <polyline
-                              points={polyline}
-                              fill="none"
-                              stroke={cfg.stroke}
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          )}
-                          {points.map((p, j) => (
-                            <circle key={j} cx={p.x} cy={p.y} r="3" fill={cfg.stroke}>
-                              <title>{`${cfg.label} — ${p.sv.tonnageKg}kg — ${formatDate(p.sv.date)}`}</title>
-                            </circle>
-                          ))}
-                        </g>
-                      )
-                    })}
-
-                    {/* X-axis dates */}
-                    {recent.map((sv, i) => {
-                      const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
-                      // Show every other date if > 6 points to avoid overlap
-                      if (recent.length > 6 && i % 2 !== 0 && i !== recent.length - 1) return null
-                      return (
-                        <text key={i} x={x} y={H + 12} textAnchor="middle" fill="#52525b" fontSize="7">
-                          {formatDate(sv.date)}
-                        </text>
-                      )
-                    })}
-                  </svg>
-
-                  {/* Legend */}
-                  <div className="flex gap-3 mt-1">
-                    {activeKeys.map(key => {
-                      const cfg = intensityLine[key]
-                      return (
-                        <div key={key} className="flex items-center gap-1">
-                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: cfg.stroke }} />
-                          <span className="text-zinc-500 text-[10px]">{cfg.label}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
+            {data.sessionVolumes.length > 0 && (
+              <TonnageChart sessionVolumes={data.sessionVolumes} />
+            )}
 
             <div className="space-y-2">
               {data.exercises.map((ex) => (
