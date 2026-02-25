@@ -10,6 +10,18 @@ export default function HomePage() {
   const activeSession = useActiveSession()
   const navigate = useNavigate()
 
+  // Must be called before any early return (Rules of Hooks)
+  const activeExerciseNames = useLiveQuery(async () => {
+    if (!activeSession) return null
+    const ids = activeSession.exerciseStatuses.map(s => s.exerciseId)
+    const exercises = await db.exercises.where('id').anyOf(ids).toArray()
+    const nameMap = new Map(exercises.map(e => [e.id!, e.name]))
+    return activeSession.exerciseStatuses.map(s => ({
+      name: nameMap.get(s.exerciseId) ?? `Exercice #${s.exerciseId}`,
+      status: s.status,
+    }))
+  }, [activeSession])
+
   // Loading
   if (!user || info === undefined) {
     return (
@@ -70,17 +82,6 @@ export default function HomePage() {
   }
 
   // Active session — resume
-  const activeExerciseNames = useLiveQuery(async () => {
-    if (!activeSession) return null
-    const ids = activeSession.exerciseStatuses.map(s => s.exerciseId)
-    const exercises = await db.exercises.where('id').anyOf(ids).toArray()
-    const nameMap = new Map(exercises.map(e => [e.id!, e.name]))
-    return activeSession.exerciseStatuses.map(s => ({
-      name: nameMap.get(s.exerciseId) ?? `Exercice #${s.exerciseId}`,
-      status: s.status,
-    }))
-  }, [activeSession])
-
   if (activeSession) {
     const doneCount = activeSession.exerciseStatuses.filter(s => s.status !== 'pending').length
     const totalCount = activeSession.exerciseStatuses.length
