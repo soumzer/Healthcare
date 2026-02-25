@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import { useDashboardData, type ExerciseHistory } from '../hooks/useDashboardData'
+import { useDashboardData, type ExerciseHistory, type SessionVolume } from '../hooks/useDashboardData'
 
 const trendConfig = {
   up: { color: 'text-emerald-400', arrow: '\u2191' },
@@ -13,6 +13,12 @@ const intensityBadge: Record<string, { letter: string; color: string }> = {
   heavy: { letter: 'F', color: 'text-blue-400' },
   volume: { letter: 'V', color: 'text-emerald-400' },
   moderate: { letter: 'M', color: 'text-amber-400' },
+}
+
+const intensityLine: Record<string, { stroke: string; label: string; letter: string }> = {
+  heavy: { stroke: '#3b82f6', label: 'Force', letter: 'F' },
+  volume: { stroke: '#10b981', label: 'Volume', letter: 'V' },
+  moderate: { stroke: '#f59e0b', label: 'Modere', letter: 'M' },
 }
 
 function formatDate(date: Date): string {
@@ -110,46 +116,105 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Volume tracker */}
-            {data.sessionVolumes.length > 0 && (
-              <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-                <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Tonnage par seance</p>
-                <div className="flex items-end gap-1 h-24">
-                  {data.sessionVolumes.slice(0, 10).reverse().map((sv, i) => {
-                    const max = Math.max(...data.sessionVolumes.slice(0, 10).map(s => s.tonnageKg))
-                    const pct = max > 0 ? (sv.tonnageKg / max) * 100 : 0
-                    const badge = sv.intensity && intensityBadge[sv.intensity]
-                    const barColor = sv.intensity === 'heavy' ? 'bg-blue-500' :
-                      sv.intensity === 'moderate' ? 'bg-amber-500' : 'bg-emerald-600'
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                        {badge && (
-                          <span className={`${badge.color} text-[9px] font-bold`}>{badge.letter}</span>
-                        )}
-                        <div
-                          className={`w-full ${barColor} rounded-t`}
-                          style={{ height: `${Math.max(pct, 4)}%` }}
-                          title={`${sv.tonnageKg}kg — ${formatDate(sv.date)}`}
-                        />
-                        <span className="text-zinc-600 text-[9px]">{formatDate(sv.date)}</span>
-                      </div>
-                    )
-                  })}
+            {/* Volume tracker — line chart per intensity */}
+            {data.sessionVolumes.length > 0 && (() => {
+              // Take last 12 sessions, reversed to chronological order
+              const recent = data.sessionVolumes.slice(0, 12).reverse()
+              const allTonnages = recent.map(s => s.tonnageKg)
+              const maxT = Math.max(...allTonnages)
+              const minT = Math.min(...allTonnages)
+              const range = maxT - minT || 1
+
+              // Chart dimensions
+              const W = 300
+              const H = 100
+              const PAD_X = 4
+              const PAD_Y = 8
+
+              // Group points by intensity
+              const linesByIntensity: Record<string, { x: number; y: number; sv: SessionVolume }[]> = {}
+              recent.forEach((sv, i) => {
+                const key = sv.intensity ?? 'moderate'
+                if (!linesByIntensity[key]) linesByIntensity[key] = []
+                const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
+                const y = PAD_Y + (1 - (sv.tonnageKg - minT) / range) * (H - PAD_Y * 2)
+                linesByIntensity[key].push({ x, y, sv })
+              })
+
+              // Active intensities for legend
+              const activeKeys = Object.keys(linesByIntensity).filter(k => intensityLine[k])
+
+              return (
+                <div className="bg-zinc-900 rounded-xl p-4 mb-4">
+                  <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Tonnage par s{'\u00e9'}ance</p>
+
+                  <svg viewBox={`0 0 ${W} ${H + 16}`} className="w-full h-28">
+                    {/* Grid lines */}
+                    {[0, 0.5, 1].map(pct => {
+                      const y = PAD_Y + (1 - pct) * (H - PAD_Y * 2)
+                      const val = Math.round(minT + pct * range)
+                      return (
+                        <g key={pct}>
+                          <line x1={PAD_X} y1={y} x2={W - PAD_X} y2={y} stroke="#27272a" strokeWidth="0.5" />
+                          <text x={W - PAD_X} y={y - 2} textAnchor="end" fill="#52525b" fontSize="7">{val >= 1000 ? `${(val / 1000).toFixed(1)}t` : `${val}kg`}</text>
+                        </g>
+                      )
+                    })}
+
+                    {/* Lines + dots per intensity */}
+                    {activeKeys.map(key => {
+                      const points = linesByIntensity[key]
+                      const cfg = intensityLine[key]
+                      const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
+                      return (
+                        <g key={key}>
+                          {points.length > 1 && (
+                            <polyline
+                              points={polyline}
+                              fill="none"
+                              stroke={cfg.stroke}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          )}
+                          {points.map((p, j) => (
+                            <circle key={j} cx={p.x} cy={p.y} r="3" fill={cfg.stroke}>
+                              <title>{`${cfg.label} — ${p.sv.tonnageKg}kg — ${formatDate(p.sv.date)}`}</title>
+                            </circle>
+                          ))}
+                        </g>
+                      )
+                    })}
+
+                    {/* X-axis dates */}
+                    {recent.map((sv, i) => {
+                      const x = PAD_X + (i / Math.max(recent.length - 1, 1)) * (W - PAD_X * 2)
+                      // Show every other date if > 6 points to avoid overlap
+                      if (recent.length > 6 && i % 2 !== 0 && i !== recent.length - 1) return null
+                      return (
+                        <text key={i} x={x} y={H + 12} textAnchor="middle" fill="#52525b" fontSize="7">
+                          {formatDate(sv.date)}
+                        </text>
+                      )
+                    })}
+                  </svg>
+
+                  {/* Legend */}
+                  <div className="flex gap-3 mt-1">
+                    {activeKeys.map(key => {
+                      const cfg = intensityLine[key]
+                      return (
+                        <div key={key} className="flex items-center gap-1">
+                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: cfg.stroke }} />
+                          <span className="text-zinc-500 text-[10px]">{cfg.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="flex justify-between mt-2 text-xs">
-                  <span className="text-zinc-500">Derniere : {data.sessionVolumes[0].tonnageKg.toLocaleString()}kg</span>
-                  {data.sessionVolumes.length >= 2 && (() => {
-                    const diff = data.sessionVolumes[0].tonnageKg - data.sessionVolumes[1].tonnageKg
-                    if (diff === 0) return null
-                    return (
-                      <span className={diff > 0 ? 'text-emerald-400' : 'text-red-400'}>
-                        {diff > 0 ? '+' : ''}{diff.toLocaleString()}kg
-                      </span>
-                    )
-                  })()}
-                </div>
-              </div>
-            )}
+              )
+            })()}
 
             <div className="space-y-2">
               {data.exercises.map((ex) => (
