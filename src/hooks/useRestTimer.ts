@@ -1,8 +1,26 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-function playTimerSound() {
+// Shared AudioContext — created on first user gesture (start), reused for timer sounds.
+// iOS Safari suspends AudioContext created outside a user gesture, so we create it
+// inside start() and keep it alive for the timer end sound.
+let sharedAudioCtx: AudioContext | null = null
+
+function ensureAudioContext(): AudioContext | null {
   try {
-    const ctx = new AudioContext()
+    if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+      sharedAudioCtx = new AudioContext()
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume()
+    }
+    return sharedAudioCtx
+  } catch { return null }
+}
+
+function playTimerSound() {
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+  try {
     const oscillator = ctx.createOscillator()
     const gain = ctx.createGain()
     oscillator.type = 'sine'
@@ -13,9 +31,11 @@ function playTimerSound() {
     gain.connect(ctx.destination)
     oscillator.start()
     oscillator.stop(ctx.currentTime + 0.3)
-    // Close context after sound finishes
-    setTimeout(() => ctx.close(), 500)
-  } catch { /* ignore — AudioContext may not be available */ }
+  } catch { /* ignore */ }
+}
+
+function vibrate(pattern: number[]) {
+  try { navigator.vibrate?.(pattern) } catch { /* ignore */ }
 }
 
 export interface UseRestTimerReturn {
@@ -58,9 +78,7 @@ export function useRestTimer(restSeconds: number, initialEndTime?: number | null
           endTimeRef.current = null
           setIsRunning(false)
           playTimerSound()
-          try {
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200])
-          } catch { /* ignore */ }
+          vibrate([200, 100, 200])
         }
       }, 250)
     }
@@ -76,6 +94,9 @@ export function useRestTimer(restSeconds: number, initialEndTime?: number | null
   }, [])
 
   const start = useCallback(() => {
+    // Unlock AudioContext on user gesture (required for iOS Safari)
+    ensureAudioContext()
+
     // Use wall-clock based timer for accuracy (survives tab suspension)
     const end = Date.now() + remaining * 1000
     endTimeRef.current = end
@@ -90,12 +111,8 @@ export function useRestTimer(restSeconds: number, initialEndTime?: number | null
         intervalRef.current = null
         endTimeRef.current = null
         setIsRunning(false)
-
-        // Sound + vibrate notification
         playTimerSound()
-        try {
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200])
-        } catch { /* ignore */ }
+        vibrate([200, 100, 200])
       }
     }, 250)
   }, [remaining])

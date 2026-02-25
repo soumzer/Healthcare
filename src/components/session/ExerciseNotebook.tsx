@@ -125,8 +125,10 @@ export default function ExerciseNotebook({
   }, [notebook.lastWeight])
 
   const handleSave = useCallback(async () => {
+    try { navigator.vibrate?.(15) } catch { /* ignore */ }
     const result = await notebook.saveAndNext()
     if (result.isWeightPR && result.prWeightKg) {
+      try { navigator.vibrate?.([50, 30, 50]) } catch { /* ignore */ }
       setPrFlash({ weightKg: result.prWeightKg })
     }
   }, [notebook])
@@ -136,6 +138,7 @@ export default function ExerciseNotebook({
     const r = parseInt(inputReps, 10)
     if (isNaN(w) || w < 0 || !r || r <= 0) return
     notebook.addSet(w, r)
+    try { navigator.vibrate?.(10) } catch { /* ignore */ }
     // Keep weight, clear reps for next set
     setInputReps('')
     // Start rest timer after logging a set
@@ -146,7 +149,7 @@ export default function ExerciseNotebook({
   const intensityInfo = INTENSITY_COLORS[target.intensity]
 
   return (
-    <div className="flex flex-col h-[var(--content-h)] overflow-hidden bg-zinc-950 text-white">
+    <div key={exercise.exerciseId} className="flex flex-col h-[var(--content-h)] overflow-hidden bg-zinc-950 text-white animate-[slideIn_0.2s_ease-out]">
       {/* Skip modal */}
       {showSkipModal && (
         <SkipModal
