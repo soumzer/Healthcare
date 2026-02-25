@@ -70,6 +70,17 @@ export default function HomePage() {
   }
 
   // Active session — resume
+  const activeExerciseNames = useLiveQuery(async () => {
+    if (!activeSession) return null
+    const ids = activeSession.exerciseStatuses.map(s => s.exerciseId)
+    const exercises = await db.exercises.where('id').anyOf(ids).toArray()
+    const nameMap = new Map(exercises.map(e => [e.id!, e.name]))
+    return activeSession.exerciseStatuses.map(s => ({
+      name: nameMap.get(s.exerciseId) ?? `Exercice #${s.exerciseId}`,
+      status: s.status,
+    }))
+  }, [activeSession])
+
   if (activeSession) {
     const doneCount = activeSession.exerciseStatuses.filter(s => s.status !== 'pending').length
     const totalCount = activeSession.exerciseStatuses.length
@@ -78,9 +89,28 @@ export default function HomePage() {
         <div className="flex-1 overflow-y-auto">
           <p className="text-zinc-400 mb-1">{"S\u00E9ance en cours"}</p>
           <p className="text-3xl font-bold mb-4">{info.status === 'ready' ? info.nextSessionName : info.lastSessionName ?? 'S\u00E9ance'}</p>
-          <p className="text-zinc-400">
+          <p className="text-zinc-400 mb-3">
             {doneCount}/{totalCount} exercices
           </p>
+
+          {activeExerciseNames && (
+            <ul className="space-y-1 mb-4">
+              {activeExerciseNames.map((ex, idx) => (
+                <li key={idx} className="flex items-center gap-2 text-sm">
+                  <span className={
+                    ex.status === 'done' ? 'text-emerald-400' :
+                    ex.status === 'skipped' ? 'text-red-400' :
+                    'text-zinc-600'
+                  }>
+                    {ex.status === 'done' ? '\u2713' : ex.status === 'skipped' ? '/' : '\u25CB'}
+                  </span>
+                  <span className={ex.status === 'pending' ? 'text-zinc-300' : 'text-zinc-500'}>
+                    {ex.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="flex-shrink-0 pb-4">
