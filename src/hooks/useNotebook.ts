@@ -18,6 +18,13 @@ export interface SkipResult {
   conditionCreated: boolean
 }
 
+export interface SaveResult {
+  /** True if a new weight PR was set */
+  isWeightPR: boolean
+  /** The new best weight, if PR */
+  prWeightKg?: number
+}
+
 export interface UseNotebookReturn {
   currentSets: NotebookSet[]
   history: NotebookEntry[]
@@ -26,7 +33,7 @@ export interface UseNotebookReturn {
   addSet: (weightKg: number, reps: number) => void
   updateSet: (index: number, weightKg: number, reps: number) => void
   removeLastSet: () => void
-  saveAndNext: () => Promise<void>
+  saveAndNext: () => Promise<SaveResult>
   skipExercise: (zone: BodyZone, questionnaireResult?: QuestionnaireResult) => Promise<SkipResult>
 }
 
@@ -104,11 +111,36 @@ export function useNotebook(
     setCurrentSets(prev => prev.slice(0, -1))
   }, [])
 
-  const saveAndNext = useCallback(async () => {
-    if (isSaving) return
+  const saveAndNext = useCallback(async (): Promise<SaveResult> => {
+    if (isSaving) return { isWeightPR: false }
     setIsSaving(true)
     try {
       const validSets = currentSets.filter(s => s.reps > 0)
+
+      // Detect weight PR: compare best weight in current sets vs all-time best
+      let isWeightPR = false
+      let prWeightKg: number | undefined
+      if (validSets.length > 0) {
+        const currentBest = Math.max(...validSets.map(s => s.weightKg))
+        if (currentBest > 0) {
+          const allEntries = await db.notebookEntries
+            .where('[userId+exerciseId]')
+            .equals([userId, exerciseId])
+            .toArray()
+          // Exclude today's entry if we're updating it
+          const pastEntries = todayEntryId
+            ? allEntries.filter(e => e.id !== todayEntryId)
+            : allEntries
+          const historicalBest = pastEntries
+            .filter(e => !e.skipped && e.sets.length > 0)
+            .reduce((max, e) => Math.max(max, ...e.sets.map(s => s.weightKg)), 0)
+          if (currentBest > historicalBest) {
+            isWeightPR = true
+            prWeightKg = currentBest
+          }
+        }
+      }
+
       if (todayEntryId) {
         // Update existing entry instead of creating a duplicate
         await db.notebookEntries.update(todayEntryId, {
@@ -150,6 +182,7 @@ export function useNotebook(
 
       setCurrentSets([])
       onNext()
+      return { isWeightPR, prWeightKg }
     } finally {
       setIsSaving(false)
     }

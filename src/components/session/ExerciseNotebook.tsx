@@ -95,6 +95,14 @@ export default function ExerciseNotebook({
   const [showOccupied, setShowOccupied] = useState(false)
   const [showSwap, setShowSwap] = useState(false)
   const [workingWeight, setWorkingWeight] = useState<string>('')
+  const [prFlash, setPrFlash] = useState<{ weightKg: number } | null>(null)
+
+  // Auto-dismiss PR flash
+  useEffect(() => {
+    if (!prFlash) return
+    const t = setTimeout(() => setPrFlash(null), 2000)
+    return () => clearTimeout(t)
+  }, [prFlash])
 
   // Check if exercise touches a painful zone
   const hasContraindication = activeZones.length > 0 &&
@@ -115,6 +123,13 @@ export default function ExerciseNotebook({
       setInputWeight(String(notebook.lastWeight))
     }
   }, [notebook.lastWeight])
+
+  const handleSave = useCallback(async () => {
+    const result = await notebook.saveAndNext()
+    if (result.isWeightPR && result.prWeightKg) {
+      setPrFlash({ weightKg: result.prWeightKg })
+    }
+  }, [notebook])
 
   const handleAddSet = useCallback(() => {
     const w = parseFloat(inputWeight)
@@ -392,13 +407,24 @@ export default function ExerciseNotebook({
           Occupee
         </button>
         <button
-          onClick={notebook.saveAndNext}
+          onClick={handleSave}
           disabled={notebook.isSaving}
           className="flex-1 bg-white text-black font-semibold rounded-xl py-3 text-lg disabled:opacity-50"
         >
           OK
         </button>
       </div>
+
+      {/* PR celebration overlay */}
+      {prFlash && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-[fadeIn_0.2s_ease-out]">
+          <div className="text-center animate-[scaleIn_0.3s_ease-out]">
+            <p className="text-5xl font-black text-amber-400 mb-2">RECORD !</p>
+            <p className="text-2xl text-white font-bold">{prFlash.weightKg} kg</p>
+            <p className="text-zinc-400 mt-1">{exercise.exerciseName}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

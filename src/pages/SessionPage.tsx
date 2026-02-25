@@ -10,6 +10,25 @@ import { useSessionPersistence } from '../hooks/useSessionPersistence'
 import type { BodyZone, Exercise, ProgramSession, SessionPhase, ExerciseStatus, NotebookSet } from '../db/types'
 import type { SwapOption } from '../components/session/ExerciseNotebook'
 
+function ElapsedTimer({ startTime }: { startTime: Date }) {
+  const [elapsed, setElapsed] = useState(() => Math.floor((Date.now() - startTime.getTime()) / 1000))
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [startTime])
+
+  const mins = Math.floor(elapsed / 60)
+  const secs = elapsed % 60
+  return (
+    <span className="text-zinc-500 text-sm font-mono">
+      {mins}:{secs.toString().padStart(2, '0')}
+    </span>
+  )
+}
+
 function SessionContent({ programId, sessionIndex }: { programId: number; sessionIndex: number }) {
   const navigate = useNavigate()
 
@@ -397,7 +416,10 @@ function SessionRunner({
     return (
       <div className="flex flex-col h-[var(--content-h)] overflow-hidden p-4">
         <div className="mb-4">
-          <h2 className="text-xl font-bold">{programSession.name}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">{programSession.name}</h2>
+            <ElapsedTimer startTime={sessionStartTime} />
+          </div>
           <p className="text-zinc-400 text-sm">
             {exerciseStatuses.filter(s => s.status !== 'pending').length}/{programSession.exercises.length} exercices
           </p>
