@@ -567,32 +567,67 @@ function SessionRunner({
   }
 
   if (phase === 'done') {
-    const doneCount = exerciseStatuses.filter(s => s.status === 'done').length
-    const skippedCount = exerciseStatuses.filter(s => s.status === 'skipped').length
-    const duration = Math.round((Date.now() - sessionStartTime.getTime()) / 60000)
-
-    return (
-      <div className="flex flex-col items-center justify-center h-[var(--content-h)] p-6 text-center">
-        <p className="text-3xl font-bold mb-2">Bravo !</p>
-        <p className="text-zinc-400 mb-6">Seance enregistree.</p>
-        <div className="bg-zinc-900 rounded-xl p-4 mb-8 w-full max-w-sm text-left space-y-1">
-          <p className="text-sm text-zinc-300">{doneCount} exercice{doneCount > 1 ? 's' : ''} complete{doneCount > 1 ? 's' : ''}</p>
-          {skippedCount > 0 && (
-            <p className="text-sm text-amber-400">{skippedCount} skip{skippedCount > 1 ? 's' : ''} (douleur)</p>
-          )}
-          <p className="text-sm text-zinc-500">Duree: ~{duration} min</p>
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
-        >
-          Retour
-        </button>
-      </div>
-    )
+    return <DoneScreen
+      exerciseStatuses={exerciseStatuses}
+      sessionStartTime={sessionStartTime}
+      userId={userId}
+      onBack={() => navigate('/')}
+    />
   }
 
   return null
+}
+
+function DoneScreen({ exerciseStatuses, sessionStartTime, userId, onBack }: {
+  exerciseStatuses: ExerciseStatus[]
+  sessionStartTime: Date
+  userId: number
+  onBack: () => void
+}) {
+  const doneCount = exerciseStatuses.filter(s => s.status === 'done').length
+  const skippedCount = exerciseStatuses.filter(s => s.status === 'skipped').length
+  const duration = Math.round((Date.now() - sessionStartTime.getTime()) / 60000)
+
+  // Compute session tonnage from today's entries
+  const tonnage = useLiveQuery(async () => {
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000)
+    const exerciseIds = exerciseStatuses.map(s => s.exerciseId)
+    const entries = await db.notebookEntries
+      .where('userId').equals(userId)
+      .filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date)
+        return d >= cutoff && !e.skipped && exerciseIds.includes(e.exerciseId)
+      })
+      .toArray()
+    let total = 0
+    for (const entry of entries) {
+      for (const s of entry.sets) total += s.weightKg * s.reps
+    }
+    return Math.round(total)
+  }, [userId, exerciseStatuses])
+
+  return (
+    <div className="flex flex-col items-center justify-center h-[var(--content-h)] p-6 text-center">
+      <p className="text-3xl font-bold mb-2">Bravo !</p>
+      <p className="text-zinc-400 mb-6">Seance enregistree.</p>
+      <div className="bg-zinc-900 rounded-xl p-4 mb-8 w-full max-w-sm text-left space-y-1">
+        <p className="text-sm text-zinc-300">{doneCount} exercice{doneCount > 1 ? 's' : ''} complete{doneCount > 1 ? 's' : ''}</p>
+        {skippedCount > 0 && (
+          <p className="text-sm text-amber-400">{skippedCount} skip{skippedCount > 1 ? 's' : ''} (douleur)</p>
+        )}
+        <p className="text-sm text-zinc-500">Duree: ~{duration} min</p>
+        {tonnage !== undefined && tonnage > 0 && (
+          <p className="text-sm text-emerald-400">Tonnage: {tonnage.toLocaleString()}kg</p>
+        )}
+      </div>
+      <button
+        onClick={onBack}
+        className="bg-white text-black font-semibold rounded-xl py-4 px-8 text-lg"
+      >
+        Retour
+      </button>
+    </div>
+  )
 }
 
 class SessionErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {

@@ -9,6 +9,12 @@ const trendConfig = {
   down: { color: 'text-red-400', arrow: '\u2193' },
 } as const
 
+const intensityBadge: Record<string, { letter: string; color: string }> = {
+  heavy: { letter: 'F', color: 'text-blue-400' },
+  volume: { letter: 'V', color: 'text-emerald-400' },
+  moderate: { letter: 'M', color: 'text-amber-400' },
+}
+
 function formatDate(date: Date): string {
   const d = date instanceof Date ? date : new Date(date)
   const day = d.getDate().toString().padStart(2, '0')
@@ -62,6 +68,11 @@ function ExerciseRow({ exercise }: { exercise: ExerciseHistory }) {
             return (
               <div key={entry.id ?? i} className="flex items-center gap-2 text-xs">
                 <span className="text-zinc-500 w-12 flex-shrink-0">{formatDate(entry.date)}</span>
+                {entry.sessionIntensity && intensityBadge[entry.sessionIntensity] && (
+                  <span className={`${intensityBadge[entry.sessionIntensity].color} font-bold w-3 flex-shrink-0`}>
+                    {intensityBadge[entry.sessionIntensity].letter}
+                  </span>
+                )}
                 <span className="text-zinc-300">
                   {entry.sets.map((s) => `${s.weightKg}kg\u00d7${s.reps}`).join(' \u00b7 ')}
                 </span>
@@ -98,11 +109,48 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {data.exercises.map((ex) => (
-              <ExerciseRow key={ex.exerciseId} exercise={ex} />
-            ))}
-          </div>
+          <>
+            {/* Volume tracker */}
+            {data.sessionVolumes.length > 0 && (
+              <div className="bg-zinc-900 rounded-xl p-4 mb-4">
+                <p className="text-zinc-400 text-xs uppercase tracking-wider mb-3">Tonnage par seance</p>
+                <div className="flex items-end gap-1 h-20">
+                  {data.sessionVolumes.slice(0, 10).reverse().map((sv, i) => {
+                    const max = Math.max(...data.sessionVolumes.slice(0, 10).map(s => s.tonnageKg))
+                    const pct = max > 0 ? (sv.tonnageKg / max) * 100 : 0
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div
+                          className="w-full bg-emerald-600 rounded-t"
+                          style={{ height: `${Math.max(pct, 4)}%` }}
+                          title={`${sv.tonnageKg}kg — ${formatDate(sv.date)}`}
+                        />
+                        <span className="text-zinc-600 text-[9px]">{formatDate(sv.date)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-between mt-2 text-xs">
+                  <span className="text-zinc-500">Derniere : {data.sessionVolumes[0].tonnageKg.toLocaleString()}kg</span>
+                  {data.sessionVolumes.length >= 2 && (() => {
+                    const diff = data.sessionVolumes[0].tonnageKg - data.sessionVolumes[1].tonnageKg
+                    if (diff === 0) return null
+                    return (
+                      <span className={diff > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                        {diff > 0 ? '+' : ''}{diff.toLocaleString()}kg
+                      </span>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {data.exercises.map((ex) => (
+                <ExerciseRow key={ex.exerciseId} exercise={ex} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -17,14 +17,23 @@ export interface ExerciseHistory {
   trend: 'up' | 'same' | 'down' | null
 }
 
+export interface SessionVolume {
+  date: Date
+  tonnageKg: number
+  exerciseCount: number
+}
+
 export interface DashboardData {
   exercises: ExerciseHistory[]
+  /** Tonnage per session day, sorted most recent first */
+  sessionVolumes: SessionVolume[]
   hasData: boolean
   isLoading: boolean
 }
 
 const emptyData: DashboardData = {
   exercises: [],
+  sessionVolumes: [],
   hasData: false,
   isLoading: true,
 }
@@ -103,8 +112,28 @@ export function useDashboardData(userId: number | undefined): DashboardData {
     // Sort by most recently performed first
     exercises.sort((a, b) => b.lastDate.getTime() - a.lastDate.getTime())
 
+    // Compute tonnage per session day
+    const byDay = new Map<string, { date: Date; tonnage: number; exerciseIds: Set<number> }>()
+    for (const entry of allEntries) {
+      if (entry.skipped || entry.sets.length === 0) continue
+      const d = entry.date instanceof Date ? entry.date : new Date(entry.date)
+      const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      if (!byDay.has(dayKey)) {
+        byDay.set(dayKey, { date: d, tonnage: 0, exerciseIds: new Set() })
+      }
+      const day = byDay.get(dayKey)!
+      for (const s of entry.sets) {
+        day.tonnage += s.weightKg * s.reps
+      }
+      day.exerciseIds.add(entry.exerciseId)
+    }
+    const sessionVolumes: SessionVolume[] = [...byDay.values()]
+      .map(d => ({ date: d.date, tonnageKg: Math.round(d.tonnage), exerciseCount: d.exerciseIds.size }))
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+
     return {
       exercises,
+      sessionVolumes,
       hasData: true,
       isLoading: false,
     }
