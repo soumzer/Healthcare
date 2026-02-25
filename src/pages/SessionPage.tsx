@@ -193,6 +193,14 @@ function SessionRunner({
     })
   }, [phase, currentExerciseIdx, exerciseStatuses, warmupChecked, saveSessionState, programId, sessionIndex, sessionStartTime])
 
+  // Warn before closing/reloading during active session
+  useEffect(() => {
+    if (phase === 'done') return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [phase])
+
   // Draft sets change handler
   const handleDraftSetsChange = useCallback((exerciseId: number, sets: NotebookSet[]) => {
     draftSetsRef.current.set(exerciseId, sets)
@@ -360,15 +368,26 @@ function SessionRunner({
     setPhase('exercises')
   }, [programId, programSession.name, currentExerciseIdx])
 
+  // Intensity color theme
+  const intensity = programSession.intensity as 'heavy' | 'volume' | 'moderate' | undefined
+  const intensityColor = intensity === 'heavy' ? { bar: 'bg-blue-500', text: 'text-blue-400', label: 'Force' }
+    : intensity === 'moderate' ? { bar: 'bg-amber-500', text: 'text-amber-400', label: 'Modere' }
+    : { bar: 'bg-emerald-500', text: 'text-emerald-400', label: 'Volume' }
+
   // --- Render phases ---
 
   if (phase === 'warmup') {
     return (
-      <div className="flex flex-col h-[var(--content-h)] overflow-hidden p-4">
+      <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
+        <div className={`h-1 ${intensityColor.bar}`} />
+        <div className="p-4 flex-1 flex flex-col overflow-hidden">
         <div className="text-center mb-4">
           <p className="text-zinc-400 text-sm uppercase tracking-wider mb-1">Echauffement</p>
           <h2 className="text-xl font-bold">{programSession.name}</h2>
-          <p className="text-zinc-400 text-sm mt-1">Halteres legeres ou barre a vide</p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-zinc-400 text-sm">Halteres legeres ou barre a vide</p>
+            <span className={`text-xs font-bold ${intensityColor.text}`}>{intensityColor.label}</span>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-1">
@@ -408,16 +427,22 @@ function SessionRunner({
             C'est parti
           </button>
         </div>
+        </div>
       </div>
     )
   }
 
   if (phase === 'exercises') {
     return (
-      <div className="flex flex-col h-[var(--content-h)] overflow-hidden p-4">
+      <div className="flex flex-col h-[var(--content-h)] overflow-hidden">
+        <div className={`h-1 ${intensityColor.bar}`} />
+        <div className="p-4 flex-1 flex flex-col overflow-hidden">
         <div className="mb-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">{programSession.name}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">{programSession.name}</h2>
+              <span className={`text-xs font-bold ${intensityColor.text}`}>{intensityColor.label}</span>
+            </div>
             <ElapsedTimer startTime={sessionStartTime} />
           </div>
           <p className="text-zinc-400 text-sm">
@@ -491,6 +516,7 @@ function SessionRunner({
               Continuer
             </button>
           )}
+        </div>
         </div>
       </div>
     )
