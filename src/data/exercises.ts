@@ -3123,7 +3123,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['multifides', 'fessiers'],
     equipmentNeeded: [],
     contraindications: [],
-    alternatives: ['Cobra (extension thoracique)'],
+    alternatives: ['Thoracic extensions (extensions thoraciques)'],
     instructions:
       'Allongé sur le ventre, se soulever sur les coudes puis sur les mains en gardant le bassin au sol. Maintient l\'extension spinale et prévient la cyphose.',
     isRehab: true,
@@ -3165,7 +3165,7 @@ export const exerciseCatalog: Omit<Exercise, 'id'>[] = [
     secondaryMuscles: ['quadriceps', 'fléchisseurs de hanche'],
     equipmentNeeded: [],
     contraindications: [],
-    alternatives: ['Étirement fléchisseurs de hanche'],
+    alternatives: ['Étirement fléchisseurs de hanche (hip flexor stretch)'],
     instructions:
       'En fente, genou arrière au sol. Avancer le bassin en gardant le torse droit. Le psoas raccourci tire sur la colonne lombaire. Étirement essentiel pour maintenir la posture droite.',
     isRehab: true,

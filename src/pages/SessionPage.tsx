@@ -330,25 +330,19 @@ function SessionRunner({
     }
   }, [userId, programId, programSession, sessionStartTime, exerciseStatuses, exerciseMap, clearSessionState])
 
-  // Swap: find alternatives with same primary muscles and category (dynamic)
+  // Swap: use curated alternatives field to propose exercises that do the same movement
   const swapOptions: SwapOption[] = useMemo(() => {
     if (!currentCatalogExercise) return []
-    const currentId = currentCatalogExercise.id
-    const currentMuscles = currentCatalogExercise.primaryMuscles
-    const currentCategory = currentCatalogExercise.category
-    // Collect IDs already used in this session
+    const altNames = currentCatalogExercise.alternatives ?? []
+    if (altNames.length === 0) return []
     const usedIds = new Set(programSession.exercises.map((e) => e.exerciseId))
-    // Find exercises with overlapping primary muscles and same category
+    const altNamesLower = altNames.map((n) => n.toLowerCase())
     return allExercises
       .filter((e) => {
-        if (e.id === currentId || e.id === undefined) return false
+        if (e.id === undefined) return false
         if (usedIds.has(e.id)) return false
-        if (e.isRehab) return false
-        if (e.category !== currentCategory) return false
-        // At least one overlapping primary muscle
-        return e.primaryMuscles.some((m) => currentMuscles.includes(m))
+        return altNamesLower.includes(e.name.toLowerCase())
       })
-      .slice(0, 8) // Limit to 8 alternatives
       .map((e) => ({ exerciseId: e.id!, name: e.name }))
   }, [currentCatalogExercise, allExercises, programSession.exercises])
 
