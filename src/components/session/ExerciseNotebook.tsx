@@ -97,13 +97,6 @@ export default function ExerciseNotebook({
   const [workingWeight, setWorkingWeight] = useState<string>('')
   const [prFlash, setPrFlash] = useState<{ weightKg: number } | null>(null)
 
-  // Auto-dismiss PR flash
-  useEffect(() => {
-    if (!prFlash) return
-    const t = setTimeout(() => setPrFlash(null), 2000)
-    return () => clearTimeout(t)
-  }, [prFlash])
-
   // Check if exercise touches a painful zone
   const hasContraindication = activeZones.length > 0 &&
     exercise.contraindications.some(z => activeZones.includes(z))
@@ -125,13 +118,17 @@ export default function ExerciseNotebook({
   }, [notebook.lastWeight])
 
   const handleSave = useCallback(async () => {
-    try { navigator.vibrate?.(15) } catch { /* ignore */ }
     const result = await notebook.saveAndNext()
     if (result.isWeightPR && result.prWeightKg) {
-      try { navigator.vibrate?.([50, 30, 50]) } catch { /* ignore */ }
       setPrFlash({ weightKg: result.prWeightKg })
+      setTimeout(() => {
+        setPrFlash(null)
+        onNext()
+      }, 2000)
+    } else {
+      onNext()
     }
-  }, [notebook])
+  }, [notebook, onNext])
 
   const handleAddSet = useCallback(() => {
     const w = parseFloat(inputWeight)
@@ -149,7 +146,7 @@ export default function ExerciseNotebook({
   const intensityInfo = INTENSITY_COLORS[target.intensity]
 
   return (
-    <div key={exercise.exerciseId} className="flex flex-col h-[var(--content-h)] overflow-hidden bg-zinc-950 text-white animate-[slideIn_0.2s_ease-out]">
+    <div key={exercise.exerciseId} className="flex flex-col h-[var(--content-h)] overflow-hidden bg-zinc-950 text-white">
       {/* Skip modal */}
       {showSkipModal && (
         <SkipModal

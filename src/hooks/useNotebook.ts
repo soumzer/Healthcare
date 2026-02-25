@@ -181,7 +181,6 @@ export function useNotebook(
       }
 
       setCurrentSets([])
-      onNext()
       return { isWeightPR, prWeightKg }
     } finally {
       setIsSaving(false)
